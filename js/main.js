@@ -1,8 +1,6 @@
 // =======================
 // LISTA DE EMISORAS
 // =======================
-// De momento metadataUrl se queda vacío.
-// Más adelante se usará para leer artista/canción.
 const stations = [
   // ====== PERÚ – LIMA / NACIONAL ======
   {
@@ -332,12 +330,16 @@ const stations = [
 
 // Mapa de región -> clase de icono (color)
 const regionClassMap = {
-  "Sudamérica": "badge-sudamerica",
-  "Centroamérica": "badge-centroamerica",
-  "Norteamérica": "badge-norteamerica",
-  "Europa": "badge-europa",
-  "Internacional": "badge-internacional"
+  Sudamérica: "badge-sudamerica",
+  Centroamérica: "badge-centroamerica",
+  Norteamérica: "badge-norteamerica",
+  Europa: "badge-europa",
+  Internacional: "badge-internacional"
 };
+
+// Keys para localStorage
+const FAVORITES_KEY = "radio_satelital_favoritas";
+const LAST_STATION_KEY = "radio_satelital_ultima";
 
 // =======================
 // REFERENCIAS DEL DOM
@@ -347,11 +349,148 @@ const countrySelect = document.getElementById("countrySelect");
 const stationList = document.getElementById("stationList");
 const player = document.getElementById("radioPlayer");
 const currentStation = document.getElementById("currentStation");
+const playerHint = document.getElementById("playerHint");
+const clearFiltersBtn = document.getElementById("clearFilters");
+const searchInput = document.getElementById("stationSearch");
+const favoritesToggle = document.getElementById("favoritesToggle");
+
+// Player bar (mobile)
+const playerBar = document.getElementById("playerBar");
+const playerBarStation = document.getElementById("playerBarStation");
+const playerBarPlayPause = document.getElementById("playerBarPlayPause");
+
+// =======================
+// ESTADO
+// =======================
+let favorites = new Set();
+let searchTerm = "";
+let currentStationData = null;
+
+// =======================
+// FUNCIONES AUXILIARES
+// =======================
+
+function setStationListBusy(isBusy) {
+  if (!stationList) return;
+  stationList.setAttribute("aria-busy", isBusy ? "true" : "false");
+}
+
+function setCurrentStationText(text) {
+  if (!currentStation) return;
+  currentStation.textContent = text;
+}
+
+function updatePlayerHint(text) {
+  if (!playerHint) return;
+  playerHint.textContent = text;
+}
+
+function updatePlayerBarVisibility() {
+  if (!playerBar) return;
+  if (currentStationData) {
+    playerBar.classList.add("player-bar--visible");
+    playerBar.setAttribute("aria-hidden", "false");
+  } else {
+    playerBar.classList.remove("player-bar--visible");
+    playerBar.setAttribute("aria-hidden", "true");
+  }
+}
+
+function updatePlayerBarText() {
+  if (!playerBarStation) return;
+  if (currentStationData) {
+    playerBarStation.textContent = `Reproduciendo: ${currentStationData.name}`;
+  } else {
+    playerBarStation.textContent = "Ninguna emisora";
+  }
+}
+
+function updatePlayerBarPlayPauseIcon() {
+  if (!playerBarPlayPause) return;
+  if (player && !player.paused) {
+    playerBarPlayPause.textContent = "⏸";
+  } else {
+    playerBarPlayPause.textContent = "▶";
+  }
+}
+
+function saveFavoritesToStorage() {
+  const arr = Array.from(favorites);
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(arr));
+}
+
+function loadFavoritesFromStorage() {
+  const raw = localStorage.getItem(FAVORITES_KEY);
+  if (!raw) return;
+  try {
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr)) {
+      favorites = new Set(arr);
+    }
+  } catch {
+    // nada
+  }
+}
+
+function saveLastStationToStorage(station) {
+  if (!station) return;
+  localStorage.setItem(LAST_STATION_KEY, JSON.stringify(station.name));
+}
+
+function loadLastStationFromStorage() {
+  const raw = localStorage.getItem(LAST_STATION_KEY);
+  if (!raw) return null;
+  try {
+    const name = JSON.parse(raw);
+    if (typeof name === "string") {
+      return stations.find((st) => st.name === name) || null;
+    }
+  } catch {
+    return null;
+  }
+}
+
+function getStationByNameFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  const stationName = params.get("station");
+  if (!stationName) return null;
+  return stations.find((st) => st.name === decodeURIComponent(stationName)) || null;
+}
+
+function buildShareUrlForStation(station) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("station", encodeURIComponent(station.name));
+  return url.toString();
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  // fallback
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
+  return Promise.resolve();
+}
 
 // =======================
 // INICIO
 // =======================
 function init() {
+  if (!regionSelect || !countrySelect || !stationList || !player) return;
+
+  // Cargar estado desde localStorage
+  loadFavoritesFromStorage();
+
   cargarRegiones();
   actualizarPaises();
   renderStations();
@@ -364,6 +503,75 @@ function init() {
   countrySelect.addEventListener("change", () => {
     renderStations();
   });
+
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener("click", () => {
+      regionSelect.value = "Todas";
+      actualizarPaises();
+      countrySelect.value = "Todos";
+      searchTerm = "";
+      if (searchInput) searchInput.value = "";
+      if (favoritesToggle) favoritesToggle.checked = false;
+      renderStations();
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      searchTerm = searchInput.value.trim().toLowerCase();
+      renderStations();
+    });
+  }
+
+  if (favoritesToggle) {
+    favoritesToggle.addEventListener("change", () => {
+      renderStations();
+    });
+  }
+
+  // Manejo básico de error del reproductor
+  player.addEventListener("error", () => {
+    updatePlayerHint("Error al reproducir la emisora. Intenta con otra estación.");
+  });
+
+  player.addEventListener("play", () => {
+    updatePlayerBarPlayPauseIcon();
+  });
+
+  player.addEventListener("pause", () => {
+    updatePlayerBarPlayPauseIcon();
+  });
+
+  // Player bar (mobile) botón play/pause
+  if (playerBarPlayPause) {
+    playerBarPlayPause.addEventListener("click", () => {
+      if (!player) return;
+      if (player.paused) {
+        player.play().catch(() => {
+          updatePlayerHint(
+            "No se pudo iniciar la reproducción automáticamente. Pulsa play en el reproductor."
+          );
+        });
+      } else {
+        player.pause();
+      }
+    });
+  }
+
+  // Última emisora reproducida
+  const stationFromQuery = getStationByNameFromQuery();
+  const lastStation = stationFromQuery || loadLastStationFromStorage();
+
+  if (lastStation) {
+    currentStationData = lastStation;
+    player.src = lastStation.url;
+    setCurrentStationText(
+      `Última emisora: ${lastStation.name} (${lastStation.country} · ${lastStation.region})`
+    );
+    updatePlayerHint("Pulsa play para continuar escuchando la última emisora.");
+    updatePlayerBarText();
+    updatePlayerBarVisibility();
+  }
 }
 
 // =======================
@@ -371,6 +579,7 @@ function init() {
 // =======================
 function cargarRegiones() {
   const regiones = ["Todas"];
+
   stations.forEach((st) => {
     if (!regiones.includes(st.region)) {
       regiones.push(st.region);
@@ -384,20 +593,23 @@ function cargarRegiones() {
     opt.textContent = region;
     regionSelect.appendChild(opt);
   });
+
+  regionSelect.value = "Todas";
 }
 
 // =======================
 // ACTUALIZAR PAÍSES
 // =======================
 function actualizarPaises() {
-  const regionSeleccionada = regionSelect.value;
+  const regionSeleccionada = regionSelect.value || "Todas";
   const paises = ["Todos"];
 
   stations.forEach((st) => {
-    if (regionSeleccionada === "Todas" || st.region === regionSeleccionada) {
-      if (!paises.includes(st.country)) {
-        paises.push(st.country);
-      }
+    const coincideRegion =
+      regionSeleccionada === "Todas" || st.region === regionSeleccionada;
+
+    if (coincideRegion && !paises.includes(st.country)) {
+      paises.push(st.country);
     }
   });
 
@@ -408,15 +620,19 @@ function actualizarPaises() {
     opt.textContent = pais;
     countrySelect.appendChild(opt);
   });
+
+  countrySelect.value = "Todos";
 }
 
 // =======================
 // RENDERIZAR EMISORAS
 // =======================
 function renderStations() {
-  const regionSeleccionada = regionSelect.value;
-  const paisSeleccionado = countrySelect.value;
+  const regionSeleccionada = regionSelect.value || "Todas";
+  const paisSeleccionado = countrySelect.value || "Todos";
+  const soloFavoritas = favoritesToggle ? favoritesToggle.checked : false;
 
+  setStationListBusy(true);
   stationList.innerHTML = "";
 
   const filtradas = stations.filter((st) => {
@@ -424,57 +640,220 @@ function renderStations() {
       regionSeleccionada === "Todas" || st.region === regionSeleccionada;
     const coincidePais =
       paisSeleccionado === "Todos" || st.country === paisSeleccionado;
-    return coincideRegion && coincidePais;
+    const coincideBusqueda =
+      !searchTerm ||
+      st.name.toLowerCase().includes(searchTerm);
+
+    const coincideFavorita = !soloFavoritas || favorites.has(st.name);
+
+    return coincideRegion && coincidePais && coincideBusqueda && coincideFavorita;
   });
 
   if (filtradas.length === 0) {
-    stationList.textContent = "No hay emisoras para este filtro.";
+    const p = document.createElement("p");
+    p.className = "no-results";
+    p.textContent = "No hay emisoras para este filtro.";
+    stationList.appendChild(p);
+    setStationListBusy(false);
     return;
   }
 
+  // Agrupar por país
+  const gruposPorPais = new Map();
   filtradas.forEach((st) => {
-    const btn = document.createElement("button");
-    btn.className = "station-btn";
-
-    const row = document.createElement("div");
-    row.className = "station-row";
-
-    // Icono genérico por región (color distinto)
-    const badge = document.createElement("div");
-    const regionClass = regionClassMap[st.region] || "badge-internacional";
-    badge.className = "station-icon " + regionClass;
-
-    const info = document.createElement("div");
-    info.className = "station-info";
-
-    const title = document.createElement("div");
-    title.className = "station-title";
-    title.textContent = st.name;
-
-    const meta = document.createElement("div");
-    meta.className = "station-meta";
-    meta.textContent = `${st.country} · ${st.region}`;
-
-    info.appendChild(title);
-    info.appendChild(meta);
-
-    row.appendChild(badge);
-    row.appendChild(info);
-    btn.appendChild(row);
-
-    btn.addEventListener("click", () => playRadio(st, btn));
-
-    stationList.appendChild(btn);
+    if (!gruposPorPais.has(st.country)) {
+      gruposPorPais.set(st.country, []);
+    }
+    gruposPorPais.get(st.country).push(st);
   });
+
+  // Ordenar países alfabéticamente
+  const paisesOrdenados = Array.from(gruposPorPais.keys()).sort((a, b) =>
+    a.localeCompare(b, "es")
+  );
+
+  paisesOrdenados.forEach((pais) => {
+    const groupWrapper = document.createElement("div");
+    groupWrapper.className = "station-group";
+
+    const heading = document.createElement("h3");
+    heading.className = "country-heading";
+    heading.textContent = pais;
+    groupWrapper.appendChild(heading);
+
+    const groupList = document.createElement("div");
+    groupList.className = "station-group-list";
+
+    gruposPorPais.get(pais).forEach((st) => {
+      const card = createStationCard(st);
+      groupList.appendChild(card);
+    });
+
+    groupWrapper.appendChild(groupList);
+    stationList.appendChild(groupWrapper);
+  });
+
+  setStationListBusy(false);
+}
+
+// =======================
+// CREAR TARJETA DE EMISORA
+// =======================
+function createStationCard(st) {
+  const btn = document.createElement("button");
+  btn.className = "station-btn";
+  btn.type = "button";
+
+  if (favorites.has(st.name)) {
+    btn.classList.add("is-favorite");
+  }
+
+  const mainRow = document.createElement("div");
+  mainRow.className = "station-main-row";
+
+  const row = document.createElement("div");
+  row.className = "station-row";
+
+  // Icono por región
+  const badge = document.createElement("div");
+  const regionClass = regionClassMap[st.region] || "badge-internacional";
+  badge.className = "station-icon " + regionClass;
+
+  const info = document.createElement("div");
+  info.className = "station-info";
+
+  const title = document.createElement("div");
+  title.className = "station-title";
+  title.textContent = st.name;
+
+  const meta = document.createElement("div");
+  meta.className = "station-meta";
+  meta.textContent = `${st.country} · ${st.region}`;
+
+  info.appendChild(title);
+  info.appendChild(meta);
+
+  row.appendChild(badge);
+  row.appendChild(info);
+
+  const actions = document.createElement("div");
+  actions.className = "station-actions";
+
+  // Botón favorito
+  const favBtn = document.createElement("button");
+  favBtn.type = "button";
+  favBtn.className = "icon-btn fav-btn";
+  const isFav = favorites.has(st.name);
+  favBtn.setAttribute("aria-pressed", isFav ? "true" : "false");
+  favBtn.setAttribute(
+    "aria-label",
+    isFav ? "Quitar de favoritas" : "Marcar como favorita"
+  );
+  favBtn.textContent = isFav ? "★" : "☆";
+
+  favBtn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    toggleFavorite(st, btn, favBtn);
+  });
+
+  // Botón compartir
+  const shareBtn = document.createElement("button");
+  shareBtn.type = "button";
+  shareBtn.className = "icon-btn share-btn";
+  shareBtn.setAttribute("aria-label", "Compartir esta emisora");
+  shareBtn.textContent = "↗";
+
+  shareBtn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    shareStation(st);
+  });
+
+  actions.appendChild(favBtn);
+  actions.appendChild(shareBtn);
+
+  mainRow.appendChild(row);
+  mainRow.appendChild(actions);
+
+  btn.appendChild(mainRow);
+
+  btn.addEventListener("click", () => playRadio(st, btn));
+
+  return btn;
+}
+
+// =======================
+// FAVORITOS
+// =======================
+function toggleFavorite(station, cardBtn, favBtn) {
+  if (favorites.has(station.name)) {
+    favorites.delete(station.name);
+  } else {
+    favorites.add(station.name);
+  }
+  saveFavoritesToStorage();
+
+  const isFav = favorites.has(station.name);
+  favBtn.setAttribute("aria-pressed", isFav ? "true" : "false");
+  favBtn.setAttribute(
+    "aria-label",
+    isFav ? "Quitar de favoritas" : "Marcar como favorita"
+  );
+  favBtn.textContent = isFav ? "★" : "☆";
+
+  if (isFav) {
+    cardBtn.classList.add("is-favorite");
+  } else {
+    cardBtn.classList.remove("is-favorite");
+  }
+}
+
+// =======================
+// COMPARTIR
+// =======================
+function shareStation(station) {
+  const url = buildShareUrlForStation(station);
+  copyToClipboard(url)
+    .then(() => {
+      updatePlayerHint("Enlace copiado al portapapeles.");
+    })
+    .catch(() => {
+      updatePlayerHint("No se pudo copiar el enlace. Copia la URL manualmente.");
+    });
 }
 
 // =======================
 // REPRODUCIR EMISORA
 // =======================
 function playRadio(station, btnClicked) {
+  if (!player) return;
+
+  currentStationData = station;
   player.src = station.url;
-  player.play();
-  currentStation.textContent = `Reproduciendo: ${station.name} (${station.country} · ${station.region})`;
+
+  player
+    .play()
+    .then(() => {
+      setCurrentStationText(
+        `Reproduciendo: ${station.name} (${station.country} · ${station.region})`
+      );
+      updatePlayerHint("Disfruta la emisora. Puedes cambiarla desde la lista.");
+      updatePlayerBarText();
+      updatePlayerBarVisibility();
+      updatePlayerBarPlayPauseIcon();
+      saveLastStationToStorage(station);
+    })
+    .catch(() => {
+      setCurrentStationText(
+        `Listo para reproducir: ${station.name} (${station.country} · ${station.region})`
+      );
+      updatePlayerHint(
+        "No se pudo iniciar la reproducción automáticamente. Pulsa play en el reproductor."
+      );
+      updatePlayerBarText();
+      updatePlayerBarVisibility();
+      updatePlayerBarPlayPauseIcon();
+      saveLastStationToStorage(station);
+    });
 
   // Quitar estado activo de todos
   document.querySelectorAll(".station-btn").forEach((b) => {
