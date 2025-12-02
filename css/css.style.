@@ -1,1 +1,225 @@
+/* ====== RESET SIMPLE ====== */
+* {
+  box-sizing: border-box;
+}
 
+body {
+  background: #05070a;
+  color: #f5f5f5;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* ====== HEADER ====== */
+header {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  background: radial-gradient(circle at top, #1e88e5 0, #0b0c10 55%);
+  border-bottom: 1px solid #222;
+}
+
+h1 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: 0.04em;
+}
+
+.subtitle {
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+  color: #d0d0d0;
+}
+
+/* ====== LAYOUT PRINCIPAL ====== */
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1.5rem;
+  padding: 1.5rem 1rem 2.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ====== SIDEBAR (FILTROS + PLAYER) ====== */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+section {
+  margin: 0 0 1rem 0;
+}
+
+/* Filtros */
+.filtros {
+  background: #0f1117;
+  border-radius: 8px;
+  border: 1px solid #222;
+  padding: 1rem;
+}
+
+.filtros h2 {
+  margin-top: 0;
+  font-size: 1.05rem;
+  margin-bottom: 0.75rem;
+}
+
+.filtro {
+  margin-bottom: 0.75rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+  color: #cccccc;
+}
+
+select {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background: #090b10;
+  color: #f5f5f5;
+}
+
+/* Player */
+.player-section {
+  background: #0f1117;
+  border-radius: 8px;
+  border: 1px solid #222;
+  padding: 1rem;
+}
+
+.player-section h2 {
+  margin-top: 0;
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+}
+
+.player-section audio {
+  width: 100%;
+}
+
+#currentStation {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #c0c0c0;
+}
+
+/* ====== PANEL DE EMISORAS ====== */
+.stations-panel {
+  background: #0b0d12;
+  border-radius: 10px;
+  border: 1px solid #222;
+  padding: 1rem 1.2rem 1.2rem;
+}
+
+.stations-panel h2 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+#stationList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Tarjeta de emisora */
+.station-btn {
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  background: #151821;
+  border: 1px solid #292c36;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #f5f5f5;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
+}
+
+.station-btn:hover {
+  background: #1f2230;
+  border-color: #3f51b5;
+  transform: translateY(-1px);
+}
+
+/* Estado de emisora activa */
+.station-btn.active {
+  border-color: #ffca28;
+  background: #262331;
+}
+
+/* Contenido interno del botón */
+.station-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.station-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.station-title {
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+.station-meta {
+  font-size: 0.8rem;
+  color: #a0a0a0;
+}
+
+/* Icono genérico por región */
+.station-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid #111;
+}
+
+/* Colores por región */
+.badge-sudamerica {
+  background: #e53935; /* rojo */
+}
+
+.badge-centroamerica {
+  background: #43a047; /* verde */
+}
+
+.badge-norteamerica {
+  background: #1e88e5; /* azul */
+}
+
+.badge-europa {
+  background: #90a4ae; /* gris */
+}
+
+.badge-internacional {
+  background: #8e24aa; /* púrpura */
+}
+
+/* ====== FOOTER ====== */
+footer {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.8rem;
+  color: #aaaaaa;
+  border-top: 1px solid #222;
+  background: #05070a;
+}
