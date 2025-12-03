@@ -1,5 +1,6 @@
-/* =========================
-   ULTRA CORE v6.2 (WAVE PLAYER CARD)
+/* css/style.css
+   =========================
+   ULTRA CORE v6.3 (WAVE PLAYER CARD)
    ========================= */
 :root {
   --bg-dark: #05070a;
@@ -59,7 +60,7 @@ body[data-theme="amoled"] .ambient-bg { display: none; }
    ========================= */
 .player-section { 
   text-align: center; 
-  min-height: 360px; /* Aumentado ligeramente para los nuevos controles */
+  min-height: 360px;
   display: flex; 
   flex-direction: column; 
   justify-content: center; 
@@ -102,7 +103,7 @@ body[data-theme="amoled"] .player-waves-container { display: none; }
 .live .timer-text { opacity: 1; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
 
 /* =========================
-   CONTROLES PRINCIPALES (NUEVO)
+   CONTROLES PRINCIPALES
    ========================= */
 .custom-controls { 
   margin-top: auto; 
@@ -120,7 +121,7 @@ body[data-theme="amoled"] .player-waves-container { display: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 32px; /* Espaciado generoso */
+  gap: 32px;
   width: 100%;
 }
 
@@ -147,7 +148,7 @@ body[data-theme="amoled"] .player-waves-container { display: none; }
   background: transparent;
   border: none;
   color: var(--text-main);
-  opacity: 0.6; /* Jerarquía visual baja */
+  opacity: 0.6;
   cursor: pointer;
   padding: 12px;
   border-radius: 50%;
@@ -176,10 +177,9 @@ body[data-theme="amoled"] .player-waves-container { display: none; }
 input[type=range] { 
   -webkit-appearance: none; 
   width: 100%; height: 6px; 
-  background: rgba(0, 0, 0, 0.4); /* Canal oscuro */
+  background: rgba(0, 0, 0, 0.4);
   border-radius: 10px; 
   outline: none; cursor: pointer; 
-  /* Efecto surco */
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.05); 
   border: 1px solid rgba(255,255,255,0.05); 
 }
@@ -190,7 +190,6 @@ input[type=range]::-webkit-slider-thumb {
   height: 18px; width: 18px; 
   border-radius: 50%; 
   background: #ffffff; 
-  /* Sombra física */
   box-shadow: 0 2px 6px rgba(0,0,0,0.6); 
   margin-top: 0; 
   transition: transform 0.1s ease; 
