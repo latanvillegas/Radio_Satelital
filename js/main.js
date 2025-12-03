@@ -1,5 +1,5 @@
 // =======================
-// SYSTEM CONFIG v3.3 (HTTPS ONLY - SECURE LIST)
+// SYSTEM CONFIG v3.5 (SECURE & STABLE)
 // =======================
 
 const stations = [
@@ -17,7 +17,7 @@ const stations = [
   { name: "Radio PBO", country: "Perú", region: "Sudamérica", url: "https://stream.radiojar.com/2fse67zuv8hvv" },
   { name: "Radio Inca", country: "Perú", region: "Sudamérica", url: "https://stream.zeno.fm/b9x47pyk21zuv" },
 
-  // ====== PERÚ – REGIONAL (Solo Streams Seguros) ======
+  // ====== PERÚ – REGIONAL (Solo HTTPS) ======
   { name: "Radio Santa Lucía", country: "Perú", region: "Sudamérica", url: "https://sp.dattavolt.com/8014/stream" },
   { name: "Radio Pampa Yurac", country: "Perú", region: "Sudamérica", url: "https://rr5200.globalhost1.com/8242/stream" },
   { name: "Radio Stereo TV", country: "Perú", region: "Sudamérica", url: "https://sp.onliveperu.com:7048/stream" },
@@ -251,6 +251,7 @@ const setPlayingState = (playing) => {
 // FILTERS & EVENTS
 // =======================
 const loadFilters = () => {
+  // Se generan dinámicamente de la lista segura
   const regions = ["Todas", ...new Set(stations.map(s => s.region))].sort();
   const countries = ["Todos", ...new Set(stations.map(s => s.country))].sort();
   
