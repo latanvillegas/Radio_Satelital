@@ -1,7 +1,13 @@
 // =======================
-// SYSTEM CONFIG v3.1 (SAFE LIST - HTTPS ONLY)
+// SYSTEM CORE v2.0 (OPTIMIZED)
 // =======================
 
+const systemConfig = {
+  fadeDuration: 200, // ms
+  defaultVolume: 0.8
+};
+
+// DATA: FRECUENCIAS
 const stations = [
   // ====== PERÚ – LIMA / NACIONAL ======
   { name: "Radio Moda", country: "Perú", region: "Sudamérica", url: "https://25023.live.streamtheworld.com/CRP_MOD_SC" },
@@ -54,24 +60,17 @@ const stations = [
   { name: "Radio La Hondureña", country: "Honduras", region: "Centroamérica", url: "https://s2.mkservers.space/rih" }
 ];
 
-const regionClassMap = {
-  "Sudamérica": "badge-sudamerica",
-  "Europa": "badge-europa",
-  "Norteamérica": "badge-norteamerica",
-  "Centroamérica": "badge-norteamerica",
-  "Internacional": "badge-default"
+// ESTADO GLOBAL
+let appState = {
+  currentStation: null,
+  isPlaying: false,
+  favorites: new Set(JSON.parse(localStorage.getItem("pro_favs") || "[]"))
 };
 
-let favorites = new Set(JSON.parse(localStorage.getItem("ultra_favs") || "[]"));
-let currentStation = null;
-let isPlaying = false;
-
-// ELEMENTOS DOM
-const els = {
-  player: document.getElementById("radioPlayer"),
-  btnPlay: document.getElementById("btnPlay"),
-  iconPlay: document.querySelector(".icon-play"),
-  iconPause: document.querySelector(".icon-pause"),
+// ELEMENTOS DOM (Cache)
+const ui = {
+  audio: document.getElementById("radioPlayer"),
+  playBtn: document.getElementById("btnPlay"),
   volSlider: document.getElementById("volSlider"),
   status: document.getElementById("statusIndicator"),
   title: document.getElementById("currentStation"),
@@ -81,112 +80,152 @@ const els = {
   region: document.getElementById("regionSelect"),
   country: document.getElementById("countrySelect"),
   favToggle: document.getElementById("favoritesToggle"),
-  clearFilters: document.getElementById("clearFilters"),
-  themeSelect: document.getElementById("themeSelect")
+  clearFilters: document.getElementById("clearFilters")
 };
 
 // =======================
-// UTILS & HAPTICS
+// CORE FUNCTIONS
 // =======================
-const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-const hapticFeedback = (intensity = 'light') => {
-  if (!navigator.vibrate) return;
-  if (intensity === 'light') navigator.vibrate(10);
-  if (intensity === 'medium') navigator.vibrate(20);
-  if (intensity === 'success') navigator.vibrate([10, 30, 10]);
-};
-
-// =======================
-// INIT & THEME ENGINE
-// =======================
 const init = () => {
-  if(!els.list) return;
+  if (!ui.list) return console.error("Critical: DOM not ready");
   
-  // Cargar Tema
-  const savedTheme = localStorage.getItem("ultra_theme") || "default";
-  setTheme(savedTheme);
-  if(els.themeSelect) els.themeSelect.value = savedTheme;
-
   loadFilters();
-  updateVolumeVisuals(els.volSlider.value);
-  renderList();
-  setupListeners();
-};
-
-const setTheme = (themeName) => {
-  if(themeName === "default") {
-    document.body.removeAttribute("data-theme");
-  } else {
-    document.body.setAttribute("data-theme", themeName);
-  }
   
-  // Actualizar metatag de barra de estado móvil
-  const metaTheme = document.querySelector('meta[name="theme-color"]');
-  if(metaTheme) {
-    // Si es AMOLED, negro puro #000000. Si no, el gris #05070a
-    if(themeName === "amoled") metaTheme.setAttribute("content", "#000000");
-    else metaTheme.setAttribute("content", "#05070a");
-  }
+  // Set volumen inicial
+  ui.audio.volume = systemConfig.defaultVolume;
+  ui.volSlider.value = systemConfig.defaultVolume;
+  
+  renderList();
+  bindEvents();
+  
+  // Reset UI inicial
+  updateStatus("STANDBY", false);
 };
 
-// =======================
-// RENDER & LOGIC
-// =======================
-const renderList = () => {
-  if (!document.startViewTransition) {
-    updateDOM();
+// --- AUDIO ENGINE ---
+
+const playStation = async (station) => {
+  // Update UI Visuals inmediatamente
+  document.querySelectorAll('.station-card').forEach(c => c.classList.remove('active'));
+  
+  // Si es la misma estación, hacemos toggle
+  if (appState.currentStation?.name === station.name) {
+    togglePlay();
+    renderList(); // Para actualizar estado visual de la tarjeta
     return;
   }
-  document.startViewTransition(() => updateDOM());
+
+  // Nueva Estación
+  appState.currentStation = station;
+  appState.isPlaying = true; // Asumimos true mientras carga
+  
+  // Actualizar Info Player
+  ui.title.innerText = station.name;
+  ui.artist.innerText = `${station.country} // ${station.region.toUpperCase()}`;
+  updateStatus("BUFFERING...", true);
+
+  // Audio Load
+  ui.audio.src = station.url;
+  
+  try {
+    await ui.audio.play();
+    updateStatus("ESTABLISHED", true);
+    renderList(); // Re-render para marcar la tarjeta activa
+    updatePlayButton(true);
+  } catch (err) {
+    console.error("Stream Error:", err);
+    updateStatus("SIGNAL LOST", false);
+    appState.isPlaying = false;
+    updatePlayButton(false);
+  }
 };
 
-const updateDOM = () => {
-  els.list.innerHTML = "";
+const togglePlay = () => {
+  if (!appState.currentStation) return;
+
+  if (ui.audio.paused) {
+    ui.audio.play()
+      .then(() => {
+        appState.isPlaying = true;
+        updateStatus("ESTABLISHED", true);
+        updatePlayButton(true);
+      })
+      .catch(e => {
+        updateStatus("ERROR", false);
+        appState.isPlaying = false;
+      });
+  } else {
+    ui.audio.pause();
+    appState.isPlaying = false;
+    updateStatus("STANDBY", false);
+    updatePlayButton(false);
+  }
+};
+
+// --- UI UPDATES ---
+
+const updateStatus = (text, isLive) => {
+  ui.status.innerText = text;
+  if (isLive) ui.status.classList.add("live");
+  else ui.status.classList.remove("live");
+};
+
+const updatePlayButton = (isPlaying) => {
+  // SVG Icons
+  const playIcon = `<svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+  const pauseIcon = `<svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
   
-  const term = normalize(els.search.value);
-  const region = els.region.value;
-  const country = els.country.value;
-  const showFavs = els.favToggle.checked;
+  ui.playBtn.innerHTML = isPlaying ? pauseIcon : playIcon;
+  document.title = isPlaying ? `▶ ${appState.currentStation.name}` : "Satelital | Core";
+};
+
+const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+const renderList = () => {
+  ui.list.innerHTML = "";
+  
+  const term = normalize(ui.search.value);
+  const region = ui.region.value;
+  const country = ui.country.value;
+  const showFavs = ui.favToggle.checked;
 
   const filtered = stations.filter(st => {
     const matchSearch = !term || normalize(st.name).includes(term);
     const matchRegion = region === "Todas" || st.region === region;
     const matchCountry = country === "Todos" || st.country === country;
-    const matchFav = !showFavs || favorites.has(st.name);
+    const matchFav = !showFavs || appState.favorites.has(st.name);
     return matchSearch && matchRegion && matchCountry && matchFav;
   });
 
   if (filtered.length === 0) {
-    els.list.innerHTML = `<p style="color:var(--text-muted); text-align:center; grid-column: 1/-1; padding: 2rem;">Sin señal en esta frecuencia.</p>`;
+    ui.list.innerHTML = `<p style="color:var(--text-muted); text-align:center; grid-column: 1/-1; padding: 2rem; font-family:var(--font-mono);">NO SIGNAL FOUND.</p>`;
     return;
   }
 
+  // Fragment para rendimiento
+  const fragment = document.createDocumentFragment();
+
   filtered.forEach(st => {
-    const isActive = currentStation && currentStation.name === st.name;
-    const isFav = favorites.has(st.name);
+    const isActive = appState.currentStation?.name === st.name;
+    const isFav = appState.favorites.has(st.name);
     
     const div = document.createElement("div");
     div.className = `station-card ${isActive ? 'active' : ''}`;
     
-    div.onmousemove = (e) => {
-      const rect = div.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      div.style.setProperty("--x", `${x}px`);
-      div.style.setProperty("--y", `${y}px`);
+    // Badges simples basados en región
+    const badgeMap = {
+      "Sudamérica": "badge-sudamerica",
+      "Europa": "badge-europa",
+      "Norteamérica": "badge-norteamerica"
     };
-
-    div.onclick = (e) => {
-      hapticFeedback('medium');
-      if(!e.target.closest('.fav-btn')) playStation(st);
-    };
-
-    const badgeClass = regionClassMap[st.region] || "badge-default";
+    const badgeClass = badgeMap[st.region] || "badge-default";
 
     div.innerHTML = `
       <div class="st-info">
-        <div class="st-icon ${badgeClass}"></div>
+        <div class="st-icon ${badgeClass}">
+          ${st.name.substring(0,2).toUpperCase()}
+        </div>
         <div>
           <span class="st-name">${st.name}</span>
           <span class="st-meta">${st.country}</span>
@@ -195,7 +234,6 @@ const updateDOM = () => {
       <div style="display:flex; align-items:center; gap:10px;">
         <div class="visualizer">
           <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-          <div class="bar"></div><div class="bar"></div>
         </div>
         <button class="fav-btn ${isFav ? 'is-fav' : ''}" aria-label="Favorito">
           ${isFav ? '★' : '☆'}
@@ -203,157 +241,81 @@ const updateDOM = () => {
       </div>
     `;
 
+    // Click en la tarjeta (Play)
+    div.onclick = (e) => {
+      if(!e.target.closest('.fav-btn')) playStation(st);
+    };
+
+    // Click en Favorito
     const btnFav = div.querySelector('.fav-btn');
     btnFav.onclick = (e) => {
       e.stopPropagation();
-      hapticFeedback('light');
-      if(favorites.has(st.name)) favorites.delete(st.name);
-      else favorites.add(st.name);
-      localStorage.setItem("ultra_favs", JSON.stringify([...favorites]));
-      renderList();
+      toggleFavorite(st.name);
     };
 
-    els.list.appendChild(div);
+    fragment.appendChild(div);
   });
+
+  ui.list.appendChild(fragment);
 };
 
-// =======================
-// PLAYER ENGINE
-// =======================
-const playStation = (station) => {
-  const allCards = document.querySelectorAll('.station-card');
-  allCards.forEach(c => c.classList.remove('active'));
-  
-  if (currentStation && currentStation.name === station.name && isPlaying) {
-    togglePlay();
-    renderList();
-    return;
-  }
-
-  currentStation = station;
-  els.title.innerText = station.name;
-  els.artist.innerText = "Estableciendo conexión...";
-  els.status.innerText = "BUFFERING";
-  els.status.style.color = "#ffca28"; 
-  els.status.classList.remove("live");
-
-  els.player.src = station.url;
-  els.player.volume = els.volSlider.value;
-  
-  const playPromise = els.player.play();
-
-  if (playPromise !== undefined) {
-    playPromise.then(() => {
-      setPlayingState(true);
-      hapticFeedback('success');
-      renderList(); 
-    }).catch(error => {
-      console.error("Stream Error:", error);
-      els.artist.innerText = "Error: Stream offline.";
-      els.status.innerText = "OFFLINE";
-      els.status.style.color = "#ff3d3d";
-      setPlayingState(false);
-      hapticFeedback('medium');
-    });
-  }
-};
-
-const togglePlay = () => {
-  if (!currentStation) return;
-  hapticFeedback('light');
-  if (els.player.paused) {
-    els.player.play();
-    setPlayingState(true);
+const toggleFavorite = (name) => {
+  if (appState.favorites.has(name)) {
+    appState.favorites.delete(name);
   } else {
-    els.player.pause();
-    setPlayingState(false);
+    appState.favorites.add(name);
   }
+  localStorage.setItem("pro_favs", JSON.stringify([...appState.favorites]));
+  renderList();
 };
 
-const setPlayingState = (playing) => {
-  isPlaying = playing;
-  if (playing) {
-    if(els.iconPlay) els.iconPlay.style.display = "none";
-    if(els.iconPause) els.iconPause.style.display = "block";
-    els.status.innerText = "EN VIVO";
-    els.status.classList.add("live");
-    els.status.style.color = "#00e676";
-    if(currentStation) els.artist.innerText = `${currentStation.country} · ${currentStation.region}`;
-    document.title = `▶ ${currentStation.name}`;
-  } else {
-    if(els.iconPlay) els.iconPlay.style.display = "block";
-    if(els.iconPause) els.iconPause.style.display = "none";
-    els.status.innerText = "PAUSADO";
-    els.status.classList.remove("live");
-    els.status.style.color = "var(--accent)";
-    document.title = "Satelital | Pausado";
-  }
-};
+// --- FILTERS & UTILS ---
 
-const updateVolumeVisuals = (val) => {
-  const percentage = val * 100;
-  els.volSlider.style.background = `linear-gradient(to right, #fff ${percentage}%, rgba(255,255,255,0.1) ${percentage}%)`;
-};
-
-// =======================
-// FILTERS & LISTENERS
-// =======================
 const loadFilters = () => {
   const regions = ["Todas", ...new Set(stations.map(s => s.region))].sort();
   const countries = ["Todos", ...new Set(stations.map(s => s.country))].sort();
-  fillSelect(els.region, regions);
-  fillSelect(els.country, countries);
-};
-
-const fillSelect = (sel, arr) => {
-  sel.innerHTML = "";
-  arr.forEach(val => {
-    const opt = document.createElement("option");
-    opt.value = val;
-    opt.innerText = val;
-    sel.appendChild(opt);
-  });
-};
-
-const setupListeners = () => {
-  if(els.btnPlay) els.btnPlay.addEventListener("click", togglePlay);
   
-  if(els.volSlider) {
-    els.volSlider.addEventListener("input", (e) => {
-      const val = e.target.value;
-      els.player.volume = val;
-      updateVolumeVisuals(val);
-    });
-  }
+  populateSelect(ui.region, regions);
+  populateSelect(ui.country, countries);
+};
 
-  // Cambio de Tema
-  if(els.themeSelect) {
-    els.themeSelect.addEventListener("change", (e) => {
-      const theme = e.target.value;
-      setTheme(theme);
-      localStorage.setItem("ultra_theme", theme);
-      hapticFeedback('medium');
-    });
-  }
+const populateSelect = (el, items) => {
+  el.innerHTML = "";
+  items.forEach(i => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.innerText = i;
+    el.appendChild(opt);
+  });
+};
 
-  if(els.search) els.search.addEventListener("input", renderList);
-  if(els.region) els.region.addEventListener("change", renderList);
-  if(els.country) els.country.addEventListener("change", renderList);
-  if(els.favToggle) els.favToggle.addEventListener("change", () => {
-    hapticFeedback('light');
-    renderList();
+const bindEvents = () => {
+  ui.playBtn.addEventListener("click", togglePlay);
+  
+  ui.volSlider.addEventListener("input", (e) => {
+    ui.audio.volume = e.target.value;
   });
 
-  if(els.clearFilters) {
-    els.clearFilters.addEventListener("click", () => {
-      hapticFeedback('light');
-      els.search.value = "";
-      els.region.value = "Todas";
-      els.country.value = "Todos";
-      els.favToggle.checked = false;
+  // Filtros dinámicos
+  [ui.search, ui.region, ui.country, ui.favToggle].forEach(el => {
+    if(el) el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', renderList);
+  });
+
+  if(ui.clearFilters) {
+    ui.clearFilters.addEventListener("click", () => {
+      ui.search.value = "";
+      ui.region.value = "Todas";
+      ui.country.value = "Todos";
+      ui.favToggle.checked = false;
       renderList();
     });
   }
+  
+  // Error handling nativo del audio
+  ui.audio.onerror = () => {
+    if(appState.isPlaying) updateStatus("STREAM ERROR", false);
+  };
 };
 
+// BOOT
 document.addEventListener("DOMContentLoaded", init);
