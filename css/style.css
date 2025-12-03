@@ -1,74 +1,19 @@
 /* =========================
-   ULTRA CORE v4.1 (FINAL STABLE)
+   ULTRA CORE v3.2 (INDUSTRIAL STANDARD)
    ========================= */
-
 :root {
-  /* --- BASE PALETTE (Cyber Dark Default) --- */
   --bg-dark: #05070a;
-  --bg-glass: rgba(15, 17, 22, 0.75); 
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --accent: #ff3d3d; 
-  --accent-glow: rgba(255, 61, 61, 0.4);
-  --text-main: #ffffff;
-  --text-muted: #94a3b8;
-  --radius: 16px;
-  --font-main: 'Inter', sans-serif;
-  --card-bg: rgba(255,255,255,0.03);
-  --panel-shadow: 0 20px 40px rgba(0,0,0,0.4);
-  --header-height: 80px;
-}
-
-/* =========================
-   THEME ENGINE (OVERRIDES)
-   ========================= */
-
-/* 1. AMOLED (Negro Absoluto - Sin Ruido - Alto Contraste) */
-body[data-theme="amoled"] {
-  --bg-dark: #000000;
-  --bg-glass: #000000;
-  --border-glass: #333333;
-  --accent: #ffffff; 
-  --accent-glow: rgba(255, 255, 255, 0.0);
-  --card-bg: #000000;
-  --panel-shadow: none;
-}
-/* Ocultar fondo ruidoso en AMOLED para píxeles apagados */
-body[data-theme="amoled"] .ambient-bg { display: none; }
-body[data-theme="amoled"] .glass-panel { backdrop-filter: none; -webkit-backdrop-filter: none; }
-
-/* 2. POLAR WHITE (Blanco Puro - Estilo Clínico) */
-body[data-theme="white"] {
-  --bg-dark: #f0f2f5;
-  --bg-glass: rgba(255, 255, 255, 0.85);
-  --border-glass: #d1d5db; /* Borde visible gris */
-  --accent: #000000; /* Acento negro para máximo contraste */
-  --accent-glow: rgba(0, 0, 0, 0.1);
-  --text-main: #111827;
+  --bg-panel: #0a0c10;
+  --border-dim: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.15);
+  --accent: #ffffff; /* Blanco puro para contraste máximo */
+  --text-main: #e2e2e2;
   --text-muted: #6b7280;
-  --card-bg: #ffffff;
-  --panel-shadow: 0 10px 25px rgba(0,0,0,0.06);
-}
-/* Invertir el ruido para que se vea sutil en blanco */
-body[data-theme="white"] .ambient-bg { filter: invert(1); opacity: 0.15; }
-/* Ajustes específicos para input y slider en blanco */
-body[data-theme="white"] .input-dark { background: #ffffff; border-color: #d1d5db; color: #111827; }
-body[data-theme="white"] input[type=range] { background: #d1d5db; }
-
-/* 3. GOLD LUXURY */
-body[data-theme="gold"] {
-  --accent: #ffd700;
-  --accent-glow: rgba(255, 215, 0, 0.5);
+  --radius: 4px; /* Radio industrial, menos "blando" */
+  --font-main: 'Inter', sans-serif;
 }
 
-/* 4. NEON PURPLE */
-body[data-theme="purple"] {
-  --accent: #d500f9;
-  --accent-glow: rgba(213, 0, 249, 0.5);
-}
-
-/* =========================
-   BASE STYLES
-   ========================= */
+/* --- BASE STYLES --- */
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
@@ -78,293 +23,214 @@ body {
   color: var(--text-main);
   min-height: 100vh;
   overflow-x: hidden;
-  transition: background 0.3s ease, color 0.3s ease;
   -webkit-font-smoothing: antialiased;
 }
 
-/* --- ATMOSPHERE --- */
-.ambient-bg {
-  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
-  background: radial-gradient(circle at 50% -20%, #1e1e24 0%, var(--bg-dark) 60%),
-              radial-gradient(circle at 90% 90%, #2a0a0a 0%, transparent 60%);
-  transition: opacity 0.5s;
-}
-.ambient-bg::after {
-  content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  opacity: 0.04; pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+/* Tabular nums para datos */
+.track-title, .status-indicator, input, .st-meta {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
 }
 
-.container { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem; }
+/* --- LAYOUT & STRUCTURE --- */
+.container { max-width: 1400px; margin: 0 auto; padding: 0 2rem; }
 
-/* =========================
-   HEADER & SELECTOR FLOTANTE
-   ========================= */
-.site-header { padding: 1.5rem 0; margin-bottom: 1rem; position: relative; z-index: 10; }
-.header-inner { display: flex; justify-content: space-between; align-items: center; }
-
-.brand-mark { display: flex; align-items: center; gap: 1rem; }
-.brand-icon {
-  width: 48px; height: 48px;
-  background: linear-gradient(135deg, var(--accent), #b71c1c);
-  border-radius: 50%;
-  display: grid; place-items: center;
-  box-shadow: 0 0 25px var(--accent-glow);
-  transition: 0.3s;
-}
-body[data-theme="amoled"] .brand-icon { background: #000; border: 2px solid #fff; box-shadow: none; }
-body[data-theme="white"] .brand-icon { background: var(--accent); color: #fff; box-shadow: none; }
-
-.brand-wave { width: 24px; height: 24px; border: 3px solid #fff; border-radius: 50%; }
-
-.site-title {
-  margin: 0; font-weight: 900; text-transform: uppercase; font-size: 1.4rem;
-  letter-spacing: -0.02em;
-}
-.site-subtitle { margin: 0; color: var(--text-muted); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }
-
-/* --- SELECTOR FLOTANTE (ARRIBA DERECHA) --- */
-.theme-floater { position: relative; }
-.theme-select-top {
-  background: var(--bg-glass);
-  color: var(--text-main);
-  border: 1px solid var(--border-glass);
-  padding: 0.6rem 1rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  outline: none;
-  font-weight: 500;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: border 0.3s;
-}
-.theme-select-top:focus { border-color: var(--accent); }
-/* Ajuste para tema blanco */
-body[data-theme="white"] .theme-select-top { background: #fff; color: #000; border-color: #ccc; }
-
-/* =========================
-   LAYOUT PRINCIPAL
-   ========================= */
 .layout {
   display: grid;
-  grid-template-columns: 340px 1fr; /* Sidebar fija, contenido flexible */
+  grid-template-columns: 320px 1fr;
   gap: 2rem;
-  padding-bottom: 4rem;
+  padding: 2rem 0;
+  height: 100vh;
+  align-content: start;
 }
 
-/* PANELES DE CRISTAL (Reusable) */
+@media (max-width: 900px) { 
+  .layout { grid-template-columns: 1fr; height: auto; } 
+}
+
+/* --- PANELES (Sin Glassmorphism innecesario) --- */
 .glass-panel {
-  background: var(--bg-glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-dim);
   border-radius: var(--radius);
   padding: 1.5rem;
-  box-shadow: var(--panel-shadow);
-  transition: background 0.3s, border-color 0.3s;
 }
-/* Ajuste visual para bordes en modo White */
-body[data-theme="white"] .glass-panel { border-top: 1px solid var(--border-glass); }
 
-/* =========================
-   SIDEBAR (PLAYER & FILTROS)
-   ========================= */
-.player-section { text-align: center; margin-bottom: 1.5rem; }
-.status-indicator { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); display: block; margin-bottom: 0.5rem; }
-.status-indicator.live { color: #00e676; text-shadow: 0 0 10px rgba(0,230,118,0.4); }
-body[data-theme="amoled"] .status-indicator.live { text-shadow: none; }
+/* --- HEADER (Minimalista) --- */
+.site-header { padding: 1.5rem 0; display: none; /* Oculto para maximizar espacio funcional, opcional */ }
+@media (max-width: 900px) { .site-header { display: block; } }
 
-.track-title { margin: 0; font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
-.track-artist { margin: 0.4rem 0 0; color: var(--text-muted); font-size: 0.9rem; }
+/* --- PLAYER SECTION (Jerarquía Corregida) --- */
+.player-section { 
+  text-align: left; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between;
+  height: 100%;
+  border-color: var(--border-light);
+}
 
-.custom-controls { margin-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+.status-indicator {
+  font-size: 0.7rem; 
+  text-transform: uppercase; 
+  letter-spacing: 0.2em; 
+  font-weight: 700; 
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  display: block;
+}
+.status-indicator.live { color: #22c55e; }
 
-/* BOTÓN DE REPRODUCCIÓN */
+.track-info-wrap { margin-bottom: 2rem; }
+
+.track-title { 
+  margin: 0; 
+  font-size: 2.2rem; /* Aumentado drásticamente */
+  font-weight: 800; 
+  color: #fff;
+  line-height: 1.1; 
+  letter-spacing: -0.03em; 
+  margin-bottom: 0.5rem;
+}
+
+.track-artist { 
+  margin: 0; 
+  color: var(--text-muted); 
+  font-size: 1rem; 
+  font-weight: 400;
+}
+
+/* Controles */
+.custom-controls { 
+  margin-top: auto; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 1.5rem; 
+}
+
 .play-btn {
-  width: 72px; height: 72px;
-  border-radius: 50%;
-  background: var(--text-main);
+  width: 100%; 
+  height: 64px;
+  border-radius: var(--radius);
+  background: #fff;
   color: #000;
   border: none;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+  transition: transform 0.1s;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
-.play-btn:hover { transform: scale(1.1); }
-.play-btn:active { transform: scale(0.95); }
-body[data-theme="amoled"] .play-btn { background: #000; border: 2px solid #fff; color: #fff; box-shadow: none; }
-body[data-theme="white"] .play-btn { background: #000; color: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+.play-btn:active { transform: scale(0.98); }
+.play-btn:hover { background: #f0f0f0; }
+.play-btn svg { width: 24px; height: 24px; fill: currentColor; }
 
-/* SLIDER VOLUMEN */
-.volume-control { width: 100%; display: flex; align-items: center; gap: 12px; color: var(--text-muted); }
+/* Slider Volumen */
+.volume-control { display: flex; align-items: center; gap: 10px; }
 input[type=range] {
-  -webkit-appearance: none; width: 100%; height: 4px;
-  background: rgba(255,255,255,0.15); border-radius: 2px;
-  outline: none; cursor: pointer;
+  -webkit-appearance: none; width: 100%; height: 2px;
+  background: var(--border-dim);
+  cursor: pointer;
 }
 input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 16px; height: 16px;
-  background: var(--text-main); border-radius: 50%;
-  cursor: pointer; transition: transform 0.1s;
-  margin-top: -6px; /* Centrar en la línea */
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
-/* Arreglo visual slider en Webkit */
-input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; }
-
-
-/* INPUTS Y SELECTS DE FILTRO */
-.input-dark {
-  background: rgba(0,0,0,0.25);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--text-main);
-  padding: 0.8rem 1rem;
-  border-radius: 10px;
-  width: 100%; font-family: inherit; font-size: 0.9rem;
-  outline: none; transition: 0.3s;
-}
-.input-dark:focus { border-color: var(--accent); }
-.input-label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; font-weight: 600; text-transform: uppercase; }
-.form-group { margin-bottom: 1.2rem; }
-
-/* =========================
-   PANEL DE EMISORAS & GRID
-   ========================= */
-.panel-head {
-  display: flex; flex-wrap: wrap; gap: 1rem;
-  justify-content: space-between; align-items: center;
-  margin-bottom: 1.5rem;
+  -webkit-appearance: none; height: 12px; width: 12px;
+  background: #fff; border-radius: 50%;
+  margin-top: -5px;
 }
 
-/* BOTONES DE VISTA (Auto / 2x / 4x) */
-.view-controls {
-  display: flex; gap: 4px;
-  background: rgba(0,0,0,0.2);
-  padding: 4px; border-radius: 8px;
-}
-body[data-theme="white"] .view-controls { background: #e5e7eb; }
+/* --- FILTERS SIDEBAR --- */
+.filters { margin-top: 1rem; display: none; /* Simplificado para este ejemplo */ }
 
-.btn-view {
-  background: transparent; border: none;
-  color: var(--text-muted);
-  padding: 6px 12px;
-  font-size: 0.75rem; font-weight: 700;
-  border-radius: 6px; cursor: pointer;
-  transition: 0.2s;
+/* --- STATION GRID --- */
+.panel-head { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-bottom: 1.5rem; 
+  border-bottom: 1px solid var(--border-dim);
+  padding-bottom: 1rem;
 }
-.btn-view:hover { color: var(--text-main); }
-.btn-view.active {
-  background: var(--bg-glass);
-  color: var(--text-main);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-body[data-theme="white"] .btn-view.active { background: #fff; color: #000; }
 
-/* --- SISTEMA DE GRID (CSS GRID MAGIC) --- */
+.panel-head h3 { 
+  margin: 0; 
+  font-size: 0.9rem; 
+  text-transform: uppercase; 
+  letter-spacing: 0.1em; 
+  color: var(--text-muted); 
+}
+
+.search-input {
+  background: transparent;
+  border: 1px solid var(--border-dim);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  font-family: inherit;
+  width: 250px;
+  border-radius: var(--radius);
+}
+.search-input:focus { border-color: #fff; outline: none; }
+
 .station-grid {
-  display: grid;
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;
-  /* Por defecto (Auto): Se adapta al tamaño disponible */
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
-/* Modificadores de Grid (activados por JS) */
-.station-grid.grid-2 { grid-template-columns: repeat(2, 1fr); }
-.station-grid.grid-4 { grid-template-columns: repeat(4, 1fr); }
-
-
-/* TARJETA DE EMISORA */
+/* --- STATION CARD (Rediseño Total) --- */
 .station-card {
-  position: relative;
-  background: var(--card-bg);
-  border: 1px solid var(--border-glass);
-  padding: 1rem;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-dim);
+  padding: 1rem; 
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s, background 0.2s;
-  overflow: hidden;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: all 0.2s;
 }
-.station-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.3); }
-body[data-theme="white"] .station-card:hover { border-color: var(--accent); }
+
+.station-card:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: var(--border-light);
+}
 
 .station-card.active {
-  background: rgba(var(--accent), 0.1); /* Tinte muy sutil del color acento */
-  border-color: var(--accent);
+  background: #fff;
+  border-color: #fff;
 }
-/* Activo en AMOLED: Inversión total */
-body[data-theme="amoled"] .station-card.active { background: #000; border-color: #fff; box-shadow: inset 0 0 0 1px #fff; }
+.station-card.active .st-name { color: #000; }
+.station-card.active .st-meta { color: #444; }
+.station-card.active .fav-btn { color: #000; }
 
-.st-info { display: flex; align-items: center; gap: 10px; z-index: 2; overflow: hidden; }
+.st-info { display: flex; align-items: center; gap: 1rem; }
+
+/* Badges Unificados - Sin colorines */
 .st-icon {
-  width: 42px; height: 42px; flex-shrink: 0;
+  width: 40px; height: 40px; 
+  background: #1a1d24; 
+  border: 1px solid var(--border-dim);
   border-radius: 50%;
-  background: #222; border: 2px solid rgba(255,255,255,0.1);
-}
-/* Iconos en modo White */
-body[data-theme="white"] .st-icon { background: #f3f4f6; border-color: #e5e7eb; }
-
-.st-name { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-.st-meta { font-size: 0.75rem; color: var(--text-muted); display: block; }
-
-/* VISUALIZER (Barras animadas) */
-.visualizer {
-  display: flex; gap: 2px; height: 16px; align-items: flex-end;
-  opacity: 0; transition: opacity 0.3s;
-}
-.station-card.active .visualizer { opacity: 1; }
-
-.bar { width: 3px; background: var(--accent); border-radius: 2px; animation: bounce 0s infinite alternate; }
-.bar:nth-child(1) { height: 60%; animation-duration: 0.4s; }
-.bar:nth-child(2) { height: 100%; animation-duration: 0.5s; }
-.bar:nth-child(3) { height: 40%; animation-duration: 0.3s; }
-
-@keyframes bounce { 0% { height: 20%; opacity: 0.7; } 100% { height: 100%; opacity: 1; } }
-
-/* BOTÓN FAVORITO */
-.fav-btn {
-  background: none; border: none; color: var(--text-muted);
-  font-size: 1.2rem; cursor: pointer;
-  padding: 0 0 0 8px; z-index: 2;
-  transition: transform 0.2s, color 0.2s;
-}
-.fav-btn:hover { color: var(--text-main); transform: scale(1.2); }
-.fav-btn.is-fav { color: #ffca28; text-shadow: 0 0 10px rgba(255,202,40,0.5); }
-body[data-theme="amoled"] .fav-btn.is-fav { text-shadow: none; }
-body[data-theme="white"] .fav-btn.is-fav { text-shadow: none; color: #f59e0b; }
-
-
-/* =========================
-   FOOTER
-   ========================= */
-.site-footer {
-  text-align: center; font-size: 0.8rem; color: var(--text-muted);
-  padding: 2rem 0; margin-top: 2rem;
-  border-top: 1px solid var(--border-glass);
+  flex-shrink: 0;
+  /* Eliminamos gradientes específicos */
+  background-image: none !important; 
 }
 
-/* =========================
-   RESPONSIVO (MÓVIL)
-   ========================= */
-@media (max-width: 900px) {
-  .layout { grid-template-columns: 1fr; gap: 1.5rem; }
-  .site-header { padding: 1rem 0; }
-  .brand-icon { width: 40px; height: 40px; }
-  .site-title { font-size: 1.2rem; }
-  
-  /* En móvil, forzamos 1 sola columna aunque el usuario pida 4 */
-  .station-grid,
-  .station-grid.grid-2,
-  .station-grid.grid-4 {
-    grid-template-columns: 1fr;
-  }
-  
-  /* Ocultar botones de vista en móvil porque no tienen sentido */
-  .view-controls { display: none; }
-  
-  /* Ajuste de player sticky en móvil (opcional, pero mejora UX) */
-  .player-section { position: sticky; top: 10px; z-index: 100; }
+.station-card.active .st-icon {
+  background: #000;
+  border-color: #000;
 }
+
+.st-name { font-weight: 600; font-size: 0.95rem; color: var(--text-main); }
+.st-meta { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Botón Fav */
+.fav-btn { opacity: 0.2; transition: opacity 0.2s; color: #fff; border: none; background: none; font-size: 1.2rem; cursor: pointer; }
+.fav-btn:hover, .fav-btn.is-fav { opacity: 1; }
+.fav-btn.is-fav { color: #fff; } /* Sin amarillo */
+.station-card.active .fav-btn.is-fav { color: #000; }
+
+/* Visualizer Simplificado */
+.visualizer { display: flex; gap: 2px; height: 12px; align-items: flex-end; margin-right: 10px; }
+.bar { width: 3px; background: #000; display: none; } 
+.station-card.active .bar { display: block; animation: bounce 0.5s infinite alternate; }
+
+@keyframes bounce { 0% { height: 20%; } 100% { height: 100%; } }
