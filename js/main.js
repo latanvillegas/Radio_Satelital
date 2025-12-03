@@ -1,5 +1,5 @@
 // =======================
-// SYSTEM CONFIG v6.2 (NAVIGATION CORE)
+// SYSTEM CONFIG v6.3 (SMART NAVIGATION)
 // =======================
 
 const defaultStations = [
@@ -65,8 +65,8 @@ let secondsElapsed = 0;
 const els = {
   player: document.getElementById("radioPlayer"),
   btnPlay: document.getElementById("btnPlay"),
-  btnPrev: document.getElementById("btnPrev"), // NUEVO
-  btnNext: document.getElementById("btnNext"), // NUEVO
+  btnPrev: document.getElementById("btnPrev"),
+  btnNext: document.getElementById("btnNext"),
   volSlider: document.getElementById("volSlider"),
   status: document.getElementById("statusIndicator"),
   title: document.getElementById("currentStation"),
@@ -87,7 +87,7 @@ const els = {
 };
 
 // =======================
-// INIT & DATA MERGE
+// INIT
 // =======================
 const init = () => {
   if(!els.list) return;
@@ -170,7 +170,12 @@ const playStation = (station) => {
 };
 
 const togglePlay = () => {
-  if (!currentStation) return;
+  // Si no hay emisora seleccionada, inicia la primera por defecto
+  if (!currentStation) {
+    if(stations.length > 0) playStation(stations[0]);
+    return;
+  }
+
   if (els.player.paused) { els.player.play(); setPlayingState(true); } 
   else { els.player.pause(); setPlayingState(false); }
 };
@@ -193,24 +198,31 @@ const setPlayingState = (playing) => {
   renderList();
 };
 
-// FUNCION DE NAVEGACION (NUEVO)
+// LOGICA DE SALTO CORREGIDA (ARRANQUE EN FRIO)
 const skipStation = (direction) => {
-  if (!currentStation || stations.length === 0) return;
+  if (stations.length === 0) return;
   
-  // Buscar en la lista global (o podrías ajustar para buscar solo en filtrados)
-  // Usamos la lista completa para navegación consistente
-  const currentIndex = stations.findIndex(s => s.name === currentStation.name);
-  let newIndex = currentIndex + direction;
-  
-  // Loop Infinito
-  if (newIndex >= stations.length) newIndex = 0;
-  if (newIndex < 0) newIndex = stations.length - 1;
+  let newIndex = 0;
+
+  // Si no hay emisora sonando (estado inicial), definimos el inicio
+  if (!currentStation) {
+    // Si damos "Next" (1), empezamos en la 0. Si "Prev" (-1), empezamos en la última.
+    newIndex = direction > 0 ? 0 : stations.length - 1;
+  } else {
+    // Lógica normal de salto
+    const currentIndex = stations.findIndex(s => s.name === currentStation.name);
+    newIndex = currentIndex + direction;
+    
+    // Loop Infinito
+    if (newIndex >= stations.length) newIndex = 0;
+    if (newIndex < 0) newIndex = stations.length - 1;
+  }
 
   playStation(stations[newIndex]);
 };
 
 // =======================
-// CUSTOM STATIONS LOGIC
+// CUSTOM STATIONS
 // =======================
 const addCustomStation = (e) => {
   e.preventDefault();
@@ -238,7 +250,7 @@ const deleteCustomStation = (e, stationName) => {
 };
 
 // =======================
-// RENDER & FILTERS
+// RENDER
 // =======================
 const renderList = () => {
   els.list.innerHTML = "";
@@ -303,15 +315,7 @@ const renderList = () => {
 
 const updateVolumeVisuals = (val) => {
   const percentage = val * 100;
-  // LOGICA GLASS GROOVE:
-  // Parte llena: Blanco (#fff)
-  // Parte vacía: Transparente (para que se vea el surco oscuro del CSS)
-  const gradient = `linear-gradient(90deg, 
-    #ffffff 0%, 
-    #ffffff ${percentage}%, 
-    rgba(255,255,255,0.0) ${percentage}%, 
-    rgba(255,255,255,0.0) 100%)`;
-  
+  const gradient = `linear-gradient(90deg, #ffffff 0%, #ffffff ${percentage}%, rgba(255,255,255,0.0) ${percentage}%, rgba(255,255,255,0.0) 100%)`;
   els.volSlider.style.background = gradient;
 };
 
@@ -347,8 +351,6 @@ const stopTimer = () => { if (timerInterval) clearInterval(timerInterval); };
 
 const setupListeners = () => {
   els.btnPlay.addEventListener("click", togglePlay);
-  
-  // LISTENERS DE NAVEGACION
   els.btnPrev.addEventListener("click", () => skipStation(-1));
   els.btnNext.addEventListener("click", () => skipStation(1));
 
