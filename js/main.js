@@ -1,5 +1,5 @@
 // =======================
-// SYSTEM CONFIG v3.3 (FINAL STABLE)
+// SYSTEM CONFIG v3.4 (FORCE RESET & STABLE)
 // =======================
 
 const stations = [
@@ -62,13 +62,12 @@ const regionClassMap = {
   "Internacional": "badge-default"
 };
 
-// --- FIX: Carga segura de favoritos ---
+// --- SAFE LOAD: Favoritos ---
 let favorites;
 try {
   favorites = new Set(JSON.parse(localStorage.getItem("ultra_favs") || "[]"));
 } catch (e) {
   favorites = new Set();
-  console.error("Favoritos corruptos, reseteando...", e);
 }
 
 let currentStation = null;
@@ -87,16 +86,15 @@ const hapticFeedback = (intensity = 'light') => {
   if (!navigator.vibrate) return;
   try {
       if (intensity === 'light') navigator.vibrate(10);
-      if (intensity === 'medium') navigator.vibrate(20);
-      if (intensity === 'success') navigator.vibrate([10, 30, 10]);
+      else if (intensity === 'medium') navigator.vibrate(20);
+      else if (intensity === 'success') navigator.vibrate([10, 30, 10]);
   } catch(e) {} 
 };
 
 // =======================
-// INIT & THEME
+// INIT & CORE
 // =======================
 const init = () => {
-  // Inicialización de selectores
   els = {
     player: document.getElementById("radioPlayer"),
     btnPlay: document.getElementById("btnPlay"),
@@ -115,17 +113,25 @@ const init = () => {
     themeSelect: document.getElementById("themeSelect")
   };
 
-  if(!els.list) {
-      console.error("FATAL: No se encontró el elemento #stationList.");
-      return;
-  }
+  if(!els.list) return; // Fail safe
   
   const savedTheme = localStorage.getItem("ultra_theme") || "default";
   setTheme(savedTheme);
   if(els.themeSelect) els.themeSelect.value = savedTheme;
 
-  loadFilters(); // Carga de filtros corregida
+  // 1. CARGAR FILTROS
+  loadFilters(); 
+
+  // 2. FORZAR REINICIO (Esto soluciona tu problema)
+  // Obligamos al navegador a ignorar el caché del formulario y volver a "Todas"
+  if(els.region) els.region.value = "Todas";
+  if(els.country) els.country.value = "Todos";
+  if(els.search) els.search.value = "";
+  if(els.favToggle) els.favToggle.checked = false;
+
   if(els.volSlider) updateVolumeVisuals(els.volSlider.value);
+  
+  // 3. RENDERIZAR
   renderList();
   setupListeners();
 };
@@ -155,7 +161,7 @@ const renderList = () => {
 const updateDOM = () => {
   els.list.innerHTML = "";
   
-  // Obtener valores con fallback
+  // Obtener valores (siempre por defecto 'Todas' si algo falla)
   const term = normalize(els.search ? els.search.value : "");
   const region = els.region ? els.region.value : "Todas";
   const country = els.country ? els.country.value : "Todos";
@@ -214,6 +220,7 @@ const updateDOM = () => {
       </div>
     `;
 
+    // Evento Favorito
     const btnFav = div.querySelector('.fav-btn');
     btnFav.onclick = (e) => {
       e.stopPropagation();
@@ -312,15 +319,14 @@ const updateVolumeVisuals = (val) => {
 // FILTERS
 // =======================
 const loadFilters = () => {
-  // 1. Extraer únicos y ordenar ALFABÉTICAMENTE
+  // Ordenar alfabéticamente
   const uniqueRegions = [...new Set(stations.map(s => s.region))].sort();
   const uniqueCountries = [...new Set(stations.map(s => s.country))].sort();
 
-  // 2. INYECTAR "Todas" al principio (SIN REORDENAR)
+  // Inyectar "Todas" AL PRINCIPIO
   const regions = ["Todas", ...uniqueRegions];
   const countries = ["Todos", ...uniqueCountries];
 
-  // 3. Renderizar
   if(els.region) fillSelect(els.region, regions);
   if(els.country) fillSelect(els.country, countries);
 };
