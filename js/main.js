@@ -1,6 +1,6 @@
 // js/main.js
 // =======================
-// SYSTEM CONFIG v6.3 (SMART NAVIGATION)
+// SYSTEM CONFIG v6.3 (SMART NAVIGATION & MEDIA SESSION)
 // =======================
 
 // NOTA: defaultStations se carga desde stations.js
@@ -117,6 +117,9 @@ const playStation = (station) => {
       setPlayingState(true);
       simulateStats();
       if (navigator.vibrate) navigator.vibrate([10,30]);
+      
+      updateMediaSession(); // LLAMADA CLAVE PARA NOTIFICACIONES
+      
     }).catch(e => {
       console.error(e);
       els.info.innerText = "Stream Offline";
@@ -146,12 +149,14 @@ const setPlayingState = (playing) => {
     els.status.classList.add("live");
     els.badge.style.display = "inline-block";
     startTimer();
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'; // Actualiza estado de notificación
   } else {
     els.btnPlay.classList.remove("playing");
     els.status.innerText = "PAUSADO";
     els.status.classList.remove("live");
     els.badge.style.display = "none";
     stopTimer();
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'; // Actualiza estado de notificación
   }
   renderList();
 };
@@ -178,6 +183,48 @@ const skipStation = (direction) => {
 
   playStation(stations[newIndex]);
 };
+
+
+// ===================================
+// MEDIA SESSION API (CONTROLES NATIVOS)
+// ===================================
+const updateMediaSession = () => {
+  if ('mediaSession' in navigator) {
+    
+    // 1. METADATOS
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentStation.name,
+      artist: currentStation.country + ' · ' + currentStation.region,
+      album: 'Satelital Wave Player v6.3',
+      // No se incluye arte para evitar un paso manual extra
+    });
+
+    // 2. HANDLERS (Conecta botones nativos a la lógica)
+    
+    // Botón Anterior Nativo
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      skipStation(-1);
+    });
+    
+    // Botón Siguiente Nativo
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      skipStation(1);
+    });
+
+    // Botón Play/Pause Nativo
+    navigator.mediaSession.setActionHandler('play', () => {
+      els.player.play();
+      setPlayingState(true);
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      els.player.pause();
+      setPlayingState(false);
+    });
+
+    // Ignorar Seek/Stop/etc. ya que es live stream
+  }
+};
+
 
 // =======================
 // CUSTOM STATIONS
