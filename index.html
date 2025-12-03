@@ -3,12 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#000000">
   
-  <meta name="theme-color" content="#030508">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
   <title>Radio Satelital | PRO Core</title>
-  <meta name="description" content="Interfaz de radio de alta fidelidad. Sistema Core v2.0.">
+  <meta name="description" content="Interfaz de radio de alta fidelidad. Sistema Core v3.0.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,8 +15,7 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 
-<body>
-  <div class="ambient-bg"></div>
+<body data-theme="amoled"> <div class="ambient-bg"></div>
 
   <header class="site-header">
     <div class="container header-inner">
@@ -28,7 +25,7 @@
         </div>
         <div class="brand-text">
           <h1 class="site-title">Satelital</h1>
-          <p class="site-subtitle">System Core v2.0</p>
+          <p class="site-subtitle">System Core v3.0 // PRO</p>
         </div>
       </div>
     </div>
@@ -38,10 +35,9 @@
     <div class="container layout">
 
       <aside class="sidebar">
-        
         <section class="player-section glass-panel">
           <div class="player-info">
-            <span class="status-indicator" id="statusIndicator">SYSTEM READY</span>
+            <span class="status-indicator" id="statusIndicator">SISTEMA EN ESPERA</span>
             <h2 id="currentStation" class="track-title">Sin Señal</h2>
             <p id="playerHint" class="track-artist">Seleccione Frecuencia</p>
           </div>
@@ -79,21 +75,40 @@
       </aside>
 
       <section class="stations-panel glass-panel">
-        <div class="panel-head">
-          <h3>Frecuencias Activas</h3>
+        
+        <div class="panel-toolbar">
           <div class="search-wrap">
-            <input id="stationSearch" type="search" placeholder="Buscar ID de estación..." class="input-dark search-input">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input id="stationSearch" type="search" placeholder="Buscar estación..." class="input-transparent">
+          </div>
+
+          <div class="view-controls">
+            <select id="themeSelector" class="theme-select" aria-label="Cambiar Tema">
+              <option value="amoled">Amoled (Negro Puro)</option>
+              <option value="midnight">Midnight (Azul Profundo)</option>
+              <option value="gold">Gold (Lujo)</option>
+            </select>
+            
+            <div class="divider-v"></div>
+
+            <button id="viewGrid" class="icon-btn active" title="Vista Cuadrícula">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            </button>
+            <button id="viewList" class="icon-btn" title="Vista Lista">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            </button>
           </div>
         </div>
 
-        <div class="fav-toggle-wrap">
+        <div class="sub-toolbar">
+          <h3 class="panel-title">Frecuencias Activas</h3>
           <label class="switch-label">
             <input type="checkbox" id="favoritesToggle">
-            <span class="switch-text" style="font-family: var(--font-mono); font-size: 0.8rem;">SOLO FAVORITOS</span>
+            <span class="switch-text">SOLO FAVORITOS</span>
           </label>
         </div>
 
-        <div id="stationList" class="station-grid">
+        <div id="stationList" class="station-grid grid-view">
           </div>
       </section>
 
@@ -101,7 +116,7 @@
   </main>
 
   <footer class="site-footer">
-    <p>SISTEMA DE AUDIO DE ALTA FIDELIDAD · v2.0 PROD</p>
+    <p>SISTEMA DE AUDIO DE ALTA FIDELIDAD · v3.0 PROD</p>
   </footer>
 
   <script src="js/main.js"></script>
