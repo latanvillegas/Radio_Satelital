@@ -1,5 +1,5 @@
 /* =========================
-   ULTRA CORE v2.5 (THEMES ENABLED)
+   ULTRA CORE v3.1 (AMOLED PERFECTION)
    ========================= */
 :root {
   /* --- DEFAULT THEME (Cyber Dark) --- */
@@ -12,22 +12,27 @@
   --text-muted: #94a3b8;
   --radius: 16px;
   --font-main: 'Inter', sans-serif;
+  --card-bg: rgba(255,255,255,0.03);
+  --panel-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
 
 /* --- THEME OVERRIDES --- */
 
-/* 1. AMOLED (Negro Absoluto) */
+/* 1. AMOLED (Negro Absoluto - Píxeles Apagados) */
 body[data-theme="amoled"] {
   --bg-dark: #000000;
-  --bg-glass: rgba(20, 20, 20, 0.9); /* Menos transparencia para contraste */
-  --border-glass: rgba(255, 255, 255, 0.15);
-  --accent: #ffffff; /* Blanco puro como acento en AMOLED */
-  --accent-glow: rgba(255, 255, 255, 0.3);
+  /* En AMOLED eliminamos la transparencia para obtener negro puro */
+  --bg-glass: #000000; 
+  --border-glass: #333333; /* Bordes sutiles para delimitar zonas */
+  --accent: #ffffff; 
+  --accent-glow: rgba(255, 255, 255, 0.0); /* Sin glow difuso */
+  --card-bg: #000000;
+  --panel-shadow: none; /* Sin sombras, todo plano */
 }
-/* En modo AMOLED, ocultamos el fondo ambiental para apagar pixeles */
-body[data-theme="amoled"] .ambient-bg {
-  display: none;
-}
+
+/* Ocultar atmósfera y ruido en AMOLED */
+body[data-theme="amoled"] .ambient-bg { display: none; }
+body[data-theme="amoled"] .glass-panel { backdrop-filter: none; -webkit-backdrop-filter: none; }
 
 /* 2. GOLD LUXURY */
 body[data-theme="gold"] {
@@ -53,7 +58,7 @@ body {
   color: var(--text-main);
   min-height: 100vh;
   overflow-x: hidden;
-  transition: background 0.3s ease, color 0.3s ease; /* Suavizar cambio de tema */
+  transition: background 0.3s ease, color 0.3s ease; 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -92,7 +97,7 @@ body {
 .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
 
 /* =========================
-   GLASSMORPHISM REFINADO
+   PANEL SYSTEM
    ========================= */
 .glass-panel {
   background: var(--bg-glass);
@@ -103,8 +108,14 @@ body {
   border-bottom: 1px solid rgba(0, 0, 0, 0.3);
   border-radius: var(--radius);
   padding: 1.8rem;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  box-shadow: var(--panel-shadow);
   transition: background 0.3s, border-color 0.3s;
+}
+
+/* En AMOLED, quitamos bordes brillantes top/bottom para ser más planos */
+body[data-theme="amoled"] .glass-panel {
+  border-top: 1px solid var(--border-glass);
+  border-bottom: 1px solid var(--border-glass);
 }
 
 /* =========================
@@ -120,6 +131,14 @@ body {
   box-shadow: 0 0 25px var(--accent-glow);
   transition: box-shadow 0.3s, background 0.3s;
 }
+
+/* Icono marca en AMOLED: Blanco y Negro */
+body[data-theme="amoled"] .brand-icon {
+  background: #000;
+  border: 2px solid #fff;
+  box-shadow: none;
+}
+
 .brand-wave {
   width: 26px; height: 26px;
   border: 3px solid #fff; border-radius: 50%;
@@ -140,8 +159,6 @@ body {
   padding-bottom: 4rem;
 }
 
-/* FIX MOVIL: Reproductor arriba o sticky abajo. 
-   Para v2.5, vamos a dejarlo arriba pero que no ocupe todo. */
 @media (max-width: 900px) { 
   .layout { grid-template-columns: 1fr; gap: 1.5rem; } 
   .site-header { padding: 1rem 0; }
@@ -160,13 +177,13 @@ body {
   transition: color 0.3s;
 }
 .status-indicator.live { color: #00e676; text-shadow: 0 0 12px rgba(0,230,118,0.4); }
+body[data-theme="amoled"] .status-indicator.live { text-shadow: none; } /* Sin glow en AMOLED */
 
 .track-title { margin: 0; font-size: 1.6rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
 .track-artist { margin: 0.5rem 0 0; color: var(--text-muted); font-size: 1rem; }
 
 .custom-controls { display: flex; flex-direction: column; align-items: center; gap: 2rem; margin-top: 2rem; }
 
-/* Botón Play "Reactor" */
 .play-btn {
   width: 80px; height: 80px;
   border-radius: 50%;
@@ -182,7 +199,14 @@ body {
 .play-btn:active { transform: scale(0.95); }
 .play-btn svg { width: 32px; height: 32px; fill: #000; }
 
-/* Slider */
+body[data-theme="amoled"] .play-btn {
+  background: #000;
+  border: 2px solid #fff;
+  color: #fff;
+  box-shadow: none;
+}
+body[data-theme="amoled"] .play-btn svg { fill: #fff; }
+
 .volume-control { width: 100%; display: flex; align-items: center; gap: 15px; color: var(--text-muted); }
 input[type=range] {
   -webkit-appearance: none; width: 100%; height: 6px;
@@ -215,16 +239,24 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 }
 .input-dark:focus { border-color: var(--accent); background: rgba(0,0,0,0.4); box-shadow: 0 0 0 2px var(--accent-glow); }
 
+body[data-theme="amoled"] .input-dark {
+  background: #000;
+  border-color: #333;
+}
+body[data-theme="amoled"] .input-dark:focus {
+  border-color: #fff;
+  box-shadow: none;
+}
+
 .station-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.2rem;
 }
 
-/* Tarjeta Magnética */
 .station-card {
   position: relative; 
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: var(--card-bg);
+  border: 1px solid var(--border-glass);
   padding: 1.2rem; border-radius: 14px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: space-between;
@@ -232,7 +264,8 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
   overflow: hidden; 
 }
 
-/* Efecto Hover Magnético */
+/* En AMOLED quitamos el efecto hover linterna si quieres ahorrar al maximo,
+   pero lo dejaremos sutil porque no consume si no se toca. */
 .station-card::before {
   content: "";
   position: absolute;
@@ -248,15 +281,18 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
 .station-card:hover::before { opacity: 1; }
 .station-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
 
-/* Estado Activo */
 .station-card.active {
   background: rgba(20, 23, 30, 0.9);
   border-color: var(--accent);
   box-shadow: inset 0 0 20px var(--accent-glow), 0 10px 20px rgba(0,0,0,0.2);
   z-index: 2;
 }
+
+/* Override para tarjeta activa en AMOLED */
 body[data-theme="amoled"] .station-card.active {
-  background: #111; /* Fondo sólido para AMOLED active */
+  background: #000;
+  border-color: #fff;
+  box-shadow: inset 0 0 0 1px #fff;
 }
 
 .st-info { display: flex; align-items: center; gap: 12px; z-index: 2; position: relative; }
@@ -269,10 +305,12 @@ body[data-theme="amoled"] .station-card.active {
 .badge-norteamerica { background: linear-gradient(135deg, #43a047, #1b5e20); }
 .badge-default { background: linear-gradient(135deg, #757575, #424242); }
 
+/* Badges planos en AMOLED */
+body[data-theme="amoled"] .st-icon { background: #000; border-color: #333; }
+
 .st-name { font-weight: 600; font-size: 1rem; display: block; margin-bottom: 2px; }
 .st-meta { font-size: 0.8rem; color: var(--text-muted); }
 
-/* VISUALIZER */
 .visualizer {
   display: flex; gap: 3px; height: 18px; align-items: flex-end;
   opacity: 0; transition: opacity 0.3s; z-index: 2;
