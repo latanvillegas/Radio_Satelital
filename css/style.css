@@ -1,24 +1,28 @@
 /* =========================
-   ULTRA CORE v4.0 (LAYOUT MASTER)
+   ULTRA CORE v4.1 (FINAL STABLE)
    ========================= */
+
 :root {
-  /* --- DEFAULT THEME (Cyber Dark) --- */
+  /* --- BASE PALETTE (Cyber Dark Default) --- */
   --bg-dark: #05070a;
-  --bg-glass: rgba(15, 17, 22, 0.85); 
+  --bg-glass: rgba(15, 17, 22, 0.75); 
   --border-glass: rgba(255, 255, 255, 0.08);
   --accent: #ff3d3d; 
-  --accent-glow: rgba(255, 61, 61, 0.5);
+  --accent-glow: rgba(255, 61, 61, 0.4);
   --text-main: #ffffff;
   --text-muted: #94a3b8;
   --radius: 16px;
   --font-main: 'Inter', sans-serif;
   --card-bg: rgba(255,255,255,0.03);
   --panel-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  --header-height: 80px;
 }
 
-/* --- THEME OVERRIDES --- */
+/* =========================
+   THEME ENGINE (OVERRIDES)
+   ========================= */
 
-/* 1. AMOLED (Negro Absoluto) */
+/* 1. AMOLED (Negro Absoluto - Sin Ruido - Alto Contraste) */
 body[data-theme="amoled"] {
   --bg-dark: #000000;
   --bg-glass: #000000;
@@ -28,160 +32,339 @@ body[data-theme="amoled"] {
   --card-bg: #000000;
   --panel-shadow: none;
 }
+/* Ocultar fondo ruidoso en AMOLED para píxeles apagados */
 body[data-theme="amoled"] .ambient-bg { display: none; }
+body[data-theme="amoled"] .glass-panel { backdrop-filter: none; -webkit-backdrop-filter: none; }
 
-/* 2. GOLD LUXURY */
-body[data-theme="gold"] {
-  --accent: #ffd700;
-  --accent-glow: rgba(255, 215, 0, 0.6);
-}
-
-/* 3. NEON PURPLE */
-body[data-theme="purple"] {
-  --accent: #d500f9;
-  --accent-glow: rgba(213, 0, 249, 0.6);
-}
-
-/* 4. POLAR WHITE (NUEVO - Cuidado con la retina) */
+/* 2. POLAR WHITE (Blanco Puro - Estilo Clínico) */
 body[data-theme="white"] {
   --bg-dark: #f0f2f5;
-  --bg-glass: rgba(255, 255, 255, 0.9);
-  --border-glass: #e2e8f0;
-  --accent: #2563eb; /* Azul corporativo para contraste */
-  --accent-glow: rgba(37, 99, 235, 0.2);
-  --text-main: #1e293b;
-  --text-muted: #64748b;
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  --border-glass: #d1d5db; /* Borde visible gris */
+  --accent: #000000; /* Acento negro para máximo contraste */
+  --accent-glow: rgba(0, 0, 0, 0.1);
+  --text-main: #111827;
+  --text-muted: #6b7280;
   --card-bg: #ffffff;
-  --panel-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  --panel-shadow: 0 10px 25px rgba(0,0,0,0.06);
 }
-body[data-theme="white"] .ambient-bg { opacity: 0.2; filter: invert(1); }
-body[data-theme="white"] .input-dark { 
-  background: #f8fafc; border-color: #cbd5e1; color: #1e293b; 
-}
-body[data-theme="white"] .st-icon { border-color: #e2e8f0; background: #f1f5f9; }
+/* Invertir el ruido para que se vea sutil en blanco */
+body[data-theme="white"] .ambient-bg { filter: invert(1); opacity: 0.15; }
+/* Ajustes específicos para input y slider en blanco */
+body[data-theme="white"] .input-dark { background: #ffffff; border-color: #d1d5db; color: #111827; }
+body[data-theme="white"] input[type=range] { background: #d1d5db; }
 
-/* --- BASE STYLES --- */
+/* 3. GOLD LUXURY */
+body[data-theme="gold"] {
+  --accent: #ffd700;
+  --accent-glow: rgba(255, 215, 0, 0.5);
+}
+
+/* 4. NEON PURPLE */
+body[data-theme="purple"] {
+  --accent: #d500f9;
+  --accent-glow: rgba(213, 0, 249, 0.5);
+}
+
+/* =========================
+   BASE STYLES
+   ========================= */
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
-  margin: 0; font-family: var(--font-main);
-  background: var(--bg-dark); color: var(--text-main);
-  min-height: 100vh; overflow-x: hidden;
-  transition: background 0.3s ease, color 0.3s ease; 
+  margin: 0;
+  font-family: var(--font-main);
+  background: var(--bg-dark);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ... (Scrollbar y Ambient-bg igual que antes) ... */
-.ambient-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; background: radial-gradient(circle at 50% -20%, #1e1e24 0%, var(--bg-dark) 60%), radial-gradient(circle at 80% 80%, #2a0a0a 0%, transparent 50%); transition: opacity 0.5s; }
-.ambient-bg::after { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.04; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); }
+/* --- ATMOSPHERE --- */
+.ambient-bg {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
+  background: radial-gradient(circle at 50% -20%, #1e1e24 0%, var(--bg-dark) 60%),
+              radial-gradient(circle at 90% 90%, #2a0a0a 0%, transparent 60%);
+  transition: opacity 0.5s;
+}
+.ambient-bg::after {
+  content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  opacity: 0.04; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
 
 .container { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem; }
 
 /* =========================
-   HEADER & THEME SELECTOR (TOP RIGHT)
+   HEADER & SELECTOR FLOTANTE
    ========================= */
-.site-header { padding: 1.5rem 0; margin-bottom: 1rem; position: relative; z-index: 20; }
+.site-header { padding: 1.5rem 0; margin-bottom: 1rem; position: relative; z-index: 10; }
 .header-inner { display: flex; justify-content: space-between; align-items: center; }
 
 .brand-mark { display: flex; align-items: center; gap: 1rem; }
-.brand-icon { width: 48px; height: 48px; background: linear-gradient(135deg, var(--accent), #b71c1c); border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 25px var(--accent-glow); }
+.brand-icon {
+  width: 48px; height: 48px;
+  background: linear-gradient(135deg, var(--accent), #b71c1c);
+  border-radius: 50%;
+  display: grid; place-items: center;
+  box-shadow: 0 0 25px var(--accent-glow);
+  transition: 0.3s;
+}
 body[data-theme="amoled"] .brand-icon { background: #000; border: 2px solid #fff; box-shadow: none; }
+body[data-theme="white"] .brand-icon { background: var(--accent); color: #fff; box-shadow: none; }
+
 .brand-wave { width: 24px; height: 24px; border: 3px solid #fff; border-radius: 50%; }
-.site-title { margin: 0; font-weight: 900; text-transform: uppercase; font-size: 1.5rem; background: linear-gradient(to right, #fff, #bbb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-body[data-theme="white"] .site-title { background: none; -webkit-text-fill-color: var(--text-main); }
+
+.site-title {
+  margin: 0; font-weight: 900; text-transform: uppercase; font-size: 1.4rem;
+  letter-spacing: -0.02em;
+}
 .site-subtitle { margin: 0; color: var(--text-muted); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }
 
-/* Selector Flotante (Top Right) */
+/* --- SELECTOR FLOTANTE (ARRIBA DERECHA) --- */
 .theme-floater { position: relative; }
 .theme-select-top {
   background: var(--bg-glass);
   color: var(--text-main);
   border: 1px solid var(--border-glass);
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1rem;
   border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   cursor: pointer;
   outline: none;
+  font-weight: 500;
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: border 0.3s;
 }
 .theme-select-top:focus { border-color: var(--accent); }
-body[data-theme="white"] .theme-select-top { background: #fff; border-color: #cbd5e1; }
+/* Ajuste para tema blanco */
+body[data-theme="white"] .theme-select-top { background: #fff; color: #000; border-color: #ccc; }
 
 /* =========================
-   LAYOUT
+   LAYOUT PRINCIPAL
    ========================= */
-.layout { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; padding-bottom: 4rem; }
-@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.layout {
+  display: grid;
+  grid-template-columns: 340px 1fr; /* Sidebar fija, contenido flexible */
+  gap: 2rem;
+  padding-bottom: 4rem;
+}
 
-/* Paneles */
-.glass-panel { background: var(--bg-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--border-glass); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--panel-shadow); }
-body[data-theme="amoled"] .glass-panel { border: 1px solid #333; }
-
-/* Player & Controls */
-.player-section { text-align: center; }
-.status-indicator { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--accent); font-weight: 700; display: block; margin-bottom: 0.5rem; }
-.status-indicator.live { color: #00e676; }
-.track-title { margin: 0; font-size: 1.4rem; font-weight: 800; }
-.track-artist { margin: 0.5rem 0 0; color: var(--text-muted); font-size: 0.9rem; }
-.play-btn { width: 70px; height: 70px; border-radius: 50%; background: var(--text-main); color: #000; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 2rem auto; transition: transform 0.2s; }
-.play-btn:hover { transform: scale(1.05); }
-body[data-theme="amoled"] .play-btn { background: #000; border: 2px solid #fff; color: #fff; }
-body[data-theme="amoled"] .play-btn svg { fill: #fff; }
-.volume-control { display: flex; align-items: center; gap: 10px; color: var(--text-muted); }
-input[type=range] { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; -webkit-appearance: none; }
-body[data-theme="white"] input[type=range] { background: #cbd5e1; }
-
-/* Inputs */
-.input-dark { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); padding: 0.8rem; border-radius: 8px; width: 100%; font-family: inherit; margin-bottom: 1rem; }
-.input-label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+/* PANELES DE CRISTAL (Reusable) */
+.glass-panel {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--panel-shadow);
+  transition: background 0.3s, border-color 0.3s;
+}
+/* Ajuste visual para bordes en modo White */
+body[data-theme="white"] .glass-panel { border-top: 1px solid var(--border-glass); }
 
 /* =========================
-   GRID CONTROL & LISTA
+   SIDEBAR (PLAYER & FILTROS)
    ========================= */
-.panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-.panel-head h3 { margin: 0; }
+.player-section { text-align: center; margin-bottom: 1.5rem; }
+.status-indicator { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); display: block; margin-bottom: 0.5rem; }
+.status-indicator.live { color: #00e676; text-shadow: 0 0 10px rgba(0,230,118,0.4); }
+body[data-theme="amoled"] .status-indicator.live { text-shadow: none; }
 
-.view-controls { display: flex; gap: 0.5rem; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 8px; }
-.btn-view { background: transparent; border: none; color: var(--text-muted); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
-.btn-view.active { background: var(--bg-glass); color: var(--text-main); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-body[data-theme="white"] .view-controls { background: #e2e8f0; }
-body[data-theme="white"] .btn-view.active { background: #fff; }
+.track-title { margin: 0; font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+.track-artist { margin: 0.4rem 0 0; color: var(--text-muted); font-size: 0.9rem; }
 
-/* --- GRID SYSTEM MAGIC --- */
+.custom-controls { margin-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+
+/* BOTÓN DE REPRODUCCIÓN */
+.play-btn {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: var(--text-main);
+  color: #000;
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+.play-btn:hover { transform: scale(1.1); }
+.play-btn:active { transform: scale(0.95); }
+body[data-theme="amoled"] .play-btn { background: #000; border: 2px solid #fff; color: #fff; box-shadow: none; }
+body[data-theme="white"] .play-btn { background: #000; color: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+
+/* SLIDER VOLUMEN */
+.volume-control { width: 100%; display: flex; align-items: center; gap: 12px; color: var(--text-muted); }
+input[type=range] {
+  -webkit-appearance: none; width: 100%; height: 4px;
+  background: rgba(255,255,255,0.15); border-radius: 2px;
+  outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px;
+  background: var(--text-main); border-radius: 50%;
+  cursor: pointer; transition: transform 0.1s;
+  margin-top: -6px; /* Centrar en la línea */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+/* Arreglo visual slider en Webkit */
+input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; }
+
+
+/* INPUTS Y SELECTS DE FILTRO */
+.input-dark {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-main);
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  width: 100%; font-family: inherit; font-size: 0.9rem;
+  outline: none; transition: 0.3s;
+}
+.input-dark:focus { border-color: var(--accent); }
+.input-label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; font-weight: 600; text-transform: uppercase; }
+.form-group { margin-bottom: 1.2rem; }
+
+/* =========================
+   PANEL DE EMISORAS & GRID
+   ========================= */
+.panel-head {
+  display: flex; flex-wrap: wrap; gap: 1rem;
+  justify-content: space-between; align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+/* BOTONES DE VISTA (Auto / 2x / 4x) */
+.view-controls {
+  display: flex; gap: 4px;
+  background: rgba(0,0,0,0.2);
+  padding: 4px; border-radius: 8px;
+}
+body[data-theme="white"] .view-controls { background: #e5e7eb; }
+
+.btn-view {
+  background: transparent; border: none;
+  color: var(--text-muted);
+  padding: 6px 12px;
+  font-size: 0.75rem; font-weight: 700;
+  border-radius: 6px; cursor: pointer;
+  transition: 0.2s;
+}
+.btn-view:hover { color: var(--text-main); }
+.btn-view.active {
+  background: var(--bg-glass);
+  color: var(--text-main);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+body[data-theme="white"] .btn-view.active { background: #fff; color: #000; }
+
+/* --- SISTEMA DE GRID (CSS GRID MAGIC) --- */
 .station-grid {
   display: grid;
   gap: 1rem;
-  /* Por defecto: Auto-fill inteligente */
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  /* Por defecto (Auto): Se adapta al tamaño disponible */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
-/* MODOS FORZADOS (Sobrescriben el default) */
+/* Modificadores de Grid (activados por JS) */
 .station-grid.grid-2 { grid-template-columns: repeat(2, 1fr); }
 .station-grid.grid-4 { grid-template-columns: repeat(4, 1fr); }
 
-/* IMPORTANTE: En móvil, ignoramos tus deseos de 4 columnas porque se vería horrible */
-@media (max-width: 600px) {
-  .station-grid.grid-2, 
-  .station-grid.grid-4 { 
-    grid-template-columns: 1fr; /* Una sola columna en móvil */
-  }
-}
 
-/* Tarjetas */
-.station-card { background: var(--card-bg); border: 1px solid var(--border-glass); padding: 1rem; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: transform 0.2s, border-color 0.2s; position: relative; overflow: hidden; }
-.station-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.3); }
+/* TARJETA DE EMISORA */
+.station-card {
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--border-glass);
+  padding: 1rem;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+  overflow: hidden;
+}
+.station-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.3); }
 body[data-theme="white"] .station-card:hover { border-color: var(--accent); }
 
-.station-card.active { border-color: var(--accent); background: rgba(var(--accent), 0.05); }
-body[data-theme="amoled"] .station-card.active { background: #000; border-color: #fff; }
+.station-card.active {
+  background: rgba(var(--accent), 0.1); /* Tinte muy sutil del color acento */
+  border-color: var(--accent);
+}
+/* Activo en AMOLED: Inversión total */
+body[data-theme="amoled"] .station-card.active { background: #000; border-color: #fff; box-shadow: inset 0 0 0 1px #fff; }
 
-.st-info { display: flex; align-items: center; gap: 10px; z-index: 2; }
-.st-icon { width: 40px; height: 40px; border-radius: 50%; background: #222; border: 2px solid rgba(255,255,255,0.1); }
-.st-name { font-weight: 600; font-size: 0.95rem; display: block; }
-.st-meta { font-size: 0.75rem; color: var(--text-muted); }
+.st-info { display: flex; align-items: center; gap: 10px; z-index: 2; overflow: hidden; }
+.st-icon {
+  width: 42px; height: 42px; flex-shrink: 0;
+  border-radius: 50%;
+  background: #222; border: 2px solid rgba(255,255,255,0.1);
+}
+/* Iconos en modo White */
+body[data-theme="white"] .st-icon { background: #f3f4f6; border-color: #e5e7eb; }
 
-.visualizer { display: flex; gap: 2px; height: 14px; align-items: flex-end; opacity: 0; }
+.st-name { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.st-meta { font-size: 0.75rem; color: var(--text-muted); display: block; }
+
+/* VISUALIZER (Barras animadas) */
+.visualizer {
+  display: flex; gap: 2px; height: 16px; align-items: flex-end;
+  opacity: 0; transition: opacity 0.3s;
+}
 .station-card.active .visualizer { opacity: 1; }
-.bar { width: 3px; background: var(--accent); animation: bounce 0.5s infinite alternate; }
-@keyframes bounce { 0% { height: 20%; } 100% { height: 100%; } }
 
-.site-footer { text-align: center; font-size: 0.8rem; color: var(--text-muted); padding: 2rem 0; border-top: 1px solid var(--border-glass); margin-top: 2rem; }
+.bar { width: 3px; background: var(--accent); border-radius: 2px; animation: bounce 0s infinite alternate; }
+.bar:nth-child(1) { height: 60%; animation-duration: 0.4s; }
+.bar:nth-child(2) { height: 100%; animation-duration: 0.5s; }
+.bar:nth-child(3) { height: 40%; animation-duration: 0.3s; }
+
+@keyframes bounce { 0% { height: 20%; opacity: 0.7; } 100% { height: 100%; opacity: 1; } }
+
+/* BOTÓN FAVORITO */
+.fav-btn {
+  background: none; border: none; color: var(--text-muted);
+  font-size: 1.2rem; cursor: pointer;
+  padding: 0 0 0 8px; z-index: 2;
+  transition: transform 0.2s, color 0.2s;
+}
+.fav-btn:hover { color: var(--text-main); transform: scale(1.2); }
+.fav-btn.is-fav { color: #ffca28; text-shadow: 0 0 10px rgba(255,202,40,0.5); }
+body[data-theme="amoled"] .fav-btn.is-fav { text-shadow: none; }
+body[data-theme="white"] .fav-btn.is-fav { text-shadow: none; color: #f59e0b; }
+
+
+/* =========================
+   FOOTER
+   ========================= */
+.site-footer {
+  text-align: center; font-size: 0.8rem; color: var(--text-muted);
+  padding: 2rem 0; margin-top: 2rem;
+  border-top: 1px solid var(--border-glass);
+}
+
+/* =========================
+   RESPONSIVO (MÓVIL)
+   ========================= */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; gap: 1.5rem; }
+  .site-header { padding: 1rem 0; }
+  .brand-icon { width: 40px; height: 40px; }
+  .site-title { font-size: 1.2rem; }
+  
+  /* En móvil, forzamos 1 sola columna aunque el usuario pida 4 */
+  .station-grid,
+  .station-grid.grid-2,
+  .station-grid.grid-4 {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Ocultar botones de vista en móvil porque no tienen sentido */
+  .view-controls { display: none; }
+  
+  /* Ajuste de player sticky en móvil (opcional, pero mejora UX) */
+  .player-section { position: sticky; top: 10px; z-index: 100; }
+}
