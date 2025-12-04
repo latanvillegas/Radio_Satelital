@@ -1,9 +1,8 @@
 // js/main.js
 // =======================
-// SYSTEM CONFIG v6.6 (REFACTORED)
+// SYSTEM CONFIG v6.9 (LOGIC MERGE)
 // =======================
 
-// MAPA DE REGIONES PARA ICONOS
 const regionClassMap = {
   "Sudamérica": "badge-sudamerica", 
   "Europa": "badge-europa",
@@ -13,28 +12,25 @@ const regionClassMap = {
   "Custom": "badge-custom"
 };
 
-// ESTADO GLOBAL
 let stations = [];
 let favorites = new Set();
 let currentStation = null;
 let isPlaying = false;
 let timerInterval = null;
 let secondsElapsed = 0;
-let metadataInterval = null; // Loop para buscar datos de canción
+let metadataInterval = null;
 
-// ELEMENTOS DOM
 const els = {
   player: document.getElementById("radioPlayer"),
   btnPlay: document.getElementById("btnPlay"),
   btnPrev: document.getElementById("btnPrev"),
   btnNext: document.getElementById("btnNext"),
-  // volSlider ELIMINADO
   status: document.getElementById("statusIndicator"),
   
-  // NUEVA ASIGNACIÓN DE JERARQUÍA
-  title: document.getElementById("streamTrack"),       // H2: Ahora es para Artista/Canción (Dinámico)
-  stationName: document.getElementById("currentStation"), // P: Ahora es para Nombre de Estación (Estático)
-  meta: document.getElementById("stationMeta"),        // P: País / Región
+  // MAPEO CORRECTO PARA TU DISEÑO
+  title: document.getElementById("currentStation"), // H2 Arriba (Estación)
+  track: document.getElementById("streamTrack"),    // P Medio (Artista)
+  meta: document.getElementById("stationMeta"),     // P Arriba (País)
   
   badge: document.getElementById("metaBadge"),
   timer: document.getElementById("timerDisplay"),
@@ -45,25 +41,17 @@ const els = {
   favToggle: document.getElementById("favoritesToggle"),
   clearFilters: document.getElementById("clearFilters"),
   themeSelect: document.getElementById("themeSelect"),
-  statsRow: document.getElementById("statsRow"),
-  listenerCount: document.getElementById("listenerCount"),
-  likeCount: document.getElementById("likeCount"),
   addForm: document.getElementById("addStationForm")
 };
 
-// =======================
-// INICIALIZACIÓN
-// =======================
 const init = () => {
   if (typeof defaultStations === 'undefined') {
     console.error("CRITICAL: defaultStations not found.");
     return;
   }
-
   try {
     const savedFavs = JSON.parse(localStorage.getItem("ultra_favs") || "[]");
     favorites = new Set(savedFavs);
-    
     const customStations = JSON.parse(localStorage.getItem("ultra_custom") || "[]");
     stations = [...customStations, ...defaultStations];
   } catch (e) {
@@ -78,13 +66,8 @@ const init = () => {
 
   loadFilters();
   resetControls();
-  // updateVolumeVisuals ELIMINADO
   renderList();
   setupListeners();
-  
-  // Limpieza inicial de estadísticas
-  if(els.listenerCount) els.listenerCount.innerText = "-";
-  if(els.likeCount) els.likeCount.innerText = "-";
   
   console.log(`System Ready: ${stations.length} stations loaded.`);
 };
@@ -96,9 +79,21 @@ const resetControls = () => {
   if(els.favToggle) els.favToggle.checked = false;
 };
 
-// =======================
-// LÓGICA DE REPRODUCCIÓN
-// =======================
+// THEME LOGIC UPDATE
+const setTheme = (themeName) => {
+  document.body.setAttribute("data-theme", themeName === "default" ? "" : themeName);
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if(metaTheme) {
+      switch(themeName) {
+          case 'amoled': metaTheme.setAttribute("content", "#000000"); break;
+          case 'white': metaTheme.setAttribute("content", "#f2f4f7"); break; 
+          case 'gold': metaTheme.setAttribute("content", "#12100b"); break;
+          case 'purple': metaTheme.setAttribute("content", "#0a0011"); break;
+          default: metaTheme.setAttribute("content", "#05070a");
+      }
+  }
+};
+
 const playStation = (station) => {
   if (currentStation && currentStation.name === station.name) { 
     togglePlay(); 
@@ -107,10 +102,10 @@ const playStation = (station) => {
   
   currentStation = station;
   
-  // UI Updates - NUEVA JERARQUÍA
-  els.stationName.innerText = station.name; // Estático
-  els.title.innerText = "Cargando...";      // Dinámico (esperando metadatos)
+  // UI Updates
+  els.title.innerText = station.name;
   els.meta.innerText = `${station.country} · ${station.region}`;
+  els.track.innerText = "Cargando...";
   
   els.status.innerText = "CONECTANDO...";
   els.status.style.color = ""; 
@@ -120,17 +115,16 @@ const playStation = (station) => {
   if(els.timer) els.timer.innerText = "00:00";
 
   els.player.src = station.url;
-  els.player.volume = 1; // Volumen al máximo por defecto, ya que no hay slider
+  els.player.volume = 1; 
   
   const p = els.player.play();
   if (p !== undefined) {
     p.then(() => {
       setPlayingState(true);
-      // simulateStats ELIMINADO - Ya no mentimos con estadísticas
       updateMediaSession();
     }).catch(e => {
       console.error("Stream Error:", e);
-      els.title.innerText = "Offline";
+      els.track.innerText = "Offline";
       els.status.innerText = "ERROR";
       els.status.style.color = "#ff3d3d";
       setPlayingState(false);
@@ -161,10 +155,9 @@ const setPlayingState = (playing) => {
     els.badge.style.display = "inline-block";
     startTimer();
     
-    // Iniciar búsqueda de metadatos (Aquí irá la lógica real en el futuro)
     obtenerMetadatos();
     if(metadataInterval) clearInterval(metadataInterval);
-    metadataInterval = setInterval(obtenerMetadatos, 15000); // Cada 15s
+    metadataInterval = setInterval(obtenerMetadatos, 15000); 
 
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
   } else {
@@ -173,28 +166,20 @@ const setPlayingState = (playing) => {
     els.status.classList.remove("live");
     els.badge.style.display = "none";
     stopTimer();
-    
     if(metadataInterval) clearInterval(metadataInterval);
-    
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
   }
   renderList(); 
 };
 
-// Lógica Placeholder para Metadatos
 const obtenerMetadatos = () => {
-    // Si tuvieras una API real, aquí harías el fetch.
-    // Por ahora, mantenemos el texto limpio o mostramos "En vivo"
     if(isPlaying && currentStation) {
-        // Como no tenemos endpoint real configurado, dejamos un mensaje genérico
-        // o el nombre de la estación si no hay datos.
-        // els.title.innerText = "Música Continua"; 
+         // Placeholder API Logic
     }
 };
 
 const skipStation = (direction) => {
   if (stations.length === 0) return;
-  
   let newIndex = 0;
   if (!currentStation) {
     newIndex = direction > 0 ? 0 : stations.length - 1;
@@ -207,9 +192,6 @@ const skipStation = (direction) => {
   playStation(stations[newIndex]);
 };
 
-// =======================
-// INTERFAZ Y RENDERIZADO
-// =======================
 const renderList = () => {
   if(!els.list) return;
   els.list.innerHTML = "";
@@ -244,9 +226,7 @@ const renderList = () => {
     const div = document.createElement("div");
     div.className = `station-card ${isActive ? 'active' : ''} ${animatingClass}`;
     
-    const deleteBtn = st.isCustom 
-      ? `<button class="del-btn" title="Eliminar">×</button>` 
-      : '';
+    const deleteBtn = st.isCustom ? `<button class="del-btn" title="Eliminar">×</button>` : '';
 
     div.innerHTML = `
       <div class="st-info">
@@ -276,22 +256,16 @@ const renderList = () => {
     if(st.isCustom) {
       div.querySelector('.del-btn').onclick = (e) => deleteCustomStation(e, st.name);
     }
-
     fragment.appendChild(div);
   });
-
   els.list.appendChild(fragment);
 };
 
-// =======================
-// UTILIDADES Y EVENTOS
-// =======================
 const addCustomStation = (e) => {
   e.preventDefault();
   const name = document.getElementById("newStationName").value.trim();
   const country = document.getElementById("newStationCountry").value.trim();
   const url = document.getElementById("newStationUrl").value.trim();
-
   if(name && url) {
     const newStation = { name, country, region: "Custom", url, isCustom: true };
     const customStations = JSON.parse(localStorage.getItem("ultra_custom") || "[]");
@@ -315,7 +289,6 @@ const loadFilters = () => {
   if(!els.region || !els.country) return;
   const regions = ["Todas", ...new Set(stations.map(s => s.region))].sort();
   const countries = ["Todos", ...new Set(stations.map(s => s.country))].sort();
-  
   const fill = (sel, arr) => {
     sel.innerHTML = "";
     arr.forEach(val => {
@@ -327,63 +300,21 @@ const loadFilters = () => {
   fill(els.country, countries);
 };
 
-const setTheme = (themeName) => {
-  document.body.setAttribute("data-theme", themeName === "default" ? "" : themeName);
-  const metaTheme = document.querySelector('meta[name="theme-color"]');
-  if(metaTheme) metaTheme.setAttribute("content", themeName === "amoled" ? "#000000" : "#05070a");
-};
-
-// Media Session API
-const updateMediaSession = () => {
-  if ('mediaSession' in navigator) {
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: currentStation.name,
-      artist: currentStation.country + ' · ' + currentStation.region,
-      album: 'Satelital Wave Player v6.6',
-    });
-    navigator.mediaSession.setActionHandler('previoustrack', () => skipStation(-1));
-    navigator.mediaSession.setActionHandler('nexttrack', () => skipStation(1));
-    navigator.mediaSession.setActionHandler('play', () => { els.player.play(); setPlayingState(true); });
-    navigator.mediaSession.setActionHandler('pause', () => { els.player.pause(); setPlayingState(false); });
-  }
-};
-
-const startTimer = () => {
-  stopTimer(); secondsElapsed = 0;
-  if(els.timer) {
-    els.timer.innerText = "00:00";
-    timerInterval = setInterval(() => {
-      secondsElapsed++;
-      const m = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
-      const s = (secondsElapsed % 60).toString().padStart(2, '0');
-      els.timer.innerText = `${m}:${s}`;
-    }, 1000);
-  }
-};
-const stopTimer = () => { if (timerInterval) clearInterval(timerInterval); };
-
 const setupListeners = () => {
   els.btnPlay.addEventListener("click", togglePlay);
   els.btnPrev.addEventListener("click", () => skipStation(-1));
   els.btnNext.addEventListener("click", () => skipStation(1));
-  
-  // EVENTO DE VOLUMEN ELIMINADO
-  
   els.themeSelect.addEventListener("change", (e) => {
     setTheme(e.target.value);
     localStorage.setItem("ultra_theme", e.target.value);
   });
-  
   [els.search, els.region, els.country].forEach(el => el.addEventListener("input", renderList));
   els.favToggle.addEventListener("change", renderList);
-  
   els.clearFilters.addEventListener("click", () => {
     resetControls();
     renderList();
   });
-  
   if(els.addForm) els.addForm.addEventListener("submit", addCustomStation);
 };
 
-// ARRANQUE
 document.addEventListener("DOMContentLoaded", init);
