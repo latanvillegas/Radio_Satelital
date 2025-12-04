@@ -1,6 +1,6 @@
 /* css/style.css
    =========================
-   ULTRA CORE v6.3 (WAVE PLAYER CARD)
+   ULTRA CORE v6.6 (REFACTORED LAYOUT)
    ========================= */
 :root {
   --bg-dark: #05070a;
@@ -56,17 +56,18 @@ body[data-theme="amoled"] .ambient-bg { display: none; }
 .glass-panel { background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; position: relative; }
 
 /* =========================
-   PLAYER SECTION
+   PLAYER SECTION (REORGANIZADO)
    ========================= */
 .player-section { 
   text-align: center; 
-  min-height: 360px;
+  min-height: 400px; /* Aumentado ligeramente para dar aire */
   display: flex; 
   flex-direction: column; 
-  justify-content: center; 
+  justify-content: space-between; /* Distribuye: Arriba, Medio, Abajo */
   position: relative; 
   overflow: hidden;
   background: linear-gradient(to bottom, rgba(0, 230, 118, 0.05), rgba(0, 0, 0, 0.2));
+  padding-bottom: 2rem;
 }
 
 /* Ondas de fondo */
@@ -85,28 +86,24 @@ body[data-theme="amoled"] .ambient-bg { display: none; }
 }
 body[data-theme="amoled"] .player-waves-container { display: none; }
 
-/* Info Track */
-.status-indicator { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent); margin-bottom: 1rem; display: block; opacity: 0.8; font-weight: 700; position: relative; z-index: 1; }
+/* 1. ZONA SUPERIOR: Info Container (Status + Timer) */
+.player-info-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  order: -1; /* Fuerza posición superior */
+  margin-bottom: 1rem;
+  z-index: 1;
+}
+
+.status-indicator { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent); margin-bottom: 0.5rem; display: block; opacity: 0.8; font-weight: 700; }
 .status-indicator.live { color: #00e676; opacity: 1; text-shadow: 0 0 15px rgba(0,230,118,0.5); }
 
-.track-title { margin: 0; font-size: 1.6rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; color: #fff; position: relative; z-index: 1; }
-.track-artist { margin: 0.5rem 0 0; color: var(--text-muted); font-size: 0.95rem; position: relative; z-index: 1; }
-.meta-badge { display: inline-block; background: #d32f2f; color: #fff; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; margin-top: 8px; font-weight: 700; position: relative; z-index: 1; }
-
-/* Stats */
-.stats-row { display: flex; justify-content: center; gap: 1.5rem; margin-top: 1rem; transition: opacity 0.5s; position: relative; z-index: 1; }
-.stat-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); font-feature-settings: "tnum"; }
-.stat-item svg { opacity: 0.7; }
-
-/* Timer */
-.timer-text { font-family: 'Inter', monospace; font-variant-numeric: tabular-nums; font-size: 2.5rem; font-weight: 900; color: #fff; margin: 1.5rem 0; opacity: 0.15; transition: opacity 0.3s; position: relative; z-index: 1; }
+.timer-text { font-family: 'Inter', monospace; font-variant-numeric: tabular-nums; font-size: 2rem; font-weight: 900; color: #fff; margin: 0; opacity: 0.15; transition: opacity 0.3s; }
 .live .timer-text { opacity: 1; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
 
-/* =========================
-   CONTROLES PRINCIPALES
-   ========================= */
+/* 2. ZONA MEDIA: Controls + Stats */
 .custom-controls { 
-  margin-top: auto; 
   width: 100%; 
   display: flex; 
   flex-direction: column; 
@@ -114,9 +111,9 @@ body[data-theme="amoled"] .player-waves-container { display: none; }
   align-items: center; 
   position: relative; 
   z-index: 1; 
+  order: 1; /* Fuerza posición media */
 }
 
-/* Grupo de Botones (Prev - Play - Next) */
 .control-group {
   display: flex;
   align-items: center;
@@ -125,7 +122,6 @@ body[data-theme="amoled"] .player-waves-container { display: none; }
   width: 100%;
 }
 
-/* Botón Play Central */
 .play-btn { 
   width: 72px; height: 72px; 
   border-radius: 50%; 
@@ -143,69 +139,47 @@ body[data-theme="amoled"] .player-waves-container { display: none; }
 .playing .icon-play { display: none; }
 .playing .icon-pause { display: block; }
 
-/* Botones Secundarios (Ghost Buttons) */
 .sec-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-main);
-  opacity: 0.6;
-  cursor: pointer;
-  padding: 12px;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; color: var(--text-main); opacity: 0.6; cursor: pointer; padding: 12px; border-radius: 50%; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center;
 }
 .sec-btn svg { width: 32px; height: 32px; fill: currentColor; }
 .sec-btn:hover { opacity: 1; background: rgba(255,255,255,0.08); transform: scale(1.1); }
-.sec-btn:active { transform: scale(0.9); }
 
-/* =========================
-   SLIDER VOLUMEN (REALISTA)
-   ========================= */
-.volume-control { 
-  display: flex; align-items: center; gap: 16px; 
-  width: 100%; max-width: 260px; 
-  margin: 0 auto;
+/* Stats Row (Ahora reemplaza al volumen) */
+.stats-row { 
+  display: flex; 
+  justify-content: center; 
+  gap: 2rem; 
+  margin-top: 0.5rem; 
+  transition: opacity 0.5s; 
+  position: relative; z-index: 1; 
+}
+.stat-item { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); font-feature-settings: "tnum"; }
+.stat-item svg { opacity: 0.7; }
+
+/* 3. ZONA INFERIOR/CENTRAL: Track Display */
+.track-display-central {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex-grow: 1; /* Ocupa el espacio restante */
+  margin-top: 1.5rem;
+  order: 2; /* Fuerza posición inferior/central */
+  z-index: 1;
 }
 
-.volume-control svg {
-  color: rgba(255, 255, 255, 0.6);
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
-}
-
-/* El Canal (Track) */
-input[type=range] { 
-  -webkit-appearance: none; 
-  width: 100%; height: 6px; 
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 10px; 
-  outline: none; cursor: pointer; 
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.05); 
-  border: 1px solid rgba(255,255,255,0.05); 
-}
-
-/* La Perilla (Thumb) */
-input[type=range]::-webkit-slider-thumb { 
-  -webkit-appearance: none; 
-  height: 18px; width: 18px; 
-  border-radius: 50%; 
-  background: #ffffff; 
-  box-shadow: 0 2px 6px rgba(0,0,0,0.6); 
-  margin-top: 0; 
-  transition: transform 0.1s ease; 
-  position: relative; z-index: 2;
-}
-
-input[type=range]:active::-webkit-slider-thumb { 
-  transform: scale(1.15); 
-  background: #f5f5f5; 
-  box-shadow: 0 0 10px rgba(255,255,255,0.3);
-}
+.track-title { margin: 0; font-size: 2.2rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; color: #fff; max-width: 90%; }
+.track-artist { margin: 0.5rem 0 0; color: var(--text-muted); font-size: 1.1rem; font-weight: 500; }
+.track-meta { font-size: 0.8rem; color: var(--text-muted); opacity: 0.6; margin-top: 0.4rem; }
+.meta-badge { display: inline-block; background: #d32f2f; color: #fff; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; margin-top: 10px; font-weight: 700; }
 
 /* Ajustes Responsive */
 @media (max-width: 480px) {
   .control-group { gap: 24px; }
   .play-btn { width: 64px; height: 64px; }
+  .timer-text { font-size: 1.8rem; }
+  .track-title { font-size: 1.8rem; }
 }
 
 /* =========================
@@ -223,11 +197,9 @@ input[type=range]:active::-webkit-slider-thumb {
 /* Filters */
 .filters-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
 .btn-text { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-.input-label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.4rem; font-weight: 700; text-transform: uppercase; }
 .input-dark { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 0.9rem; border-radius: 10px; outline: none; transition: border-color 0.2s; }
 .input-dark:focus { border-color: var(--accent); }
 .input-dark option { background-color: var(--bg-dark); color: #fff; }
-.separator { border: 0; border-top: 1px solid var(--border-glass); margin: 1.5rem 0; opacity: 0.3; }
 .filter-row { display: flex; gap: 1rem; }
 .filter-row .form-group { flex: 1; }
 
