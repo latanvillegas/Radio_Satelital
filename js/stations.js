@@ -1,4 +1,8 @@
 // js/stations.js
+// =======================
+// DATA FREQUENCIES v6.6
+// =======================
+
 const defaultStations = [
   // ====== PERÚ (LIMA / NACIONAL) ======
   { name: "Radio Moda", country: "Perú", region: "Sudamérica", url: "https://25023.live.streamtheworld.com/CRP_MOD_SC" },
