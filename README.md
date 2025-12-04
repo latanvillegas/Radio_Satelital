@@ -19,3 +19,13 @@ El proyecto sigue una estructura estricta de separación de preocupaciones (SoC)
 └── js/
     ├── stations.js     # Base de datos estática de emisoras (JSON Array).
     ├── main.js         # Lógica de negocio, renderizado y manejo de eventos.
+Características Técnicas
+Persistencia: Uso de localStorage para favoritos y emisoras custom.
+Audio: HTML5 Audio + Media Session API (Controles en pantalla de bloqueo).
+PWA: Instalable en Android/iOS/Desktop gracias al Service Worker (sw.js).
+Seguridad: Solo admite flujos HTTPS para compatibilidad con GitHub Pages.
+Mantenimiento
+Agregar Radios: Edite js/stations.js. Use siempre formato JSON estricto.
+Actualizar Versión: Al hacer cambios, actualice el query param ?v=X.X en index.html para limpiar la caché del usuario.
+Licencia
+Privado.
