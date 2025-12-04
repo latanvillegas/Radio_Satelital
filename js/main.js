@@ -1,6 +1,6 @@
 // js/main.js
 // =======================
-// SYSTEM CONFIG v6.9 (LOGIC MERGE)
+// SYSTEM CONFIG v7.0 (STABLE)
 // =======================
 
 const regionClassMap = {
@@ -27,10 +27,10 @@ const els = {
   btnNext: document.getElementById("btnNext"),
   status: document.getElementById("statusIndicator"),
   
-  // MAPEO CORRECTO PARA TU DISEÑO
-  title: document.getElementById("currentStation"), // H2 Arriba (Estación)
-  track: document.getElementById("streamTrack"),    // P Medio (Artista)
-  meta: document.getElementById("stationMeta"),     // P Arriba (País)
+  // Elementos de Texto
+  title: document.getElementById("currentStation"), // H2 Arriba
+  track: document.getElementById("streamTrack"),    // P Medio (Donde iban stats)
+  meta: document.getElementById("stationMeta"),     // P Arriba
   
   badge: document.getElementById("metaBadge"),
   timer: document.getElementById("timerDisplay"),
@@ -79,7 +79,6 @@ const resetControls = () => {
   if(els.favToggle) els.favToggle.checked = false;
 };
 
-// THEME LOGIC UPDATE
 const setTheme = (themeName) => {
   document.body.setAttribute("data-theme", themeName === "default" ? "" : themeName);
   const metaTheme = document.querySelector('meta[name="theme-color"]');
@@ -102,7 +101,7 @@ const playStation = (station) => {
   
   currentStation = station;
   
-  // UI Updates
+  // Actualizar UI
   els.title.innerText = station.name;
   els.meta.innerText = `${station.country} · ${station.region}`;
   els.track.innerText = "Cargando...";
@@ -117,6 +116,7 @@ const playStation = (station) => {
   els.player.src = station.url;
   els.player.volume = 1; 
   
+  // Promesa de reproducción robusta
   const p = els.player.play();
   if (p !== undefined) {
     p.then(() => {
@@ -124,7 +124,7 @@ const playStation = (station) => {
       updateMediaSession();
     }).catch(e => {
       console.error("Stream Error:", e);
-      els.track.innerText = "Offline";
+      els.track.innerText = "Offline / Error";
       els.status.innerText = "ERROR";
       els.status.style.color = "#ff3d3d";
       setPlayingState(false);
@@ -155,6 +155,7 @@ const setPlayingState = (playing) => {
     els.badge.style.display = "inline-block";
     startTimer();
     
+    // Iniciar loop de metadatos (placeholder)
     obtenerMetadatos();
     if(metadataInterval) clearInterval(metadataInterval);
     metadataInterval = setInterval(obtenerMetadatos, 15000); 
@@ -173,9 +174,7 @@ const setPlayingState = (playing) => {
 };
 
 const obtenerMetadatos = () => {
-    if(isPlaying && currentStation) {
-         // Placeholder API Logic
-    }
+    // Aquí irá la lógica de fetch en el futuro
 };
 
 const skipStation = (direction) => {
