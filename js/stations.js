@@ -1,6 +1,6 @@
 // js/stations.js
 // =======================
-// DATA FREQUENCIES v6.6
+// DATA FREQUENCIES v6.9
 // =======================
 
 const defaultStations = [
