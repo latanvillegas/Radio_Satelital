@@ -1,6 +1,6 @@
 // js/main.js
 // =======================
-// SYSTEM CONFIG v7.0 (STABLE)
+// SYSTEM CONFIG v7.1 (SAFE MODE)
 // =======================
 
 const regionClassMap = {
@@ -27,10 +27,9 @@ const els = {
   btnNext: document.getElementById("btnNext"),
   status: document.getElementById("statusIndicator"),
   
-  // Elementos de Texto
-  title: document.getElementById("currentStation"), // H2 Arriba
-  track: document.getElementById("streamTrack"),    // P Medio (Donde iban stats)
-  meta: document.getElementById("stationMeta"),     // P Arriba
+  title: document.getElementById("currentStation"),
+  track: document.getElementById("streamTrack"),
+  meta: document.getElementById("stationMeta"),
   
   badge: document.getElementById("metaBadge"),
   timer: document.getElementById("timerDisplay"),
@@ -46,9 +45,12 @@ const els = {
 
 const init = () => {
   if (typeof defaultStations === 'undefined') {
-    console.error("CRITICAL: defaultStations not found.");
+    console.error("CRITICAL: defaultStations missing.");
+    alert("Error: Archivo de estaciones no cargado.");
     return;
   }
+  
+  // Recuperación segura de datos
   try {
     const savedFavs = JSON.parse(localStorage.getItem("ultra_favs") || "[]");
     favorites = new Set(savedFavs);
@@ -60,16 +62,18 @@ const init = () => {
     favorites = new Set();
   }
 
+  // Tema
   const savedTheme = localStorage.getItem("ultra_theme") || "default";
   setTheme(savedTheme);
   if(els.themeSelect) els.themeSelect.value = savedTheme;
 
+  // Renderizado
   loadFilters();
   resetControls();
   renderList();
   setupListeners();
   
-  console.log(`System Ready: ${stations.length} stations loaded.`);
+  console.log(`System Ready v7.1`);
 };
 
 const resetControls = () => {
@@ -101,34 +105,44 @@ const playStation = (station) => {
   
   currentStation = station;
   
-  // Actualizar UI
-  els.title.innerText = station.name;
-  els.meta.innerText = `${station.country} · ${station.region}`;
-  els.track.innerText = "Cargando...";
+  // UI Updates protegidos
+  if(els.title) els.title.innerText = station.name;
+  if(els.meta) els.meta.innerText = `${station.country} · ${station.region}`;
+  if(els.track) els.track.innerText = "Conectando...";
   
-  els.status.innerText = "CONECTANDO...";
-  els.status.style.color = ""; 
-  els.badge.style.display = "none";
+  if(els.status) {
+      els.status.innerText = "BUFFERING...";
+      els.status.style.color = ""; 
+  }
+  if(els.badge) els.badge.style.display = "none";
   
   stopTimer();
   if(els.timer) els.timer.innerText = "00:00";
 
-  els.player.src = station.url;
-  els.player.volume = 1; 
-  
-  // Promesa de reproducción robusta
-  const p = els.player.play();
-  if (p !== undefined) {
-    p.then(() => {
-      setPlayingState(true);
-      updateMediaSession();
-    }).catch(e => {
-      console.error("Stream Error:", e);
-      els.track.innerText = "Offline / Error";
-      els.status.innerText = "ERROR";
-      els.status.style.color = "#ff3d3d";
-      setPlayingState(false);
-    });
+  // Audio Play con manejo de errores
+  try {
+      els.player.src = station.url;
+      els.player.volume = 1; 
+      
+      const p = els.player.play();
+      if (p !== undefined) {
+        p.then(() => {
+          setPlayingState(true);
+          updateMediaSession();
+        }).catch(e => {
+          console.error("Playback Failed:", e);
+          if(els.track) els.track.innerText = "Error: Stream Offline/Bloqueado";
+          if(els.status) {
+              els.status.innerText = "ERROR";
+              els.status.style.color = "#ff3d3d";
+          }
+          setPlayingState(false);
+          // Alerta visual para depuración
+          // alert("No se puede reproducir: " + e.message); 
+        });
+      }
+  } catch (err) {
+      console.error("Critical Audio Error", err);
   }
 };
 
@@ -148,34 +162,36 @@ const togglePlay = () => {
 
 const setPlayingState = (playing) => {
   isPlaying = playing;
+  
+  // Clases CSS protegidas
+  if(els.btnPlay) {
+      if (playing) els.btnPlay.classList.add("playing");
+      else els.btnPlay.classList.remove("playing");
+  }
+
   if (playing) {
-    els.btnPlay.classList.add("playing");
-    els.status.innerText = "EN VIVO";
-    els.status.classList.add("live");
-    els.badge.style.display = "inline-block";
+    if(els.status) {
+        els.status.innerText = "EN VIVO";
+        els.status.classList.add("live");
+    }
+    if(els.badge) els.badge.style.display = "inline-block";
     startTimer();
     
-    // Iniciar loop de metadatos (placeholder)
-    obtenerMetadatos();
-    if(metadataInterval) clearInterval(metadataInterval);
-    metadataInterval = setInterval(obtenerMetadatos, 15000); 
-
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
   } else {
-    els.btnPlay.classList.remove("playing");
-    els.status.innerText = "PAUSADO";
-    els.status.classList.remove("live");
-    els.badge.style.display = "none";
+    if(els.status) {
+        els.status.innerText = "PAUSADO";
+        els.status.classList.remove("live");
+    }
+    if(els.badge) els.badge.style.display = "none";
     stopTimer();
-    if(metadataInterval) clearInterval(metadataInterval);
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
   }
   renderList(); 
 };
 
-const obtenerMetadatos = () => {
-    // Aquí irá la lógica de fetch en el futuro
-};
+// ... Resto de funciones auxiliares (skip, render, filter) sin cambios críticos ...
+// Se mantienen igual que v7.0 pero aseguran que no haya referencias rotas
 
 const skipStation = (direction) => {
   if (stations.length === 0) return;
@@ -195,10 +211,10 @@ const renderList = () => {
   if(!els.list) return;
   els.list.innerHTML = "";
   
-  const term = els.search.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const region = els.region.value;
-  const country = els.country.value;
-  const showFavs = els.favToggle.checked;
+  const term = els.search ? els.search.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+  const region = els.region ? els.region.value : "Todas";
+  const country = els.country ? els.country.value : "Todos";
+  const showFavs = els.favToggle ? els.favToggle.checked : false;
 
   const filtered = stations.filter(st => {
     const normName = st.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -260,6 +276,7 @@ const renderList = () => {
   els.list.appendChild(fragment);
 };
 
+// ... Funciones utilitarias standard ...
 const addCustomStation = (e) => {
   e.preventDefault();
   const name = document.getElementById("newStationName").value.trim();
@@ -273,17 +290,15 @@ const addCustomStation = (e) => {
     location.reload(); 
   }
 };
-
 const deleteCustomStation = (e, stationName) => {
   e.stopPropagation();
-  if(confirm(`¿Eliminar permanentemente ${stationName}?`)) {
+  if(confirm(`¿Eliminar ${stationName}?`)) {
     let customStations = JSON.parse(localStorage.getItem("ultra_custom") || "[]");
     customStations = customStations.filter(s => s.name !== stationName);
     localStorage.setItem("ultra_custom", JSON.stringify(customStations));
     location.reload();
   }
 };
-
 const loadFilters = () => {
   if(!els.region || !els.country) return;
   const regions = ["Todas", ...new Set(stations.map(s => s.region))].sort();
@@ -298,18 +313,45 @@ const loadFilters = () => {
   fill(els.region, regions);
   fill(els.country, countries);
 };
-
+const updateMediaSession = () => {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentStation.name,
+      artist: currentStation.country + ' · ' + currentStation.region,
+      album: 'Satelital Wave Player v7.1',
+    });
+    navigator.mediaSession.setActionHandler('previoustrack', () => skipStation(-1));
+    navigator.mediaSession.setActionHandler('nexttrack', () => skipStation(1));
+    navigator.mediaSession.setActionHandler('play', () => { els.player.play(); setPlayingState(true); });
+    navigator.mediaSession.setActionHandler('pause', () => { els.player.pause(); setPlayingState(false); });
+  }
+};
+const startTimer = () => {
+  stopTimer(); secondsElapsed = 0;
+  if(els.timer) {
+    els.timer.innerText = "00:00";
+    timerInterval = setInterval(() => {
+      secondsElapsed++;
+      const m = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+      const s = (secondsElapsed % 60).toString().padStart(2, '0');
+      els.timer.innerText = `${m}:${s}`;
+    }, 1000);
+  }
+};
+const stopTimer = () => { if (timerInterval) clearInterval(timerInterval); };
 const setupListeners = () => {
-  els.btnPlay.addEventListener("click", togglePlay);
-  els.btnPrev.addEventListener("click", () => skipStation(-1));
-  els.btnNext.addEventListener("click", () => skipStation(1));
-  els.themeSelect.addEventListener("change", (e) => {
+  if(els.btnPlay) els.btnPlay.addEventListener("click", togglePlay);
+  if(els.btnPrev) els.btnPrev.addEventListener("click", () => skipStation(-1));
+  if(els.btnNext) els.btnNext.addEventListener("click", () => skipStation(1));
+  if(els.themeSelect) els.themeSelect.addEventListener("change", (e) => {
     setTheme(e.target.value);
     localStorage.setItem("ultra_theme", e.target.value);
   });
-  [els.search, els.region, els.country].forEach(el => el.addEventListener("input", renderList));
-  els.favToggle.addEventListener("change", renderList);
-  els.clearFilters.addEventListener("click", () => {
+  if(els.search) els.search.addEventListener("input", renderList);
+  if(els.region) els.region.addEventListener("input", renderList);
+  if(els.country) els.country.addEventListener("input", renderList);
+  if(els.favToggle) els.favToggle.addEventListener("change", renderList);
+  if(els.clearFilters) els.clearFilters.addEventListener("click", () => {
     resetControls();
     renderList();
   });
