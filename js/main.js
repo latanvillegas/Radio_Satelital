@@ -1,8 +1,9 @@
 // js/main.js
+// =======================
+// SYSTEM CONFIG v7.3 (PWA ENABLED - A11Y PATCHED)
+// =======================
 
-// Bloque de definición de clases (Reemplazar la línea 10 de su js/main.js)
-// ========================================================================
-// MAPA DE ASIGNACIÓN DE CLASES DE COLOR POR PAÍS 
+// MAPA DE ASIGNACIÓN DE CLASES DE COLOR POR PAÍS (Implementación de la solicitud)
 const countryClassMap = {
   "España": "badge-spain", 
   "Francia": "badge-france",
@@ -24,11 +25,189 @@ const countryClassMap = {
   "México": "badge-mexico",
   "Custom": "badge-custom" 
 };
-// ========================================================================
 
+let stations = [];
+let favorites = new Set();
+let currentStation = null;
+let isPlaying = false;
+let timerInterval = null;
+let secondsElapsed = 0;
+let metadataInterval = null;
 
-// ... (El resto de las variables y funciones hasta renderList) ...
+const els = {
+  player: document.getElementById("radioPlayer"),
+  btnPlay: document.getElementById("btnPlay"),
+  btnPrev: document.getElementById("btnPrev"),
+  btnNext: document.getElementById("btnNext"),
+  status: document.getElementById("statusIndicator"),
+  
+  title: document.getElementById("currentStation"),
+  track: document.getElementById("streamTrack"),
+  meta: document.getElementById("stationMeta"),
+  
+  badge: document.getElementById("metaBadge"),
+  timer: document.getElementById("timerDisplay"),
+  list: document.getElementById("stationList"),
+  search: document.getElementById("stationSearch"),
+  region: document.getElementById("regionSelect"),
+  country: document.getElementById("countrySelect"),
+  favToggle: document.getElementById("favoritesToggle"),
+  clearFilters: document.getElementById("clearFilters"),
+  themeSelect: document.getElementById("themeSelect"),
+  addForm: document.getElementById("addStationForm")
+};
 
+const init = () => {
+  if (typeof defaultStations === 'undefined') {
+    console.error("CRITICAL: defaultStations missing.");
+    return;
+  }
+  
+  try {
+    const savedFavs = JSON.parse(localStorage.getItem("ultra_favs") || "[]");
+    favorites = new Set(savedFavs);
+    const customStations = JSON.parse(localStorage.getItem("ultra_custom") || "[]");
+    stations = [...customStations, ...defaultStations];
+  } catch (e) {
+    localStorage.clear();
+    stations = [...defaultStations];
+    favorites = new Set();
+  }
+
+  const savedTheme = localStorage.getItem("ultra_theme") || "default";
+  setTheme(savedTheme);
+  if(els.themeSelect) els.themeSelect.value = savedTheme;
+
+  loadFilters();
+  resetControls();
+  renderList();
+  setupListeners();
+  
+  console.log(`System Ready v7.3`);
+};
+
+const resetControls = () => {
+  if(els.search) els.search.value = "";
+  if(els.region) els.region.value = "Todas";
+  if(els.country) els.country.value = "Todos";
+  if(els.favToggle) els.favToggle.checked = false;
+};
+
+const setTheme = (themeName) => {
+  document.body.setAttribute("data-theme", themeName === "default" ? "" : themeName);
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if(metaTheme) {
+      switch(themeName) {
+          case 'amoled': metaTheme.setAttribute("content", "#000000"); break;
+          case 'white': metaTheme.setAttribute("content", "#f2f4f7"); break; 
+          case 'gold': metaTheme.setAttribute("content", "#12100b"); break;
+          case 'purple': metaTheme.setAttribute("content", "#0a0011"); break;
+          default: metaTheme.setAttribute("content", "#05070a");
+      }
+  }
+};
+
+const playStation = (station) => {
+  if (currentStation && currentStation.name === station.name) { 
+    togglePlay(); 
+    return; 
+  }
+  
+  currentStation = station;
+  
+  if(els.title) els.title.innerText = station.name;
+  if(els.meta) els.meta.innerText = `${station.country} · ${station.region}`;
+  if(els.track) els.track.innerText = "Conectando...";
+  
+  if(els.status) {
+      els.status.innerText = "BUFFERING...";
+      els.status.style.color = ""; 
+  }
+  if(els.badge) els.badge.style.display = "none";
+  
+  stopTimer();
+  if(els.timer) els.timer.innerText = "00:00";
+
+  try {
+      els.player.src = station.url;
+      els.player.volume = 1; 
+      
+      const p = els.player.play();
+      if (p !== undefined) {
+        p.then(() => {
+          setPlayingState(true);
+          updateMediaSession();
+        }).catch(e => {
+          console.error("Playback Failed:", e);
+          if(els.track) els.track.innerText = "Offline";
+          if(els.status) {
+              els.status.innerText = "ERROR";
+              els.status.style.color = "#ff3d3d";
+          }
+          setPlayingState(false);
+        });
+      }
+  } catch (err) {
+      console.error("Critical Audio Error", err);
+  }
+};
+
+const togglePlay = () => {
+  if (!currentStation) {
+    if(stations.length > 0) playStation(stations[0]);
+    return;
+  }
+  if (els.player.paused) { 
+    els.player.play(); 
+    setPlayingState(true); 
+  } else { 
+    els.player.pause(); 
+    setPlayingState(false); 
+  }
+};
+
+const setPlayingState = (playing) => {
+  isPlaying = playing;
+  
+  if(els.btnPlay) {
+      if (playing) els.btnPlay.classList.add("playing");
+      else els.btnPlay.classList.remove("playing");
+  }
+
+  if (playing) {
+    if(els.status) {
+        els.status.innerText = "EN VIVO";
+        els.status.classList.add("live");
+    }
+    if(els.badge) els.badge.style.display = "inline-block";
+    startTimer();
+    
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+  } else {
+    if(els.status) {
+        els.status.innerText = "PAUSADO";
+        els.status.classList.remove("live");
+    }
+    if(els.badge) els.badge.style.display = "none";
+    stopTimer();
+    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+  }
+  renderList(); 
+};
+
+const skipStation = (direction) => {
+  if (stations.length === 0) return;
+  let newIndex = 0;
+  if (!currentStation) {
+    newIndex = direction > 0 ? 0 : stations.length - 1;
+  } else {
+    const currentIndex = stations.findIndex(s => s.name === currentStation.name);
+    newIndex = currentIndex + direction;
+    if (newIndex >= stations.length) newIndex = 0;
+    if (newIndex < 0) newIndex = stations.length - 1;
+  }
+  playStation(stations[newIndex]);
+};
 
 const renderList = () => {
   if(!els.list) return;
@@ -59,7 +238,7 @@ const renderList = () => {
     const isActive = currentStation && currentStation.name === st.name;
     const isFav = favorites.has(st.name);
     
-    // CAMBIO CRÍTICO: Usar countryClassMap[st.country]
+    // ASIGNACIÓN DE CLASE POR PAÍS: usa countryClassMap
     const badgeClass = countryClassMap[st.country] || "badge-default"; 
     
     const animatingClass = (isActive && isPlaying) ? 'animating' : '';
@@ -102,4 +281,117 @@ const renderList = () => {
   });
   els.list.appendChild(fragment);
 };
-// ... (El resto de las funciones: addCustomStation, deleteCustomStation, etc.) ...
+
+const addCustomStation = (e) => {
+  e.preventDefault();
+  const name = document.getElementById("newStationName").value.trim();
+  const country = document.getElementById("newStationCountry").value.trim();
+  const url = document.getElementById("newStationUrl").value.trim();
+  if(name && url) {
+    const newStation = { name, country, region: "Custom", url, isCustom: true };
+    const customStations = JSON.parse(localStorage.getItem("ultra_custom") || "[]");
+    customStations.push(newStation);
+    localStorage.setItem("ultra_custom", JSON.stringify(customStations));
+    location.reload(); 
+  }
+};
+const deleteCustomStation = (e, stationName) => {
+  e.stopPropagation();
+  if(confirm(`¿Eliminar ${stationName}?`)) {
+    let customStations = JSON.parse(localStorage.getItem("ultra_custom") || "[]");
+    customStations = customStations.filter(s => s.name !== stationName);
+    localStorage.setItem("ultra_custom", JSON.stringify(customStations));
+    location.reload();
+  }
+};
+const loadFilters = () => {
+  if(!els.region || !els.country) return;
+  const regions = ["Todas", ...new Set(stations.map(s => s.region))].sort();
+  const countries = ["Todos", ...new Set(stations.map(s => s.country))].sort();
+  const fill = (sel, arr) => {
+    sel.innerHTML = "";
+    arr.forEach(val => {
+      const opt = document.createElement("option");
+      opt.value = val; opt.innerText = val; sel.appendChild(opt);
+    });
+  };
+  fill(els.region, regions);
+  fill(els.country, countries);
+};
+const updateMediaSession = () => {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentStation.name,
+      artist: currentStation.country + ' · ' + currentStation.region,
+      album: 'Satelital Wave Player v7.3',
+    });
+    navigator.mediaSession.setActionHandler('previoustrack', () => skipStation(-1));
+    navigator.mediaSession.setActionHandler('nexttrack', () => skipStation(1));
+    navigator.mediaSession.setActionHandler('play', () => { els.player.play(); setPlayingState(true); });
+    navigator.mediaSession.setActionHandler('pause', () => { els.player.pause(); setPlayingState(false); });
+  }
+};
+const startTimer = () => {
+  stopTimer(); secondsElapsed = 0;
+  if(els.timer) {
+    els.timer.innerText = "00:00";
+    timerInterval = setInterval(() => {
+      secondsElapsed++;
+      const m = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+      const s = (secondsElapsed % 60).toString().padStart(2, '0');
+      els.timer.innerText = `${m}:${s}`;
+    }, 1000);
+  }
+};
+const stopTimer = () => { if (timerInterval) clearInterval(timerInterval); };
+const setupListeners = () => {
+  if(els.btnPlay) els.btnPlay.addEventListener("click", togglePlay);
+  if(els.btnPrev) els.btnPrev.addEventListener("click", () => skipStation(-1));
+  if(els.btnNext) els.btnNext.addEventListener("click", () => skipStation(1));
+  if(els.themeSelect) els.themeSelect.addEventListener("change", (e) => {
+    setTheme(e.target.value);
+    localStorage.setItem("ultra_theme", e.target.value);
+  });
+  if(els.search) els.search.addEventListener("input", renderList);
+  if(els.region) els.region.addEventListener("input", renderList);
+  if(els.country) els.country.addEventListener("input", renderList);
+  if(els.favToggle) els.favToggle.addEventListener("change", renderList);
+  if(els.clearFilters) els.clearFilters.addEventListener("click", () => {
+    resetControls();
+    renderList();
+  });
+  if(els.addForm) els.addForm.addEventListener("submit", addCustomStation);
+};
+
+// =======================
+// PWA INSTALL LOGIC
+// =======================
+let deferredPrompt;
+const installBtn = document.getElementById('btnInstall');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevenir banner automático
+  e.preventDefault();
+  deferredPrompt = e;
+  // Mostrar botón
+  if(installBtn) installBtn.style.display = 'block';
+});
+
+if(installBtn) {
+  installBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to install prompt: ${outcome}`);
+      deferredPrompt = null;
+      installBtn.style.display = 'none';
+    }
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  if(installBtn) installBtn.style.display = 'none';
+  console.log('PWA Installed');
+});
+
+document.addEventListener("DOMContentLoaded", init);
