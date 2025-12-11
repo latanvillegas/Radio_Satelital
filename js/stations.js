@@ -12,14 +12,11 @@ const defaultStations = [
   { name: "Acqua", country: "Argentina", region: "Mar del Plata", url: "https://sonic-us.streaming-chile.com:7006/" },
   { name: "Acqua 100.1", country: "Argentina", region: "Villa Gesell", url: "https://strcdn.klm99.com:10983/acquapinamar" },
   { name: "Arceri", country: "Costa Rica", region: "Aserrín", url: "https://stream-178.zeno.fm/rmnr2cphyxhvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJybW5yMmNwaHl4aHZ2IiwiaG9zdCI6InN0cmVhbS0xNzguemVuby5mbSIsInJ0dGwiOjUsImp0aSI6ImRYMW41R2s4U08yYWx2V0JKcHRDWEEiLCJpYXQiOjE3NjU0MTkxOTEsImV4cCI6MTc2NTQxOTI1MX0.KWxdZmmrrZmvw7-yDyEuMHt6eBzZ2z_OfEElTQVFrPQ" },
-  { name: "Actitud", country: "México", region: "San Felipe", url: "https://radioenhd.com:8088/" }, // Sintaxis Corregida
+  { name: "Actitud", country: "México", region: "San Felipe", url: "https://radioenhd.com:8088/" },
   { name: "Actitud 100.9 FM", country: "Guatemala", region: "Ciudad de Guatemala", url: "https://ss.redradios.net:8002/stream" },
   { name: "Activa (Buenos Aires)", country: "Argentina", region: "Buenos Aires", url: "https://edge01.radiohdvivo.com/fmra1033" },
   { name: "Activa (Colombia)", country: "Colombia", region: "Tuquerres", url: "https://stream-177.zeno.fm/vkb12zqmgzzuv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJ2a2IxMnpxbWd6enV2IiwiaG9zdCI6InN0cmVhbS0xNzcuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6InVSNGNtcWRqUks2Q1dYb29xY2c5ckEiLCJpYXQiOjE3NjU0MTk2MDEsImV4cCI6MTc2NTQxOTY2MX0.mzmgEUJ2fr9JQ35IKW3sIeU7Ilioh400N-YjigAkiqM" },
-  // { name: "Activa (España)", country: "España", region: "Madrid", url: "https://stream-177.zeno.fm/vkb12zqmgzzuv?zt=..." }, // DUPLICADO de Activa (Colombia) - Eliminado para evitar conflictos.
-  // { name: "Activa (Honduras)", country: "Honduras", region: "San Pedro Sula", url: "https://stream-177.zeno.fm/vkb12zqmgzzuv?zt=..." }, // DUPLICADO de Activa (Colombia) - Eliminado para evitar conflictos.
-  { name: "Activa (Salina Cruz)", country: "México", region: "Salina Cruz", url: "https://sp3.servidorrprivado.com/6617/" }, // Sintaxis Corregida
-  // { name: "Activa (Yuriria)", country: "México", region: "Yuriria", url: "https://stream-177.zeno.fm/vkb12zqmgzzuv?zt=..." }, // DUPLICADO de Activa (Colombia) - Eliminado para evitar conflictos.
+  { name: "Activa (Salina Cruz)", country: "México", region: "Salina Cruz", url: "https://sp3.servidorrprivado.com/6617/" },
   { name: "Activa (Puerto Rico)", country: "Puerto Rico", region: "San Juan", url: "https://cast3.asurahosting.com/proxy/univers1/stream" },
   { name: "Activa 100.7", country: "Argentina", region: "News", url: "https://sh4.radioonlinehd.com:8533/stream" },
   { name: "Activa 12340 AM", country: "EE.UU", region: "Nashville", url: "https://ice66.securenetsystems.net/WNVL" },
@@ -36,8 +33,7 @@ const defaultStations = [
   { name: "Activa Táchira Punta FM", country: "Venezuela", region: "San Cristóbal", url: "https://stream-157.zeno.fm/53vezhmmad0uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI1M3ZlemhtbWFkMHV2IiwiaG9zdCI6InN0cmVhbS0xNTcuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Ii1vUTExOGtSU1dlZG82cHVzZk1JOEEiLCJpYXQiOjE3NjU0MjE3MjEsImV4cCI6MTc2NTQyMTc4MX0.Xqb3C5FezGjrayWw84Zmpn9tkMV0AIz4gcy8X3V152M" },
   
   // =======================================================
-  // ====== PERÚ (LIMA / NACIONAL) - DEL ARCHIVO ORIGINAL ======
-  // * Región actualizada de 'Sudamérica' a 'Nacional' para mejor filtrado
+  // ====== PERÚ (LIMA / NACIONAL) ======
   // =======================================================
   { name: "Radio Moda", country: "Perú", region: "Nacional", url: "https://25023.live.streamtheworld.com/CRP_MOD_SC" },
   { name: "Ritmo Romántica", country: "Perú", region: "Nacional", url: "https://25103.live.streamtheworld.com/CRP_RIT_SC" },
@@ -55,8 +51,7 @@ const defaultStations = [
   { name: "Radio Abba Padre", country: "Perú", region: "Nacional", url: "https://stream-175.zeno.fm/6rrwumthg6quv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiI2cnJ3dW10aGc2cXV2IiwiaG9zdCI6InN0cmVhbS0xNzUuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Im9XY2g3dmlTU0NHYlVGQ0QtZmNxUFEiLCJpYXQiOjE3NjQ3OTMwNDksImV4cCI6MTc2NDc5MzEwOX0.U3kdYbFm_XjuESzU_aSQ7owwkG9ScWV9h4fLn36I88U" },
 
   // =======================================================
-  // ====== PERÚ (REGIONALES) - DEL ARCHIVO ORIGINAL ======
-  // * Región actualizada de 'Sudamérica' a 'Regional' para mejor filtrado
+  // ====== PERÚ (REGIONALES) ======
   // =======================================================
   { name: "Radio Turbo Mix", country: "Perú", region: "Regional", url: "https://serverssl.innovatestream.pe:8080/167.114.118.120:7624/stream" },
   { name: "Radio Fuego", country: "Perú", region: "Regional", url: "https://serverssl.innovatestream.pe:8080/sp.onliveperu.com:8128/" },
@@ -75,7 +70,6 @@ const defaultStations = [
   { name: "La Cheverísima", country: "Perú", region: "Regional", url: "https://sp.onliveperu.com:8114/stream" },
   { name: "Radio TV El Shaddai", country: "Perú", region: "Regional", url: "https://stream.zeno.fm/ppr5q4q3x1zuv" },
   { name: "Radio Inica Digital", country: "Perú", region: "Regional", url: "https://stream.zeno.fm/487vgx80yuhvv" },
-  // { name: "Radio La Falsa", country: "Perú", region: "Regional", url: "https://stream.zeno.fm/b9x47pyk21zuv" }, // DUPLICADO de Radio Inca - Eliminado para evitar conflictos.
   { name: "Radio Activa", country: "Perú", region: "Regional", url: "https://sp.onliveperu.com:8108/stream" }, 
   { name: "Radio Mía", country: "Perú", region: "Regional", url: "https://streaming.zonalatinaeirl.com:8020/radio" },
   { name: "Radio Patrón", country: "Perú", region: "Regional", url: "https://streaming.zonalatinaeirl.com:8010/radio" },
@@ -83,21 +77,20 @@ const defaultStations = [
   { name: "Radio Enamorados", country: "Perú", region: "Regional", url: "https://stream.zeno.fm/gnybbqc1fnruv" },
 
   // =======================================================
-  // ====== LATINOAMÉRICA / NORTEAMÉRICA - DEL ORIGINAL ======
-  // * Regiones 'Sudamérica' / 'Norteamérica' / 'Centroamérica' mantenidas.
+  // ====== LATINOAMÉRICA / NORTEAMÉRICA ======
   // =======================================================
   { name: "Radio ABC (San Luis)", country: "México", region: "Norteamérica", url: "https://16643.live.streamtheworld.com/XHCZFM.mp3" },
   { name: "Radio ABC (Taxco)", country: "México", region: "Norteamérica", url: "https://streaming.servicioswebmx.com/8288/stream" },
   { name: "ABC 760", country: "México", region: "Norteamérica", url: "https://streamingcwsradio30.com/8292/stream" },
   { name: "ABC Radio Puebla", country: "México", region: "Norteamérica", url: "https://streaming.servicioswebmx.com/8264/stream" },
-  { name: "Radio Acceso Total", country: "México", region: "Norteamérica", url: "https://us10a.serverse.com/proxy/acce8712?mp=/" }, // Sintaxis Corregida
+  { name: "Radio Acceso Total", country: "México", region: "Norteamérica", url: "https://us10a.serverse.com/proxy/acce8712?mp=/" },
   { name: "Ach Kuxlejal 100.3", country: "México", region: "Norteamérica", url: "https://stream-178.zeno.fm/md6tfkaaechvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJtZDZ0ZmthYWVjaHZ2IiwiaG9zdCI6InN0cmVhbS0xNzguemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IkI4TUMzLXR3UTR1Q1VzbXY2M0gwUFEiLCJpYXQiOjE3NjQ3OTQ4MTksImV4cCI6MTc2NDc5NDg3OX0.xBJOxw_oGdW4sqNsL4n9WyUeK6CTvzAY8o5i5MjLe78" },
   
   { name: "ABC 94.7", country: "Argentina", region: "Sudamérica", url: "https://stream-176.zeno.fm/n03jc4xoy63tv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJuMDNqYzR4b3k2M3R2IiwiaG9zdCI6InN0cmVhbS0xNzYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6Im9aa3kyRHRvUXBDU3kwNUF2OGdPX3ciLCJpYXQiOjE3NjQ3OTM2MzksImV4cCI6MTc2NDc5MzY5OX0.clgYVIm4DHZtHwGTjXdSfYi0SjVgGWj8UkiZEBz3yg0" },
   { name: "Estéreo Abejorral", country: "Colombia", region: "Sudamérica", url: "https://icecasthd.net/proxy/abejorral/live" },
   { name: "Abriendo Surcos", country: "Colombia", region: "Sudamérica", url: "https://djp.sytes.net/public/abriendo_surcos" },
-  { name: "Acacio de Chile", country: "Chile", region: "Sudamérica", url: "https://sonic.portalfoxmix.cl:7057/" }, // Sintaxis Corregida
-  { name: "Acción FM", country: "Venezuela", region: "Sudamérica", url: "https://stream.intervalohost.com:7008/stream" },
+  { name: "Acacio de Chile", country: "Chile", region: "Sudamérica", url: "https://sonic.portalfoxmix.cl:7057/" },
+  { name: "Acción FM", country: "Venezuela", region: "Sudamérica", url: "https://stream-intervalohost.com:7008/stream" },
   { name: "Aclo Chuquisaca", country: "Bolivia", region: "Sudamérica", url: "https://cloudstream2030.conectarhosting.com/8192/stream" },
   { name: "Aclo Tarija", country: "Bolivia", region: "Sudamérica", url: "https://cloudstream2030.conectarhosting.com/8242/stream" },
   
@@ -106,7 +99,7 @@ const defaultStations = [
   { name: "Una Radio Viva Voz", country: "Nicaragua", region: "Centroamérica", url: "https://rr5100.globalhost1.com/8006/stream" },
   
   // =======================================================
-  // ====== EEUU / EUROPA - DEL ARCHIVO ORIGINAL ======
+  // ====== EEUU / EUROPA ======
   // =======================================================
   { name: "105.3 El Ritmo", country: "EE.UU", region: "Norteamérica", url: "https://n02b-e2.revma.ihrhls.com/zc3209/hls.m3u8?rj-ttl=5&rj-tok=AAABmuXcB-4Ad7qhABJqQGGBcg" },
   { name: "Acción Cristiana", country: "EE.UU", region: "Norteamérica", url: "https://panel.lifestreammedia.net:8162/stream" },
