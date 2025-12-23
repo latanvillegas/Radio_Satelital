@@ -30,7 +30,6 @@ const init = () => {
     btnNext: document.getElementById("btnNext"),
     status: document.getElementById("statusIndicator"),
     title: document.getElementById("currentStation"),
-    track: document.getElementById("streamTrack"),
     meta: document.getElementById("stationMeta"),
     badge: document.getElementById("metaBadge"),
     timer: document.getElementById("timerDisplay"),
@@ -120,7 +119,6 @@ const playStation = (station) => {
   currentStation = station;
   if(els.title) els.title.innerText = station.name;
   if(els.meta) els.meta.innerText = `${station.country} · ${station.region}`;
-  if(els.track) els.track.innerText = "Conectando...";
   if(els.status) { els.status.innerText = "BUFFERING..."; els.status.style.color = ""; }
   if(els.badge) els.badge.style.display = "none";
   stopTimer(); if(els.timer) els.timer.innerText = "00:00";
@@ -131,7 +129,6 @@ const playStation = (station) => {
       if (p !== undefined) {
         p.then(() => { setPlayingState(true); updateMediaSession(); }).catch(e => {
           console.error("Error Reproducción:", e);
-          if(els.track) els.track.innerText = "Offline";
           if(els.status) { els.status.innerText = "ERROR"; els.status.style.color = "#ff3d3d"; }
           setPlayingState(false);
         });
