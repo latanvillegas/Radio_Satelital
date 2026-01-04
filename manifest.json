@@ -1,29 +1,37 @@
 {
   "name": "Radio Satelital Ultra",
   "short_name": "Satelital",
-  "description": "Ultra Wave Player v7.2 - Streaming Interface",
-  "id": "/index.html",
+  "description": "Ultra Wave Player v7.5 - Interfaz de transmisión",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#05070a",
   "theme_color": "#05070a",
   "orientation": "portrait",
-  "categories": [
-    "music",
-    "entertainment"
-  ],
+  "scope": "/",
   "icons": [
     {
-      "src": "https://dummyimage.com/192x192/05070a/ffffff.png&amp;text=RADIO",
+      "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "https://dummyimage.com/512x512/05070a/ffffff.png&amp;text=RADIO",
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
