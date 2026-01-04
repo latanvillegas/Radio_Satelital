@@ -44,7 +44,7 @@
       "short_name": "Reproducir",
       "description": "Inicia el reproductor de radio inmediatamente",
       "url": "/index.html?action=play",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ],
   "screenshots": [
@@ -53,7 +53,7 @@
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Pantalla Principal de Radio Satelital"
+      "label": "Pantalla Principal"
     },
     {
       "src": "icon-512.png",
@@ -63,11 +63,63 @@
       "label": "Reproductor Móvil"
     }
   ],
+  "share_target": {
+    "action": "/index.html",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "/index.html",
+      "accept": {
+        "audio/mpeg": [".mp3"],
+        "audio/x-mpegurl": [".m3u"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+radio",
+      "url": "/index.html?station=%s"
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Radio Satelital",
+      "short_name": "Satelital",
+      "description": "Acceso rápido a la radio",
+      "tag": "radio-widget",
+      "template": "widget-template",
+      "ms_ac_template": "widgets/mini-player.json",
+      "data": "widgets/data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "icon-512.png",
+          "sizes": "512x512",
+          "label": "Widget Preview"
+        }
+      ],
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "edge_side_panel": {
     "preferred_width": 400
-  }
+  },
+  "related_applications": [],
+  "prefer_related_applications": false
 }
