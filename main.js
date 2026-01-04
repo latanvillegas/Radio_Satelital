@@ -1,4 +1,4 @@
-// main.js v7.7 (NETWORK & TIMER FIX)
+// main.js v8.0 (NOTIFICACIONES PRO + LIVE STATUS)
 // =======================
 
 const countryClassMap = {
@@ -20,9 +20,8 @@ let secondsElapsed = 0;
 let els = {};
 
 const init = () => {
-  console.log("Iniciando Sistema v7.7...");
+  console.log("Iniciando Sistema v8.0...");
   
-  // 1. CAPTURAR ELEMENTOS
   els = {
     player: document.getElementById("radioPlayer"),
     btnPlay: document.getElementById("btnPlay"),
@@ -40,14 +39,12 @@ const init = () => {
     favToggle: document.getElementById("favoritesToggle"),
     clearFilters: document.getElementById("clearFilters"),
     addForm: document.getElementById("addStationForm"),
-    // Elementos del Menú
     btnOptions: document.getElementById("btnOptions"),
     btnCloseMenu: document.getElementById("btnCloseMenu"),
     sideMenu: document.getElementById("sideMenu"),
     menuOverlay: document.getElementById("menuOverlay")
   };
 
-  // 2. CARGAR DATOS
   if (typeof defaultStations === 'undefined') { console.error("Falta defaultStations."); return; }
   
   try {
@@ -61,7 +58,6 @@ const init = () => {
     favorites = new Set();
   }
 
-  // 3. APLICAR TEMA
   const savedTheme = localStorage.getItem("ultra_theme") || "default";
   setTheme(savedTheme);
   
@@ -75,7 +71,12 @@ const init = () => {
   renderList();
   setupListeners();
   
-  console.log(`Sistema Listo v7.7`);
+  // Inicializar audio context para evitar bloqueos
+  if (els.player) {
+    els.player.crossOrigin = "anonymous";
+  }
+
+  console.log(`Sistema Listo v8.0`);
 };
 
 const resetControls = () => {
@@ -118,7 +119,6 @@ const playStation = (station) => {
   if(els.status) { els.status.innerText = "BUFFERING..."; els.status.style.color = ""; }
   if(els.badge) els.badge.style.display = "none";
   
-  // Reseteamos timer visualmente, pero la lógica real iniciará en setPlayingState
   if(els.timer) els.timer.innerText = "00:00";
   stopTimer(); 
 
@@ -126,7 +126,11 @@ const playStation = (station) => {
       els.player.src = station.url; els.player.volume = 1; 
       const p = els.player.play();
       if (p !== undefined) {
-        p.then(() => { setPlayingState(true); updateMediaSession(); }).catch(e => {
+        p.then(() => { 
+          setPlayingState(true); 
+          // Actualizamos la notificación inmediatamente al empezar a cargar
+          updateMediaSession(); 
+        }).catch(e => {
           console.error("Error Reproducción:", e);
           if(els.status) { els.status.innerText = "ERROR"; els.status.style.color = "#ff3d3d"; }
           setPlayingState(false);
@@ -146,25 +150,27 @@ const setPlayingState = (playing) => {
   
   if (playing) {
     if(els.status) { els.status.innerText = "EN VIVO"; els.status.classList.add("live"); }
-    
-    // Gestión del Badge LIVE / Conectando
     if(els.badge) {
         els.badge.style.display = "inline-block";
         els.badge.innerText = navigator.onLine ? "LIVE" : "Conectando...";
     }
-
-    // Iniciamos timer (reseteando a 0 si es nueva reproducción)
     startTimer(true);
-
-    // Si al dar play no hay internet, pausamos el timer inmediatamente
     if(!navigator.onLine && timerInterval) clearInterval(timerInterval);
+    
+    // Le decimos a Android que estamos sonando
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'playing';
+    }
 
-    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
   } else {
     if(els.status) { els.status.innerText = "PAUSADO"; els.status.classList.remove("live"); }
     if(els.badge) els.badge.style.display = "none";
     stopTimer();
-    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+    
+    // Le decimos a Android que estamos pausados
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'paused';
+    }
   }
   renderList(); 
 };
@@ -180,6 +186,47 @@ const skipStation = (direction) => {
     if (newIndex < 0) newIndex = stations.length - 1;
   }
   playStation(stations[newIndex]);
+};
+
+// --- AQUÍ ESTÁ LA MAGIA DE LA NOTIFICACIÓN MEJORADA ---
+const updateMediaSession = () => {
+  if ('mediaSession' in navigator && currentStation) {
+    
+    // 1. Definimos la imagen. Usamos icon-512.png porque es grande.
+    // Android usará los colores de esta imagen para pintar el fondo de la notificación.
+    // Si tu icono es blanco y negro, el fondo será gris. ¡Usa un logo colorido para tener fondo de color!
+    const artworkImage = [
+      { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }
+    ];
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentStation.name,
+      artist: currentStation.country, // Muestra el país como artista
+      album: 'Radio Satelital En Vivo',
+      artwork: artworkImage
+    });
+
+    // 2. Manejadores de botones (Para que funcionen en la notificación)
+    navigator.mediaSession.setActionHandler('play', () => { 
+      els.player.play(); 
+      setPlayingState(true); 
+    });
+    navigator.mediaSession.setActionHandler('pause', () => { 
+      els.player.pause(); 
+      setPlayingState(false); 
+    });
+    navigator.mediaSession.setActionHandler('previoustrack', () => skipStation(-1));
+    navigator.mediaSession.setActionHandler('nexttrack', () => skipStation(1));
+    
+    // 3. Quitar el "00:00" estático (Truco para Radio en Vivo)
+    // Al no definir duración ni posición, algunos Androids muestran "LIVE" o ocultan la barra.
+    try {
+        navigator.mediaSession.setPositionState(null);
+    } catch(e) {
+        // Fallback para navegadores viejos
+    }
+  }
 };
 
 const renderList = () => {
@@ -264,30 +311,13 @@ const loadFilters = () => {
   const fill = (sel, arr) => { sel.innerHTML = ""; arr.forEach(val => { const opt = document.createElement("option"); opt.value = val; opt.innerText = val; sel.appendChild(opt); }); };
   fill(els.region, regions); fill(els.country, countries);
 };
-const updateMediaSession = () => {
-  if ('mediaSession' in navigator) {
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: currentStation.name,
-      artist: currentStation.country + ' · ' + currentStation.region,
-      album: 'Satelital Wave Player v7.7',
-    });
-    navigator.mediaSession.setActionHandler('previoustrack', () => skipStation(-1));
-    navigator.mediaSession.setActionHandler('nexttrack', () => skipStation(1));
-    navigator.mediaSession.setActionHandler('play', () => { els.player.play(); setPlayingState(true); });
-    navigator.mediaSession.setActionHandler('pause', () => { els.player.pause(); setPlayingState(false); });
-  }
-};
 
-// --- LOGICA DEL TIMER MEJORADA ---
 const startTimer = (reset = true) => {
-  // Aseguramos que no haya dos intervalos corriendo
   if(timerInterval) clearInterval(timerInterval);
-  
   if(reset) {
     secondsElapsed = 0;
     if(els.timer) els.timer.innerText = "00:00";
   }
-
   if(els.timer) {
     timerInterval = setInterval(() => {
       secondsElapsed++;
@@ -305,7 +335,6 @@ const setupListeners = () => {
   if(els.btnPrev) els.btnPrev.addEventListener("click", () => skipStation(-1));
   if(els.btnNext) els.btnNext.addEventListener("click", () => skipStation(1));
   
-  // LOGICA TEMAS
   const themeBtns = document.querySelectorAll('.theme-btn');
   themeBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -317,7 +346,6 @@ const setupListeners = () => {
     });
   });
 
-  // LOGICA MENÚ
   if(els.btnOptions) els.btnOptions.addEventListener("click", (e) => { e.preventDefault(); toggleMenu(true); });
   if(els.btnCloseMenu) els.btnCloseMenu.addEventListener("click", () => toggleMenu(false));
   if(els.menuOverlay) els.menuOverlay.addEventListener("click", () => toggleMenu(false));
@@ -329,11 +357,9 @@ const setupListeners = () => {
   if(els.clearFilters) els.clearFilters.addEventListener("click", () => { resetControls(); renderList(); });
   if(els.addForm) els.addForm.addEventListener("submit", addCustomStation);
 
-  // --- LISTENERS DE CONEXIÓN ---
   window.addEventListener('offline', () => {
     if(isPlaying) {
       if(els.badge) els.badge.innerText = "Conectando...";
-      // Pausar el timer sin resetearlo
       if(timerInterval) clearInterval(timerInterval); 
     }
   });
@@ -341,20 +367,16 @@ const setupListeners = () => {
   window.addEventListener('online', () => {
     if(isPlaying) {
       if(els.badge) els.badge.innerText = "LIVE";
-      // Reanudar el timer (false = no resetear segundos)
       startTimer(false); 
-      // Intentar reanudar audio si se detuvo
       if(els.player) els.player.play(); 
     }
   });
 };
 
-// PWA INSTALL
 let deferredPrompt;
 const installBtn = document.getElementById('btnInstall');
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; if(installBtn) installBtn.style.display = 'block'; });
 if(installBtn) { installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; deferredPrompt = null; installBtn.style.display = 'none'; } }); }
 window.addEventListener('appinstalled', () => { if(installBtn) installBtn.style.display = 'none'; console.log('PWA Installed'); });
 
-// INICIO SEGURO
 document.addEventListener("DOMContentLoaded", init);
