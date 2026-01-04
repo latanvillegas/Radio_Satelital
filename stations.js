@@ -1,4 +1,4 @@
-// js/stations.js
+// stations.js
 // =======================
 // DATA FRECUENCIAS v7.3 (Consolidado y Corregido)
 // =======================
