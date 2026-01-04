@@ -1,4 +1,4 @@
-/* style.css v7.7 (LOGO GENÉRICO Y REDES SOCIALES FIJAS)
+/* style.css v8.0 (WEAR COLORS & LOGO REAL)
    ========================= */
 :root {
   /* DEFAULT (Cyber Dark) */
@@ -20,12 +20,34 @@
   --touch-target: 48px;
 }
 
-/* TEMAS (Manteniendo lógica de colores) */
+/* === TEMAS CLÁSICOS === */
 body[data-theme="amoled"] { --bg-dark:#000; --bg-glass:#000; --border-glass:#333; --accent:#fff; --accent-hover:#e0e0e0; --input-bg:#111; --btn-bg:#fff; --btn-text:#000; }
 body[data-theme="gold"] { --bg-dark:#12100b; --bg-glass:rgba(30,25,10,0.98); --border-glass:rgba(255,215,0,0.25); --accent:#ffb300; --accent-hover:#ff8f00; --text-main:#fffae0; --text-muted:#e6dcb8; --input-bg:rgba(40,35,20,0.7); --card-hover:rgba(255,215,0,0.08); --btn-bg:#ffb300; --btn-text:#12100b; }
 body[data-theme="purple"] { --bg-dark:#0a0011; --bg-glass:rgba(25,5,40,0.95); --border-glass:rgba(180,50,255,0.3); --accent:#e040fb; --accent-hover:#d500f9; --text-main:#f3e5f5; --text-muted:#e1bee7; --input-bg:rgba(40,10,60,0.7); --card-hover:rgba(213,0,249,0.15); --btn-bg:#e040fb; --btn-text:#fff; }
 body[data-theme="white"] { --bg-dark:#f8fafc; --bg-glass:#fff; --border-glass:#cbd5e1; --accent:#c62828; --accent-hover:#b71c1c; --text-main:#0f172a; --text-muted:#475569; --input-bg:#f1f5f9; --card-hover:#e2e8f0; --btn-bg:#0f172a; --btn-text:#fff; }
 
+/* === NUEVOS TEMAS "WEAR" (Degradados Vibrantes) === */
+/* Blue Ocean */
+body[data-theme="wear-ocean"] { --bg-dark:#0d1b2a; --bg-glass:rgba(13, 27, 42, 0.85); --accent:#00e5ff; --accent-hover:#00b8d4; }
+body[data-theme="wear-ocean"] .ambient-bg { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); opacity: 1; }
+
+/* Sunset Orange */
+body[data-theme="wear-sunset"] { --bg-dark:#2d1b0e; --bg-glass:rgba(45, 27, 14, 0.85); --accent:#ff9100; --accent-hover:#ff6d00; }
+body[data-theme="wear-sunset"] .ambient-bg { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); opacity: 1; }
+
+/* Neon Galaxy */
+body[data-theme="wear-galaxy"] { --bg-dark:#1a0b2e; --bg-glass:rgba(26, 11, 46, 0.85); --accent:#d500f9; --accent-hover:#aa00ff; }
+body[data-theme="wear-galaxy"] .ambient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); opacity: 1; }
+
+/* Mint Fresh */
+body[data-theme="wear-mint"] { --bg-dark:#00241b; --bg-glass:rgba(0, 36, 27, 0.85); --accent:#00e676; --accent-hover:#00c853; }
+body[data-theme="wear-mint"] .ambient-bg { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); opacity: 1; }
+
+/* Cherry Bomb */
+body[data-theme="wear-cherry"] { --bg-dark:#2b0505; --bg-glass:rgba(43, 5, 5, 0.85); --accent:#ff1744; --accent-hover:#d50000; }
+body[data-theme="wear-cherry"] .ambient-bg { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); opacity: 1; }
+
+/* Estilos específicos para tema Blanco */
 body[data-theme="white"] .ambient-bg { background: radial-gradient(circle at 50% -20%, #ffffff 0%, #e2e8f0 60%); opacity: 1; }
 body[data-theme="white"] .track-artist, body[data-theme="white"] .status-indicator.live { text-shadow: none; }
 body[data-theme="white"] .player-waves-container { opacity: 0.1; }
@@ -56,12 +78,14 @@ body[data-theme="amoled"] .ambient-bg { display: none; }
 .header-inner { display: flex; justify-content: space-between; align-items: center; }
 .brand-mark { display: flex; align-items: center; gap: 1rem; }
 
-/* ESTILOS DEL LOGO GENÉRICO (SVG) */
-.brand-logo {
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
-  color: var(--accent); /* Hereda el color de acento del tema */
+/* --- ESTILOS PARA TU LOGO DE IMAGEN (REAL) --- */
+.brand-img-logo {
+  height: 48px;            /* Tamaño ideal para el encabezado */
+  width: auto;             /* Mantiene la forma original */
+  margin-right: 8px;       /* Espacio entre logo y texto */
+  border-radius: 10px;     /* Bordes redondeados */
+  object-fit: contain;     
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
 }
 
 .site-title { margin: 0; font-weight: 800; font-size: 1.5rem; text-transform: uppercase; letter-spacing: -0.03em; color: var(--text-main); }
@@ -114,7 +138,7 @@ body[data-theme="amoled"] .ambient-bg { display: none; }
   background: linear-gradient(to bottom, rgba(0, 230, 118, 0.05), rgba(0, 0, 0, 0.02));
   padding-bottom: 2rem;
 }
-/* ... (resto de estilos del player, sin cambios) */
+/* Estilos adicionales del player */
 .player-waves-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; z-index: 0; pointer-events: none; opacity: 0.6; }
 .waves { width: 100%; height: 100%; }
 .parallax > use { animation: move-forever 25s cubic-bezier(.55,.5,.45,.5) infinite; }
@@ -169,24 +193,17 @@ body[data-theme="amoled"] .ambient-bg { display: none; }
   width: 22px; 
   height: 22px;
   transition: transform 0.2s;
+  fill: var(--text-muted); 
 }
 .social-link:hover { 
   transform: translateY(-3px); 
   box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
   background: rgba(255, 255, 255, 0.05);
 }
-.social-link:hover svg {
-  transform: scale(1.1);
-}
+.social-link:hover svg { transform: scale(1.1); }
 
-/* === LOGOS ORIGINALES DE REDES SOCIALES === */
-.social-link svg {
-  fill: var(--text-muted); /* Color genérico por si falla algo */
-}
-
-/* Colores de marca por defecto */
+/* Colores de marca */
 .social-link.facebook-orig svg { fill: #1877F2; }
-/* Instagram usa un gradiente en el SVG, no necesita 'fill' */
 .social-link.whatsapp-orig svg { fill: #25D366; }
 .social-link.spotify-orig svg { fill: #1DB954; }
 .social-link.youtube-orig svg { fill: #FF0000; }
@@ -194,7 +211,6 @@ body[data-theme="amoled"] .ambient-bg { display: none; }
 .social-link.wikipedia-orig svg { fill: #000000; }
 .social-link.applemusic-orig svg { fill: #FC3C44; }
 
-/* El borde en hover toma el color de la marca */
 .social-link.facebook-orig:hover { border-color: #1877F2; }
 .social-link.instagram-orig:hover { border-color: #d62976; }
 .social-link.whatsapp-orig:hover { border-color: #25D366; }
@@ -204,15 +220,9 @@ body[data-theme="amoled"] .ambient-bg { display: none; }
 .social-link.wikipedia-orig:hover { border-color: #000000; }
 .social-link.applemusic-orig:hover { border-color: #FC3C44; }
 
-/* En tema blanco, los logos de color oscuro necesitan un ajuste */
-body[data-theme="white"] .social-link.wikipedia-orig svg {
-    background-color: #000;
-    fill: #fff;
-    border-radius: 2px;
-    padding: 1px;
-}
+body[data-theme="white"] .social-link.wikipedia-orig svg { background-color: #000; fill: #fff; border-radius: 2px; padding: 1px; }
 
-/* ... (resto de estilos de forms, lista, footer, etc., sin cambios) */
+/* LAYOUT PANELES */
 .glass-panel { background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; position: relative; transition: background 0.3s; }
 .panel-head-small h3 { margin: 0 0 1rem 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
 .mini-form { display: flex; flex-direction: column; gap: 12px; }
