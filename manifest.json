@@ -1,84 +1,158 @@
-/* sw.js v8.5 - Service Worker
-   - Actualizado a v8.5 para forzar la recarga del nuevo manifest.json
-   - Mantiene funciones offline y sincronización
-*/
-
-const CACHE_NAME = 'radio-satelital-v8.5';
-const ASSETS = [
-  './',
-  './index.html',
-  './style.css?v=8.5',
-  './main.js?v=8.5',
-  './stations.js?v=8.5',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
-];
-
-// 1. INSTALACIÓN
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
-  );
-  self.skipWaiting();
-});
-
-// 2. ACTIVACIÓN (Borrar cachés antiguas para asegurar que se vea la actualización)
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
-      );
-    })
-  );
-  self.clients.claim();
-});
-
-// 3. FETCH (Cache First)
-self.addEventListener('fetch', (e) => {
-  // Ignoramos audio streaming para no llenar la memoria
-  if (e.request.url.includes('.mp3') || e.request.url.includes('stream') || e.request.url.includes('icecast')) {
-    return; 
-  }
-
-  e.respondWith(
-    caches.match(e.request).then((res) => {
-      return res || fetch(e.request).catch(() => {
-        // Fallback simple si no hay internet
-        if (e.request.mode === 'navigate') {
-          return caches.match('./index.html');
+{
+  "name": "Radio Satelital Ultra",
+  "short_name": "Satelital",
+  "description": "Escucha emisoras de radio en vivo de todo el mundo con Ultra Wave Player. Interfaz moderna, streaming de alta calidad y modo sin conexión.",
+  "id": "/index.html",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#05070a",
+  "theme_color": "#05070a",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": [
+    "music",
+    "entertainment",
+    "news"
+  ],
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.latanvillegas.radio",
+      "id": "com.latanvillegas.radio"
+    }
+  ],
+  "scope_extensions": [
+    {
+      "origin": "https://latanvillegas.online"
+    }
+  ],
+  "handle_links": "preferred",
+  "new_note_url": "/index.html?action=note",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Reproducir Radio",
+      "short_name": "Reproducir",
+      "description": "Inicia el reproductor de radio inmediatamente",
+      "url": "/index.html?action=play",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
-      });
-    })
-  );
-});
-
-// 4. FUNCIONES DE PWA AVANZADA (Soporte para lo que pide PWABuilder)
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'update-content') {
-    // Placeholder para cumplir el requisito de "Sincronización periódica"
-    console.log('Periodic Sync ejecutado');
-  }
-});
-
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-stations') {
-    console.log('Background Sync ejecutado');
-  }
-});
-
-self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.text() : 'Radio Satelital';
-  event.waitUntil(
-    self.registration.showNotification('Radio Satelital', {
-      body: data,
-      icon: 'icon-192.png',
-      badge: 'icon-192.png'
-    })
-  );
-});
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Pantalla Principal"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Reproductor Móvil"
+    }
+  ],
+  "share_target": {
+    "action": "/index.html",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "/index.html",
+      "accept": {
+        "audio/mpeg": [
+          ".mp3"
+        ],
+        "audio/x-mpegurl": [
+          ".m3u"
+        ]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+radio",
+      "url": "/index.html?station=%s"
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Radio Satelital",
+      "short_name": "Satelital",
+      "description": "Acceso rápido a la radio",
+      "tag": "radio-widget",
+      "template": "widget-template",
+      "ms_ac_template": "widgets/mini-player.json",
+      "data": "widgets/data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "icon-512.png",
+          "sizes": "512x512",
+          "label": "Widget Preview"
+        }
+      ],
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "display_override": [
+    "tabbed",
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "prefer_related_applications": false
+}
