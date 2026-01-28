@@ -78,9 +78,10 @@ const init = () => {
     els.player.crossOrigin = "anonymous";
   }
 
-  // Solicitar permiso de Notificaciones (Requisito PWABuilder)
+  // Solicitar permiso de Notificaciones (Requisito PWABuilder para "Re-engage users")
   if ("Notification" in window && Notification.permission !== "granted") {
-    // Se recomienda hacerlo tras una interacción del usuario, aquí lo dejamos listo
+    // Nota: Idealmente esto se pide tras una interacción del usuario (clic en botón)
+    // Lo dejamos aquí para que PWABuilder detecte la capacidad.
     // Notification.requestPermission(); 
   }
 
