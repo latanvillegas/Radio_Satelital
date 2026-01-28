@@ -66,9 +66,9 @@ Descarga la aplicación nativa sin publicidad y con todas las funciones desbloqu
 ├── style.css         # Estilos y Temas
 ├── main.js           # Lógica del reproductor y UI
 ├── stations.js       # Base de datos de emisoras
-└── assets/  ,,,      # Iconos e imágenes
+└── assets/           # Iconos e imágenes
 
----
+```
 
 👤 Autor y Contacto
 Desarrollado con ❤️ por Latán Villegas Avelino.
