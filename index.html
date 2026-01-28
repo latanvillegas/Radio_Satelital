@@ -1,160 +1,71 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="description" content="Radio Satelital: Escucha emisoras de radio en vivo." />
-  <meta name="theme-color" content="#05070a">
-  
-  <title>Radio Satelital | Ultra Interface v8.1</title>
-  
-  <link rel="manifest" href="manifest.json">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
-  
-  <link rel="stylesheet" href="style.css?v=8.1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radio Satelital v8.1</title>
+  <link rel="stylesheet" href="style.css?v=8.1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap" rel="stylesheet">
 </head>
-
-<body class="page">
+<body>
   <div class="ambient-bg"></div>
-
   <div class="menu-overlay" id="menuOverlay"></div>
 
   <aside class="side-menu" id="sideMenu">
-    <div class="menu-header">
-      <h3>Menú</h3>
-      <button id="btnCloseMenu" class="sec-btn" aria-label="Cerrar menú">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-      </button>
+    <h3>Personalización</h3>
+    <div class="theme-switcher">
+      <button class="theme-btn" data-theme="default" style="background:#05070a"></button>
+      <button class="theme-btn" data-theme="amoled" style="background:#000"></button>
+      <button class="theme-btn" data-theme="gold" style="background:#ffb300"></button>
+      <button class="theme-btn" data-theme="purple" style="background:#e040fb"></button>
+      <button class="theme-btn" data-theme="white" style="background:#fff"></button>
     </div>
-    
-    <div class="menu-content">
-      <div id="optionsSection" class="menu-panel">
-        <div class="panel-head-small"><h3>Personalización</h3></div>
-        
-        <div class="opt-group">
-          <label class="opt-label">Clásicos</label>
-          <div class="theme-switcher">
-            <button class="theme-btn active" data-theme="default" style="background:#05070a; border-color:#d32f2f"></button>
-            <button class="theme-btn" data-theme="amoled" style="background:#000000; border-color:#ffffff"></button>
-            <button class="theme-btn" data-theme="gold" style="background:#12100b; border-color:#ffb300"></button>
-            <button class="theme-btn" data-theme="purple" style="background:#0a0011; border-color:#e040fb"></button>
-            <button class="theme-btn" data-theme="white" style="background:#f8fafc; border-color:#c62828"></button>
-          </div>
-        </div>
-
-        <div class="opt-group">
-          <label class="opt-label">Wear PRO</label>
-          <div class="theme-switcher">
-            <button class="theme-btn" data-theme="wear-ocean" style="background: linear-gradient(135deg, #4facfe, #00f2fe); border:none;"></button>
-            <button class="theme-btn" data-theme="wear-sunset" style="background: linear-gradient(135deg, #ff9a9e, #fecfef); border:none;"></button>
-            <button class="theme-btn" data-theme="wear-galaxy" style="background: linear-gradient(135deg, #667eea, #764ba2); border:none;"></button>
-            <button class="theme-btn" data-theme="wear-mint" style="background: linear-gradient(135deg, #43e97b, #38f9d7); border:none;"></button>
-            <button class="theme-btn" data-theme="wear-cherry" style="background: linear-gradient(135deg, #ff0844, #ffb199); border:none;"></button>
-          </div>
-        </div>
-      </div>
-
-      <hr style="border:0; border-top:1px solid var(--border-glass); margin: 2rem 0;">
-
-      <div class="menu-panel">
-        <div class="panel-head-small"><h3>Agregar Frecuencia</h3></div>
-        <form id="addStationForm" class="mini-form">
-          <input type="text" id="newStationName" placeholder="Nombre" required class="input-dark mini">
-          <input type="text" id="newStationCountry" placeholder="País" required class="input-dark mini">
-          <input type="url" id="newStationUrl" placeholder="URL (HTTPS)" required class="input-dark mini">
-          <button type="submit" class="btn-action">Guardar</button>
-        </form>
-      </div>
-    </div>
+    <button id="btnCloseMenu" class="input-dark">Cerrar Menú</button>
   </aside>
 
-  <header class="site-header">
-    <div class="container header-inner">
-      <div class="brand-mark">
-        <img src="icon-192.png" alt="Logo" class="brand-img-logo">
-        <div class="brand-text"> 
-          <h1 class="site-title">Satelital</h1>
-          <p class="site-subtitle">Wave Player v8.1</p>
-        </div>
+  <header class="container" style="display:flex; justify-content:space-between; align-items:center; padding: 1rem 0;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <img src="icon-192.png" class="brand-img-logo">
+      <div>
+        <h1 style="margin:0; font-size:1.2rem;">SATELITAL</h1>
+        <small style="opacity:0.5;">Wave Player v8.1</small>
       </div>
-      <button id="btnOptions" class="sec-btn" aria-label="Abrir Menú">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-      </button>
     </div>
+    <button id="btnOptions" style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer;">☰</button>
   </header>
 
-  <main id="mainContent" class="site-main">
-    <div class="container layout">
-      
-      <aside class="sidebar">
-        <section class="player-section glass-panel">
-          <div class="player-info">
-            <span class="status-indicator" id="statusIndicator">Listo</span>
-            <div class="track-display">
-                <h2 id="currentStation" class="track-title">Selecciona Emisora</h2>
-                <p id="stationMeta" class="track-meta">País · Región</p>
-                <div class="meta-badge" id="metaBadge" style="display:none">LIVE</div>
-            </div>
-          </div>
-          <div id="timerDisplay" class="timer-text">00:00</div>
-          <audio id="radioPlayer" preload="none" class="sr-only"></audio>
-          <div class="custom-controls">
-            <div class="control-group">
-              <button id="btnPrev" class="sec-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
-              <button id="btnPlay" class="btn-control play-btn">
-                <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-              </button>
-              <button id="btnNext" class="sec-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
-            </div>
-          </div>
-        </section>
-
-        <section class="filters glass-panel">
-          <div class="filters-header"><h3>Filtros Rápidos</h3></div>
-          <div class="filter-row">
-            <div class="form-group"><select id="regionSelect" class="input-dark"></select></div>
-            <div class="form-group"><select id="countrySelect" class="input-dark"></select></div>
-          </div>
-        </section>
-      </aside>
-
-      <section class="stations-panel glass-panel">
-        <div class="panel-head">
-          <h3>Frecuencias</h3>
-          <div class="header-actions">
-            <button id="btnInstall" class="btn-text" style="display:none; color: #00e676;">Instalar</button>
-            <button id="clearFilters" class="btn-text">Reset</button>
-            <input id="stationSearch" type="search" placeholder="Buscar..." class="input-dark search-input">
-          </div>
+  <main class="container layout">
+    <aside class="sidebar">
+      <section class="player-section glass-panel">
+        <span id="statusIndicator" class="status-indicator">LISTO</span>
+        <h2 id="currentStation" class="track-title">Selecciona Emisora</h2>
+        <p id="stationMeta" style="opacity:0.6;">País · Región</p>
+        <div id="timerDisplay" class="timer-text">00:00</div>
+        <audio id="radioPlayer" style="display:none;"></audio>
+        <div class="controls">
+          <button id="btnPlay" class="play-btn">▶</button>
         </div>
-        <div class="fav-toggle-wrap">
-          <label class="switch-label" for="favoritesToggle">
-            <input type="checkbox" id="favoritesToggle">
-            <span class="switch-text">Prioridad Favoritos</span>
-          </label>
-        </div>
-        <div id="stationList" class="station-grid"></div>
       </section>
 
-    </div>
+      <section class="filters glass-panel">
+        <div class="filters-header"><h3>Filtros Rápidos</h3></div>
+        <div class="filter-row">
+          <select id="regionSelect" class="input-dark"></select>
+          <select id="countrySelect" class="input-dark"></select>
+        </div>
+      </section>
+    </aside>
+
+    <section class="stations-panel glass-panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h3 style="margin:0;">Frecuencias</h3>
+        <input id="stationSearch" type="search" placeholder="Buscar..." class="input-dark" style="max-width:150px;">
+      </div>
+      <div id="stationList" class="station-grid"></div>
+    </section>
   </main>
 
-  <footer class="site-footer"><p>© 2026 Radio Satelital</p></footer>
-  
-  <script src="stations.js?v=8.1"></script>
-  <script src="main.js?v=8.1"></script>
-  
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('PWA Ready:', reg.scope))
-          .catch(err => console.error('PWA Error:', err));
-      });
-    }
-  </script>
+  <script src="stations.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
