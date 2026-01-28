@@ -1,5 +1,5 @@
-// main.js v8.6 (FULL PWA COMPLIANCE + LIVE UI FIX)
-// =================================================
+// main.js v8.7 (FINAL LIVE UI FIX)
+// =================================
 
 const countryClassMap = {
   "España": "badge-spain", "Francia": "badge-france", "Alemania": "badge-germany", "EE.UU": "badge-usa", 
@@ -16,11 +16,10 @@ let isPlaying = false;
 let timerInterval = null;
 let secondsElapsed = 0;
 
-// Objeto para elementos del DOM
 let els = {};
 
 const init = () => {
-  console.log("Iniciando Sistema v8.6...");
+  console.log("Iniciando Sistema v8.7...");
   
   els = {
     player: document.getElementById("radioPlayer"),
@@ -60,30 +59,18 @@ const init = () => {
 
   const savedTheme = localStorage.getItem("ultra_theme") || "default";
   setTheme(savedTheme);
-  
   setTimeout(() => {
       const activeBtn = document.querySelector(`.theme-btn[data-theme="${savedTheme}"]`);
       if(activeBtn) activeBtn.classList.add('active');
   }, 100);
 
-  // Inicializar Handlers de Notificación
   setupMediaSessionHandlers();
-
   loadFilters();
   resetControls();
   renderList();
   setupListeners();
   
-  if (els.player) {
-    els.player.crossOrigin = "anonymous";
-  }
-
-  // Solicitar permiso de Notificaciones (Requisito PWABuilder)
-  if ("Notification" in window && Notification.permission !== "granted") {
-    // Notification.requestPermission(); 
-  }
-
-  console.log(`Sistema Listo v8.6`);
+  if (els.player) els.player.crossOrigin = "anonymous";
 };
 
 const resetControls = () => {
@@ -95,17 +82,13 @@ const resetControls = () => {
 
 const setTheme = (themeName) => {
   document.body.setAttribute("data-theme", themeName === "default" ? "" : themeName);
-  
-  // Cambia el color de la barra del navegador según el tema
   const metaTheme = document.querySelector('meta[name="theme-color"]');
   if(metaTheme) {
       switch(themeName) {
-          // Temas Clásicos
           case 'amoled': metaTheme.setAttribute("content", "#000000"); break;
           case 'white': metaTheme.setAttribute("content", "#f8fafc"); break; 
           case 'gold': metaTheme.setAttribute("content", "#12100b"); break;
           case 'purple': metaTheme.setAttribute("content", "#0a0011"); break;
-          // Temas WEAR
           case 'wear-ocean': metaTheme.setAttribute("content", "#0d1b2a"); break;
           case 'wear-sunset': metaTheme.setAttribute("content", "#2d1b0e"); break;
           case 'wear-galaxy': metaTheme.setAttribute("content", "#1a0b2e"); break;
@@ -129,32 +112,26 @@ const toggleMenu = (show) => {
 
 const playStation = (station) => {
   if (currentStation && currentStation.name === station.name) { togglePlay(); return; }
-  
   currentStation = station;
   
-  // Actualizar UI
+  // UI Update
   if(els.title) els.title.innerText = station.name;
   if(els.meta) els.meta.innerText = `${station.country} · ${station.region}`;
   if(els.status) { els.status.innerText = "CONECTANDO..."; els.status.style.color = ""; }
   if(els.badge) els.badge.style.display = "none";
-  
-  // Actualizar Notificación ANTES de cargar audio
-  updateMediaSessionMetadata();
-  if ('mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = 'playing';
-  }
-
   if(els.timer) els.timer.innerText = "00:00";
   stopTimer(); 
+
+  // Configurar Metadata Básica (Titulo/Artista)
+  updateMediaSessionMetadata();
 
   try {
       els.player.src = station.url; 
       els.player.volume = 1; 
-      
       const p = els.player.play();
       if (p !== undefined) {
         p.then(() => { 
-          setPlayingState(true); 
+          setPlayingState(true); // <--- AQUÍ SE APLICARÁ EL FIX
         }).catch(e => {
           console.error("Error Reproducción:", e);
           if(els.status) { els.status.innerText = "ERROR"; els.status.style.color = "#ff3d3d"; }
@@ -177,7 +154,7 @@ const togglePlay = () => {
 
 const setPlayingState = (playing) => {
   isPlaying = playing;
-  if(els.btnPlay) { if (playing) els.btnPlay.classList.add("playing"); else els.btnPlay.classList.remove("playing"); }
+  if(els.btnPlay) els.btnPlay.classList.toggle("playing", playing);
   
   if (playing) {
     if(els.status) { els.status.innerText = "EN VIVO"; els.status.classList.add("live"); }
@@ -188,7 +165,18 @@ const setPlayingState = (playing) => {
     startTimer(true);
     if(!navigator.onLine && timerInterval) clearInterval(timerInterval);
     
-    if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+    // === FIX DEFINITIVO NOTIFICACIÓN ===
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'playing';
+        // Forzamos "Infinity" AHORA que el audio ya arrancó
+        try {
+            navigator.mediaSession.setPositionState({
+                duration: Infinity, 
+                playbackRate: 1,
+                position: 0
+            });
+        } catch(e) { console.log("Live UI no soportada"); }
+    }
 
   } else {
     if(els.status) { els.status.innerText = "PAUSADO"; els.status.classList.remove("live"); }
@@ -213,7 +201,7 @@ const skipStation = (direction) => {
   playStation(stations[newIndex]);
 };
 
-// --- GESTIÓN DE NOTIFICACIONES (FIXED) ---
+// --- GESTIÓN DE NOTIFICACIONES ---
 
 const setupMediaSessionHandlers = () => {
   if ('mediaSession' in navigator) {
@@ -227,30 +215,16 @@ const setupMediaSessionHandlers = () => {
 
 const updateMediaSessionMetadata = () => {
   if ('mediaSession' in navigator && currentStation) {
-    // Usamos TU LOGO (icon-192.png)
     const artworkImage = [
       { src: 'assets/icon-192.png', sizes: '192x192', type: 'image/png' },
       { src: 'assets/icon-512.png', sizes: '512x512', type: 'image/png' }
     ];
-
     navigator.mediaSession.metadata = new MediaMetadata({
       title: currentStation.name,
       artist: currentStation.country,
       album: 'Satelital Live',
       artwork: artworkImage
     });
-
-    // === TRUCO SENIOR APLICADO AQUÍ ===
-    // Esto activa el modo "EN VIVO" y quita el 00:00
-    try {
-        navigator.mediaSession.setPositionState({
-            duration: Infinity, 
-            playbackRate: 1,
-            position: 0
-        });
-    } catch(e) {
-        console.log("Live UI no soportada en este navegador");
-    }
   }
 };
 
@@ -412,19 +386,14 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       const reg = await navigator.serviceWorker.register('./sw.js');
-      console.log('PWA Service Worker v8.6 Registrado');
-
+      console.log('PWA Service Worker v8.7 Registrado');
       if ('periodicSync' in reg) {
         try {
           const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
-          if (status.state === 'granted') {
-            await reg.periodicSync.register('update-content', { minInterval: 24 * 60 * 60 * 1000 });
-          }
+          if (status.state === 'granted') { await reg.periodicSync.register('update-content', { minInterval: 24 * 60 * 60 * 1000 }); }
         } catch (e) {}
       }
-      if ('sync' in reg) {
-        try { await reg.sync.register('sync-stations'); } catch (e) {}
-      }
+      if ('sync' in reg) { try { await reg.sync.register('sync-stations'); } catch (e) {} }
     } catch (err) { console.error('Error PWA:', err); }
   });
 }
