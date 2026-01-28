@@ -1,4 +1,4 @@
-// main.js v8.1 (SCROLL & COMPACT UPDATE)
+// main.js v8.4 (PWA ADVANCED & SYNC)
 // =======================
 
 const countryClassMap = {
@@ -20,7 +20,7 @@ let secondsElapsed = 0;
 let els = {};
 
 const init = () => {
-  console.log("Iniciando Sistema v8.1...");
+  console.log("Iniciando Sistema v8.4...");
   
   els = {
     player: document.getElementById("radioPlayer"),
@@ -78,7 +78,7 @@ const init = () => {
     els.player.crossOrigin = "anonymous";
   }
 
-  console.log(`Sistema Listo v8.1`);
+  console.log(`Sistema Listo v8.4`);
 };
 
 const resetControls = () => {
@@ -387,6 +387,7 @@ const setupListeners = () => {
   });
 };
 
+// INSTALACIÓN PWA Y LOGICA "BTN INSTALL"
 let deferredPrompt;
 const installBtn = document.getElementById('btnInstall');
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; if(installBtn) installBtn.style.display = 'block'; });
@@ -394,3 +395,34 @@ if(installBtn) { installBtn.addEventListener('click', async () => { if (deferred
 window.addEventListener('appinstalled', () => { if(installBtn) installBtn.style.display = 'none'; console.log('PWA Installed'); });
 
 document.addEventListener("DOMContentLoaded", init);
+
+// REGISTRO DE SERVICE WORKER Y CAPACIDADES AVANZADAS (v8.4)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      // Registramos el nuevo sw.js
+      const reg = await navigator.serviceWorker.register('./sw.js');
+      console.log('PWA Service Worker v8.4 Registrado:', reg.scope);
+
+      // Intentamos registrar Sincronización Periódica (Periodic Sync)
+      // Esto es lo que pide PWABuilder para dar el check verde en capacidades
+      if ('periodicSync' in reg) {
+        try {
+          const status = await navigator.permissions.query({
+            name: 'periodic-background-sync',
+          });
+          if (status.state === 'granted') {
+            await reg.periodicSync.register('update-content', {
+              minInterval: 24 * 60 * 60 * 1000 // 1 día
+            });
+            console.log('Periodic Sync activado correctamente');
+          }
+        } catch (e) {
+          console.log('Periodic Sync no soportado o denegado (No crítico)');
+        }
+      }
+    } catch (err) {
+      console.error('Error PWA:', err);
+    }
+  });
+}
