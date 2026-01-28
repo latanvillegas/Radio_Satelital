@@ -1,4 +1,4 @@
-/* style.css v8.2 (SOCIAL COLORS & SCROLL)
+/* style.css v8.3 (COMPACT FILTERS & NO TITLE)
    ========================= */
 :root {
   /* DEFAULT (Cyber Dark) */
@@ -203,18 +203,16 @@ body[data-theme="amoled"] .ambient-bg { display: none; }
 .social-link.spotify-orig svg { fill: #1DB954; }
 .social-link.youtube-orig svg { fill: #FF0000; }
 .social-link.pinterest-orig svg { fill: #E60023; }
-.social-link.wikipedia-orig svg { fill: #ffffff; background: #000; border-radius: 2px; } /* Wiki blanco sobre negro */
+.social-link.wikipedia-orig svg { fill: #ffffff; background: #000; border-radius: 2px; }
 .social-link.applemusic-orig svg { fill: #FA243C; }
 
-/* NUEVAS REDES SOCIALES */
-.social-link.x-orig svg { fill: #ffffff; } /* X es blanco en fondo oscuro */
-.social-link.tiktok-orig svg { fill: #FE2C55; } /* TikTok Rojo/Negro */
+.social-link.x-orig svg { fill: #ffffff; }
+.social-link.tiktok-orig svg { fill: #FE2C55; }
 .social-link.telegram-orig svg { fill: #229ED9; }
 .social-link.discord-orig svg { fill: #5865F2; }
 .social-link.linkedin-orig svg { fill: #0077B5; }
 .social-link.reddit-orig svg { fill: #FF4500; }
 
-/* Efecto Hover (Brillo del color de la marca) */
 .social-link:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-3px); }
 
 .social-link.facebook-orig:hover { box-shadow: 0 5px 15px rgba(24, 119, 242, 0.4); border-color: #1877F2; }
@@ -248,33 +246,28 @@ body[data-theme="amoled"] .ambient-bg { display: none; }
 .search-input { max-width: 160px; min-height: 40px; }
 @media (max-width: 600px) { .panel-head { flex-direction: column; align-items: stretch; } .header-actions { justify-content: space-between; margin-top: 10px; } .search-input { max-width: 100%; flex: 1; } }
 
-/* === FILTROS COMPACTOS (v8.1) === */
-.filters.glass-panel { padding: 1rem; margin-bottom: 1rem; }
-.filters-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
-.filters-header h3 { font-size: 0.9rem; opacity: 0.8; }
-/* Inputs de filtros más pequeños */
+/* === FILTROS ULTRA-COMPACTOS (v8.3) === */
+.filters.glass-panel { padding: 10px; margin-bottom: 1rem; display: flex; align-items: center; } /* Padding reducido y flex */
+.filters-header { display: none; } /* Ocultamos el header visualmente por si acaso */
+/* Inputs de filtros en fila y pequeños */
 .filters .input-dark { min-height: 36px; font-size: 0.9rem; padding: 0 0.8rem; }
+.filter-row { display: flex; gap: 0.5rem; flex: 1; width: 100%; } /* Gaps reducidos */
+.filter-row .form-group { flex: 1; min-width: 100px; margin-bottom: 0; }
 
 .btn-text { background: none; border: none; color: var(--accent); min-height: 44px; padding: 0 10px; cursor: pointer; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
 .btn-text:hover { text-decoration: underline; color: var(--accent-hover); }
-.filter-row { display: flex; gap: 0.8rem; flex-wrap: wrap; }
-.filter-row .form-group { flex: 1; min-width: 120px; }
-.form-group { margin-bottom: 0; }
 
 /* === SCROLL INDEPENDIENTE (v8.1) === */
 .station-grid { 
   display: grid; 
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
   gap: 1rem;
-  /* Scroll y Altura */
-  max-height: calc(100vh - 280px); /* Altura dinámica */
+  max-height: calc(100vh - 280px);
   min-height: 300px;
   overflow-y: auto;
-  padding-right: 5px; /* Espacio para scrollbar */
+  padding-right: 5px; 
   align-content: start;
 }
-
-/* Scrollbar Personalizado para la lista */
 .station-grid::-webkit-scrollbar { width: 6px; }
 .station-grid::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 4px; }
 .station-grid::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
