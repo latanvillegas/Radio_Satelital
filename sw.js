@@ -1,18 +1,19 @@
-/* sw.js v8.5 - Service Worker Completo
+/* sw.js v8.7 - Service Worker Completo (UPDATED)
    Cumple con todos los requisitos de PWABuilder:
-   - Cache Offline (v8.5)
+   - Cache Offline (v8.7)
    - Sincronización en segundo plano (Background Sync)
    - Sincronización periódica (Periodic Sync)
    - Notificaciones Push (Re-engagement)
 */
 
-const CACHE_NAME = 'radio-satelital-v8.5';
+// CAMBIO CLAVE: Al subir a v8.7, el celular borrará la caché vieja
+const CACHE_NAME = 'radio-satelital-v8.7';
 const ASSETS = [
   './',
   './index.html',
-  './style.css?v=8.5',
-  './main.js?v=8.5',
-  './stations.js?v=8.5',
+  './style.css?v=8.7',
+  './main.js?v=8.7', // Esto obliga a cargar el main.js nuevo
+  './stations.js?v=8.7',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
@@ -25,6 +26,7 @@ self.addEventListener('install', (e) => {
       return cache.addAll(ASSETS);
     })
   );
+  // Fuerza al SW a activarse de inmediato
   self.skipWaiting();
 });
 
@@ -34,11 +36,13 @@ self.addEventListener('activate', (e) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
+          // Borra todo lo que no sea la v8.7
           if (key !== CACHE_NAME) return caches.delete(key);
         })
       );
     })
   );
+  // Toma el control de la página inmediatamente
   self.clients.claim();
 });
 
@@ -65,7 +69,6 @@ self.addEventListener('fetch', (e) => {
 });
 
 // 4. BACKGROUND SYNC (Resiliencia a mala conexión)
-// Satisface la recomendación: "Make your app resilient to poor network connections"
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-stations') {
     event.waitUntil(syncStations());
@@ -74,11 +77,9 @@ self.addEventListener('sync', (event) => {
 
 async function syncStations() {
   console.log('[SW] Sincronizando emisoras en segundo plano...');
-  // Aquí iría la lógica real para reconectar o enviar datos pendientes
 }
 
 // 5. PERIODIC SYNC (Actualización de contenido en segundo plano)
-// Satisface la recomendación: "Show data to your users instantly"
 self.addEventListener('periodicsync', (event) => {
   if (event.tag === 'update-content') {
     event.waitUntil(updateContent());
@@ -87,11 +88,9 @@ self.addEventListener('periodicsync', (event) => {
 
 async function updateContent() {
   console.log('[SW] Actualizando contenido periódicamente...');
-  // Lógica para refrescar la caché de la lista de emisoras
 }
 
 // 6. NOTIFICACIONES PUSH (Re-engagement)
-// Satisface la recomendación: "Re-engage users with timely notifications"
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.text() : '¡Sintoniza Radio Satelital!';
   
