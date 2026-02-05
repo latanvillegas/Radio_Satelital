@@ -12,13 +12,6 @@
   "lang": "es",
   "dir": "ltr",
   "categories": ["music", "entertainment"],
-  "display_override": [
-    "tabbed",
-    "window-controls-overlay",
-    "standalone",
-    "minimal-ui"
-  ],
-  "new_note_url": "/index.html?action=note",
   "icons": [
     {
       "src": "icon-192.png",
@@ -75,29 +68,24 @@
     "enctype": "application/x-www-form-urlencoded",
     "params": { "title": "title", "text": "text", "url": "url" }
   },
+  "display_override": [
+    "tabbed",
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "new_note_url": "/index.html?note=true",
   "widgets": [
     {
-      "name": "Radio Player",
-      "short_name": "Radio",
-      "description": "Widget de Radio Satelital",
-      "tag": "radio-widget",
+      "name": "Radio Widget",
+      "description": "Control rápido",
+      "tag": "radio",
       "template": "widget",
-      "ms_ac_template": "widgets/mini-player.json",
+      "ms_ac_template": "widgets/mini.json",
       "data": "widgets/data.json",
       "type": "application/json",
-      "screenshots": [
-        {
-          "src": "icon-512.png",
-          "sizes": "512x512",
-          "label": "Widget Preview"
-        }
-      ],
-      "icons": [
-        {
-          "src": "icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
+      "screenshots": [{"src": "icon-512.png", "sizes": "512x512", "label": "Widget"}],
+      "icons": [{"src": "icon-192.png", "sizes": "192x192"}]
     }
   ],
   "edge_side_panel": {
