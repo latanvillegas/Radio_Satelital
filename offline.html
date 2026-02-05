@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sin Conexión | Radio Satelital</title>
+    <title>Radio Offline</title>
     <style>
-        body { background: #05070a; color: white; font-family: sans-serif; text-align: center; padding: 50px 20px; }
-        h1 { color: #d32f2f; }
-        p { color: #888; }
-        button { background: #d32f2f; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 20px; }
+        body { margin: 0; padding: 0; background: #05070a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
+        h1 { font-size: 2rem; margin-bottom: 1rem; }
+        p { color: #888; margin-bottom: 2rem; }
+        button { background: #d32f2f; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h1>¡Estás Offline!</h1>
-    <p>Parece que perdiste la conexión a internet.</p>
-    <p>La radio volverá cuando recuperes la señal.</p>
-    <button onclick="window.location.reload()">Reintentar Conexión</button>
+    <h1>Sin Conexión</h1>
+    <p>Comprueba tu internet para seguir escuchando.</p>
+    <button onclick="window.location.reload()">Reconectar</button>
 </body>
 </html>
