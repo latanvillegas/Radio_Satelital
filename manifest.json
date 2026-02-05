@@ -1,7 +1,7 @@
 {
   "name": "Radio Satelital",
   "short_name": "Satelital",
-  "description": "Escucha emisoras de radio en vivo. Desarrollado por Latán Villegas. Interfaz moderna, streaming de alta calidad y modo sin conexión.",
+  "description": "Escucha emisoras de radio en vivo. Desarrollado por Latán Villegas.",
   "id": "/index.html",
   "start_url": "/index.html",
   "display": "standalone",
@@ -10,27 +10,6 @@
   "orientation": "portrait",
   "scope": "/",
   "lang": "es",
-  "dir": "ltr",
-  "categories": [
-    "music",
-    "entertainment",
-    "news"
-  ],
-  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
-  "related_applications": [
-    {
-      "platform": "play",
-      "url": "https://play.google.com/store/apps/details?id=com.latanvillegas.radio",
-      "id": "com.latanvillegas.radio"
-    }
-  ],
-  "scope_extensions": [
-    {
-      "origin": "https://latanvillegas.online"
-    }
-  ],
-  "handle_links": "preferred",
-  "new_note_url": "/index.html?action=note",
   "icons": [
     {
       "src": "icon-192.png",
@@ -61,15 +40,9 @@
     {
       "name": "Reproducir Radio",
       "short_name": "Reproducir",
-      "description": "Inicia el reproductor inmediatamente",
+      "description": "Inicia el reproductor",
       "url": "/index.html?action=play",
-      "icons": [
-        {
-          "src": "icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ],
   "screenshots": [
@@ -78,79 +51,35 @@
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Pantalla Principal"
+      "label": "Escritorio"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Reproductor Móvil"
+      "label": "Móvil"
     }
   ],
   "share_target": {
     "action": "/index.html",
     "method": "GET",
     "enctype": "application/x-www-form-urlencoded",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  },
-  "file_handlers": [
-    {
-      "action": "/index.html",
-      "accept": {
-        "audio/mpeg": [
-          ".mp3"
-        ],
-        "audio/x-mpegurl": [
-          ".m3u"
-        ]
-      }
-    }
-  ],
-  "protocol_handlers": [
-    {
-      "protocol": "web+radio",
-      "url": "/index.html?station=%s"
-    }
-  ],
-  "widgets": [
-    {
-      "name": "Radio Satelital",
-      "short_name": "Satelital",
-      "description": "Acceso rápido a la radio",
-      "tag": "radio-widget",
-      "template": "widget-template",
-      "ms_ac_template": "widgets/mini-player.json",
-      "data": "widgets/data.json",
-      "type": "application/json",
-      "screenshots": [
-        {
-          "src": "icon-512.png",
-          "sizes": "512x512",
-          "label": "Widget Preview"
-        }
-      ],
-      "icons": [
-        {
-          "src": "icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    }
-  ],
-  "launch_handler": {
-    "client_mode": "navigate-existing"
+    "params": { "title": "title", "text": "text", "url": "url" }
   },
   "display_override": [
-    "tabbed",
     "window-controls-overlay",
     "standalone",
-    "minimal-ui"
+    "minimal-ui",
+    "tabbed"
   ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "scope_extensions": [
+    { "origin": "https://latanvillegas.online" }
+  ],
+  "handle_links": "preferred",
   "prefer_related_applications": false,
   "serviceworker": {
     "src": "./sw.js",
