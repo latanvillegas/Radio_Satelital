@@ -1,5 +1,5 @@
 {
-  "type": "adaptivecard",
+  "type": "AdaptiveCard",
   "body": [
     {
       "type": "Container",
@@ -12,7 +12,7 @@
         },
         {
           "type": "TextBlock",
-          "text": "En vivo desde Perú",
+          "text": "En vivo - Perú",
           "isSubtle": true,
           "wrap": true
         }
