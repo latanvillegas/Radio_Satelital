@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Bloquear archivos de sistema o privados si los hubiera en el futuro
+Disallow: /private/
+Disallow: /tmp/
+
+# Enlace al Sitemap (Crucial para indexación rápida)
+Sitemap: https://latanvillegas.online/sitemap.xml
