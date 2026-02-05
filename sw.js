@@ -1,124 +1,98 @@
-/* sw.js v8.7 - Service Worker Completo (UPDATED)
-   Cumple con todos los requisitos de PWABuilder:
-   - Cache Offline (v8.7)
-   - Sincronización en segundo plano (Background Sync)
-   - Sincronización periódica (Periodic Sync)
-   - Notificaciones Push (Re-engagement)
-*/
+// sw.js v9.5 - Service Worker Optimizado (Cache + Network)
+// =========================================================
 
-// CAMBIO CLAVE: Al subir a v8.7, el celular borrará la caché vieja
-const CACHE_NAME = 'radio-satelital-v8.7';
-const ASSETS = [
+// Nombre de la memoria caché (Debe coincidir con tu versión actual)
+const CACHE_NAME = 'radio-satelital-v9.5';
+
+// Lista de archivos requeridos para funcionar sin internet
+// NOTA: Las versiones (?v=9.5) deben ser idénticas a las del index.html
+const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './style.css?v=8.7',
-  './main.js?v=8.7', // Esto obliga a cargar el main.js nuevo
-  './stations.js?v=8.7',
+  './style.css?v=9.5',
+  './stations.js?v=9.5',
+  './main.js?v=9.5',
   './manifest.json',
+  './favicon.png',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './404.html'
 ];
 
-// 1. INSTALACIÓN
-self.addEventListener('install', (e) => {
-  e.waitUntil(
+// 1. INSTALACIÓN: Descarga los archivos a la memoria del celular
+self.addEventListener('install', (event) => {
+  console.log('[Service Worker] Instalando v9.5...');
+  
+  // Obliga al SW a activarse inmediatamente sin esperar a que cierres la pestaña
+  self.skipWaiting();
+
+  event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
+      console.log('[Service Worker] Cacheando archivos del sistema...');
+      return cache.addAll(ASSETS_TO_CACHE);
     })
   );
-  // Fuerza al SW a activarse de inmediato
-  self.skipWaiting();
 });
 
-// 2. ACTIVACIÓN (Limpieza de caché antigua)
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => {
+// 2. ACTIVACIÓN: Borra las memorias viejas (v8.7, v8.5, etc.)
+self.addEventListener('activate', (event) => {
+  console.log('[Service Worker] Activando y limpiando versiones antiguas...');
+  
+  event.waitUntil(
+    caches.keys().then((keyList) => {
       return Promise.all(
-        keys.map((key) => {
-          // Borra todo lo que no sea la v8.7
-          if (key !== CACHE_NAME) return caches.delete(key);
+        keyList.map((key) => {
+          if (key !== CACHE_NAME) {
+            console.log('[Service Worker] Eliminando caché obsoleta:', key);
+            return caches.delete(key);
+          }
         })
       );
     })
   );
-  // Toma el control de la página inmediatamente
-  self.clients.claim();
+  
+  // Toma el control de la página de inmediato
+  return self.clients.claim();
 });
 
-// 3. FETCH (Estrategia Cache First)
-self.addEventListener('fetch', (e) => {
-  // No cachear streams de audio ni llamadas externas de API
-  if (e.request.url.includes('.mp3') || 
-      e.request.url.includes('stream') || 
-      e.request.url.includes('icecast') ||
-      e.request.method !== 'GET') {
+// 3. INTERCEPTOR: Decide qué mostrar al usuario
+self.addEventListener('fetch', (event) => {
+  // Solo interceptamos peticiones GET (lectura)
+  if (event.request.method !== 'GET') return;
+
+  // EXCEPCIÓN: NO cachear el streaming de audio (mp3, icecast, etc.)
+  // Si cacheamos el audio, llenaremos la memoria del usuario en minutos.
+  const url = event.request.url;
+  if (url.includes('stream') || url.includes('.mp3') || url.includes('icecast') || url.includes('shoutcast')) {
     return; 
   }
 
-  e.respondWith(
-    caches.match(e.request).then((res) => {
-      return res || fetch(e.request).catch(() => {
-        // Fallback offline simple si falla la red y es navegación
-        if (e.request.mode === 'navigate') {
-          return caches.match('./index.html');
+  // ESTRATEGIA: "Stale-While-Revalidate"
+  // 1. Muestra lo que hay en memoria (Carga Instantánea).
+  // 2. En segundo plano, baja la versión nueva de internet para la próxima vez.
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      
+      // Promesa de red: Busca actualizaciones en internet
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        // Si la respuesta es válida, actualizamos la copia en caché
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        // SI NO HAY INTERNET y falló el fetch:
+        // Si es una navegación (abrir la página), mostrar error 404 personalizado
+        if (event.request.mode === 'navigate') {
+          return caches.match('./404.html');
         }
       });
+
+      // Retorna la versión en caché si existe, si no, espera a la red
+      return cachedResponse || fetchPromise;
     })
   );
-});
-
-// 4. BACKGROUND SYNC (Resiliencia a mala conexión)
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-stations') {
-    event.waitUntil(syncStations());
-  }
-});
-
-async function syncStations() {
-  console.log('[SW] Sincronizando emisoras en segundo plano...');
-}
-
-// 5. PERIODIC SYNC (Actualización de contenido en segundo plano)
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'update-content') {
-    event.waitUntil(updateContent());
-  }
-});
-
-async function updateContent() {
-  console.log('[SW] Actualizando contenido periódicamente...');
-}
-
-// 6. NOTIFICACIONES PUSH (Re-engagement)
-self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.text() : '¡Sintoniza Radio Satelital!';
-  
-  const options = {
-    body: data,
-    icon: 'icon-192.png',
-    badge: 'icon-192.png',
-    vibrate: [100, 50, 100],
-    data: {
-      dateOfArrival: Date.now(),
-      primaryKey: '1'
-    },
-    actions: [
-      { action: 'explore', title: 'Escuchar' },
-      { action: 'close', title: 'Cerrar' }
-    ]
-  };
-
-  event.waitUntil(
-    self.registration.showNotification('Radio Satelital', options)
-  );
-});
-
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  if (event.action === 'explore') {
-    event.waitUntil(
-      clients.openWindow('/')
-    );
-  }
 });
