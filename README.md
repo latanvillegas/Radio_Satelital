@@ -20,9 +20,9 @@ Esta versión ha alcanzado el máximo nivel de integración técnica:
 * **✅ Multi-Dispositivo:** Compatible con escritorio, tablet y teléfono.
 
 ### 🎧 Experiencia de Audio Premium
-* **Motor de Audio v9.5:** Optimizado para cero cortes en segundo plano.
-* **Media Session API:** Control total desde la pantalla de bloqueo y reloj.
-* **Multi-Formato:** Soporte nativo para `.mp3`, `.m3u` y streaming Shoutcast/Icecast.
+* **Motor de Audio Nativo:** Optimizado con HTML5 Audio API + Media Session.
+* **Formatos Soportados:** `.mp3`, `.m3u`, streaming Shoutcast/Icecast en vivo.
+* **Control Avanzado:** Manejo desde pantalla de bloqueo, notificaciones y smartwatch.
 
 ### 🎨 Personalización Visual
 * **Temas Premium:** Cyber Dark, AMOLED Real, Gold Luxury.
@@ -39,11 +39,122 @@ Esta versión ha alcanzado el máximo nivel de integración técnica:
 
 ---
 
-## 📲 Características Avanzadas
+## 📖 Guía de Uso
 
-Esta versión soporta sincronización de emisoras a través de servicios en la nube (cuando está habilitado por el administrador).
+### Agregar una Emisora
+1. Abre la app y ve al **Panel Rápido** (⚙️ Ajustes)
+2. Completa **Nombre** y **URL del stream** (m3u, mp3, o stream en vivo)
+3. Presiona **"+"** o buscador para agregar
+4. La emisora aparecerá en tu lista local
 
-> **Nota:** Las configuraciones de integración con servicios en la nube deben ser gestionadas por desarrolladores. Para más información, consulta `docs/` o contacta al mantenedor del proyecto.
+### Buscar y Filtrar
+- **Búsqueda rápida:** Usa el campo "Buscar emisora"
+- **Por país:** Selecciona desde dropdown "Todos los países"
+- **Por región:** Filtra dentro del país seleccionado
+- **Solo favoritos:** Presiona ⭐ para mostrar solo tus favoritos
+
+### Personalización Visual
+1. Abre **Ajustes** (⚙️)
+2. Selecciona tema: AMOLED, Gold, Purple, White, Ocean, Sunset, Galaxy, Mint, Cherry
+3. Ajusta tamaño de interfaz: Auto, Pequeño, Medio, Grande, Muy Grande
+4. Los cambios se guardan automáticamente
+
+### Reproducción y Controles
+- **Play/Pausa:** Presiona el botón grande en el centro
+- **Siguiente/Anterior:** Flechas < >
+- **Volumen:** Deslizador en la barra del reproductor
+- **Pantalla de bloqueo:** Controla desde ahí en modo instalado
+
+### Modo Offline
+- La app guarda emisoras en tu dispositivo
+- Puedes buscar entre tus emisoras sin internet
+- Para escuchar necesitas conexión
+
+---
+
+## 🛠️ Stack Tecnológico
+
+| Categor​ía | Tecnología | Función |
+|-----------|-----------|---------|
+| **Framework** | [Next.js 15](https://nextjs.org) | Server-side rendering + SSG |
+| **UI** | [React 19](https://react.dev) | Componentes dinámicos |
+| **Estilos** | [Tailwind CSS](https://tailwindcss.com) | Utilidades + CSS personalizado |
+| **Tipos** | [TypeScript](https://www.typescriptlang.org) | Type-safety |
+| **Iconos** | [Lucide React](https://lucide.dev) | Icons SVG |
+| **Animación** | [Framer Motion](https://www.framer.com/motion) | Transiciones suaves |
+| **Audio** | HTML5 Audio API | Reproducción nativa |
+| **PWA** | Web Manifest + Service Worker | Instalable offline |
+| **Base de datos** | LocalStorage + Firebase/Supabase (opcional) | Persistencia local y nube |
+
+---
+
+## 🌐 Compatibilidad de Navegadores
+
+| Navegador | Versión | PWA | Instalable | Offline |
+|-----------|---------|-----|-----------|---------|
+| **Chrome** | 88+ | ✅ | ✅ | ✅ |
+| **Edge** | 88+ | ✅ | ✅ | ✅ |
+| **Firefox** | 64+ | ✅ | ✅ | ✅ |
+| **Safari** | 15.4+ | ⚠️ Parcial | ⚠️ Manual | ✅ |
+| **Samsung Internet** | 14+ | ✅ | ✅ | ✅ |
+
+**Nota:** Safari requiere agregar manualmente (Home > Añadir a inicio)
+
+---
+
+## 🔒 Seguridad
+
+Esta aplicación implementa múltiples capas de protección:
+
+### Validación
+- ✅ URLs validadas (solo `http://` y `https://`)
+- ✅ Bloqueo de `localhost` y redes privadas
+- ✅ Validación de longitud de campos
+
+### Privacidad
+- ✅ **Sin registro requerido** - funciona 100% anónimo
+- ✅ **Sin rastreo** - los datos se guardan SÓ​LO en tu dispositivo
+- ✅ **Datos locales** - localStorage no se envía a servidores
+- ✅ **CORS protegido** - proxy inteligente para requests seguras
+
+### Arquitectura
+- ✅ Sin exposición de credenciales en frontend
+- ✅ Mensajes de error genéricos (sin detalles técnicos)
+- ✅ CSP (Content Security Policy) configurada
+
+---
+
+---
+
+## 🔧 Troubleshooting
+
+Para problemas comunes, consulta la documentación específica:
+
+- **Problemas de audio:** [AUDIO_PLAYBACK_TROUBLESHOOTING.md](AUDIO_PLAYBACK_TROUBLESHOOTING.md)
+- **Configuración privada en la nube:** [docs/ADMIN_SETUP.md](docs/ADMIN_SETUP.md)
+- **Notificaciones en tiempo real:** [docs/REALTIME_NOTIFICATIONS.md](docs/REALTIME_NOTIFICATIONS.md)
+
+### Problemas Frecuentes
+
+**P: ¿Por qué no suena una emisora?**
+- Verifica que la URL sea válida (http:// o https://)
+- Intenta en otro navegador para descartar problemas de caché
+- Algunos streams pueden estar offline
+- Consulta [AUDIO_PLAYBACK_TROUBLESHOOTING.md](AUDIO_PLAYBACK_TROUBLESHOOTING.md)
+
+**P: ¿Cómo instalo en iOS?**
+- Abre en Safari
+- Menú (↑) → Agregar a pantalla de inicio
+- Se instalará como app web
+
+**P: ¿Funciona sin internet?**
+- Sí, pero limitado. Necesitas internet para escuchar streams en vivo.
+- Puedes buscar entre emisoras agregadas sin conexión.
+
+**P: ¿Dónde se guardan mis datos?**
+- Todo en tu dispositivo (localStorage)
+- Nada se envía a servidores externos (excepto Supabase si lo activas)
+- Ver [PRIVACY.md](PRIVACY.md) para detalles
 
 ---
 
@@ -51,43 +162,174 @@ Esta versión soporta sincronización de emisoras a través de servicios en la n
 
 ```text
 /
-├── satelital-radio/      # Aplicación Next.js PWA
-│   ├── app/              # Lógica principal
-│   ├── components/       # Componentes React
-│   ├── hooks/            # Hooks personalizados
-│   ├── lib/              # Utilidades y helpers
-│   ├── public/           # Activos públicos
-│   │   ├── manifest.json # Manifiesto PWA
-│   │   ├── icon-*.png    # Iconos para instalación
-│   │   └── robots.txt    # SEO
-│   └── types/            # Tipos TypeScript
-├── docs/                 # Documentación
-├── scripts/              # Scripts útiles
-├── stations.js           # Base de datos de emisoras
-├── supabase.config.js    # Configuración de Supabase
-└── manifest.json         # Manifiesto PWA raíz
+├── satelital-radio/              # Aplicación Next.js PWA (principal)
+│   ├── app/
+│   │   ├── page.tsx              # Página principal
+│   │   ├── layout.tsx            # Estructura global
+│   │   └── globals.css           # Estilos responsive
+│   ├── components/               # Componentes React
+│   │   ├── Player.tsx            # Reproductor con 4 modos
+│   │   ├── StationGrid.tsx       # Grilla de emisoras
+│   │   ├── StationCard.tsx       # Tarjeta individual
+│   │   ├── SideMenu.tsx          # Panel de ajustes
+│   │   ├── Filters.tsx           # Búsqueda y filtros
+│   │   ├── BottomNav.tsx         # Navegación inferior
+│   │   └── ThemeInitializer.tsx  # Sistema de temas
+│   ├── hooks/                    # Hooks personalizados
+│   │   ├── usePlayer.ts          # Lógica de reproducción
+│   │   ├── useStations.ts        # Manejo de emisoras
+│   │   ├── useMediaSession.ts    # Controls desde lock screen
+│   │   └── usePWAInstall.ts      # Instalación PWA
+│   ├── lib/                      # Utilidades
+│   │   ├── player.ts             # API de audio
+│   │   ├── stations.ts           # Carga de emisoras
+│   │   ├── firebase.ts           # Configuración Firebase
+│   │   ├── supabase.ts           # Configuración Supabase
+│   │   ├── proxy.ts              # Manejo de CORS
+│   │   ├── theme.ts              # Sistema de temas
+│   │   ├── geo.ts                # Geolocalización
+│   │   ├── favorites.ts          # Gestión de favoritos
+│   │   └── validate.ts           # Validaciones
+│   ├── public/                   # Activos
+│   │   ├── manifest.json         # Manifiesto PWA
+│   │   ├── icon-192.png          # Icono 192x192
+│   │   ├── icon-512.png          # Icono 512x512
+│   │   └── robots.txt            # SEO
+│   ├── types/
+│   │   └── station.ts            # Types TypeScript
+│   └── data/
+│       └── stations.json         # Emisoras por defecto
+│
+├── docs/                         # Documentación
+│   ├── ADMIN_GUIDE.md           # Guía para administradores
+│   ├── ADMIN_SETUP.md           # Setup de admin
+│   ├── REALTIME_NOTIFICATIONS.md # Notificaciones
+│   └── *.sql                     # Scripts de base de datos
+│
+├── scripts/
+│   └── test-streams.sh          # Helper para testear streams
+│
+├── widgets/                      # Widgets para Android
+│   ├── mini.json                # Config de widget pequeño
+│   └── data.json                # Datos de widget
+│
+├── stations.js                  # Base de datos de emisoras
+├── supabase.config.js           # Configuración Supabase (opcional)
+├── manifest.json                # Manifiesto raíz
+└── package.json                 # Dependencias raíz
 ```
+
+### Archivos Importantes Explicados
+
+- **`stations.js`** - Array de emisoras disponibles al inicio. Se puede extender dinámicamente.
+- **`supabase.config.js`** - (Opcional) Para sincronizar emisoras globalmente entre usuarios. Dejar vacío para modo local.
+- **Manifest.json** - Define cómo se instala la app (nombre, icono, colores, etc.)
+- **globals.css** - Estilos responsive que funcionan en cualquier dispositivo (320px - 2560px)
+
+---
 
 ## 🛠️ Requisitos
 
-- Node.js 18+
-- npm o yarn
-- Navegador moderno (Chrome, Edge, Firefox)
+Para ejecutar localmente:
+
+- **Node.js** 18.17+ (recomendado: 20 LTS)
+- **npm** 9+ o **yarn** 3+
+- **Navegador moderno** para testing (Chrome, Edge, Firefox)
+- **Git** (para clonar repositorio)
+
+### Requisitos opcionales (para características avanzadas)
+
+- Firebase o Supabase (para sincronización en la nube)
+- Servidor web (nginx, Apache) para producción
+
+---
 
 ## ⚡ Instalación Local
 
+### Desarrollo
+
 ```bash
-# 1. Instalar dependencias
+# 1. Clonar repositorio
+git clone https://github.com/latanvillegas/Radio_Satelital.git
+cd Radio_Satelital
+
+# 2. Instalar dependencias raíz
 npm install
 
-# 2. Instalar dependencias de la app web
-cd satelital-radio && npm install && cd ..
+# 3. Instalar dependencias de la app Next.js
+cd satelital-radio
+npm install
+cd ..
 
-# 3. Ejecutar en desarrollo
+# 4. Crear archivo .env.local (si usas Firebase/Supabase)
+# cp .env.example .env.local
+# (Agrega tus credenciales si quieres sincronización en la nube)
+
+# 5. Ejecutar en desarrollo (hot reload)
 npm run dev
 
-# 4. Compilar para producción
+# Abre http://localhost:3000
+```
+
+### Compilación para Producción
+
+```bash
+# Compilar versión optimizada
 npm run build
+
+# Verificar que compila sin errores
+cd satelital-radio && npm run build && cd ..
+
+# Servir localmente para testing
+npm start
+```
+
+### Testing de PWA
+
+```bash
+# Validar que sea instalable (PWA Builder)
+cd satelital-radio && npm run build && npm start
+
+# Luego abre http://localhost:3000 en Chrome
+# Verás el prompt "Instalar app" o podrás instalar desde menú
+```
+
+### Testing de Streams
+
+```bash
+# Script para validar si un stream funciona
+./scripts/test-streams.sh "https://stream.example.com/radio.mp3"
+```
+
+---
+
+## 📦 Producción
+
+### Desplegar en Vercel (Recomendado)
+
+```bash
+# 1. Hacer push a GitHub
+git push origin main
+
+# 2. Conectar repositorio a Vercel
+# https://vercel.com/new
+
+# 3. Vercel automáticamente compila y despliega
+# Acceso en: https://tu-proyecto.vercel.app
+```
+
+### Desplegar en tu servidor
+
+```bash
+# 1. Compilar
+npm run build
+
+# 2. Subir archivos de satelital-radio/.next a tu servidor
+# 3. Instalar dependencias en servidor
+npm ci --production
+
+# 4. Iniciar con PM2 o similar
+pm2 start npm --name radio -- start
 ```
 
 ---
@@ -119,4 +361,33 @@ Desarrollado con ❤️ por **Latán Villegas Avelino**.
 [![Donar con PayPal](https://img.shields.io/badge/Hacer%20Donaci%C3%B3n-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=alv.oficial123@gmail.com&currency_code=USD&source=url)
 
 ---
-© 2026 Radio Satelital. Todos los derechos reservados.
+
+## 📜 Licencia
+
+Este proyecto está bajo la licencia **MIT**.
+
+### MIT License
+Copyright (c) 2026 Latán Villegas Avelino
+
+Se concede permiso, sin cargo, a cualquier persona que obtenga una copia de este software y archivos de documentación asociados (el "Software"), para utilizar el Software sin restricción, incluyendo sin limitación los derechos para usar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar, y/o vender copias del Software, sujeto a las siguientes condiciones:
+
+El aviso de copyright anterior y este aviso de permiso deberán ser incluidos en todas las copias o partes sustanciales del Software.
+
+**EL SOFTWARE SE PROPORCIONA "TAL CUAL", SIN GARANTÍA DE NINGÚN TIPO**, expresa o implícita, incluyendo pero no limitado a garantías de comerciabilidad, idoneidad para un propósito particular y no infracción.
+
+En ningún caso los autores o propietarios de derechos de autor serán responsables por cualquier reclamación, daño u otra responsabilidad, ya sea en acción de contrato, agravio o de otra manera, que surja de, fuera de o en conexión con el software o el uso u otras transacciones en el Software.
+
+Para más información, ver [LICENSE](LICENSE)
+
+---
+
+### Atribuciones
+
+- **Lucide React** - Iconos SVG ([MIT License](https://github.com/lucide-icons/lucide))
+- **Framer Motion** - Animaciones ([MIT License](https://github.com/framer/motion))
+- **Next.js** - Framework web ([MIT License](https://github.com/vercel/next.js))
+- **Tailwind CSS** - Framework CSS ([MIT License](https://github.com/tailwindlabs/tailwindcss))
+
+---
+
+© 2026 **Radio Satelital**. Todos los derechos reservados.
