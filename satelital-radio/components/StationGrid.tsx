@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import StationCard from './StationCard'
 import SkeletonCard from './SkeletonCard'
-import { FixedSizeList as List } from 'react-window'
+import { FixedSizeGrid as Grid } from 'react-window'
 import type { Station } from '../types/station'
 
 type Props = {
@@ -52,20 +52,20 @@ export default function StationGrid({ stations, playStation, toggleFavorite }: P
     )
   }
 
-  // Virtualized grid -> convertimos en filas con 'columns' elementos por fila
+  // Virtualized grid -> usar FixedSizeGrid por columnas
   const rowCount = Math.ceil(stations.length / columns)
-  const rowHeight = 96 // altura por fila (ajustar si es necesario)
+  const rowHeight = 120 // altura por fila (ajustada para tarjetas)
 
-  const Row = ({ index, style }: { index: number; style: any }) => {
-    const start = index * columns
-    const items = stations.slice(start, start + columns)
+  // columnWidth se calcula dinámicamente según ancho disponible
+  const columnWidth = Math.floor((width - gap * (columns - 1)) / columns)
+
+  const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: any }) => {
+    const idx = rowIndex * columns + columnIndex
+    if (idx >= stations.length) return null
+    const s = stations[idx]
     return (
-      <div style={{ ...style, display: 'flex', gap: `${gap}px`, padding: '8px 0' }}>
-        {items.map((s)=> (
-          <div style={{ width: `calc((100% - ${(columns-1)*gap}px)/${columns})` }} key={`${s.name}-${s.url}`}>
-            <StationCard station={s} onPlay={playStation} onToggleFav={toggleFavorite} />
-          </div>
-        ))}
+      <div style={{ ...style, padding: '8px' }} key={`${s.name}-${s.url}`}>
+        <StationCard station={s} onPlay={playStation} onToggleFav={toggleFavorite} />
       </div>
     )
   }
@@ -75,9 +75,16 @@ export default function StationGrid({ stations, playStation, toggleFavorite }: P
       <div className="panel-head station-panel-head">
         <h3>Frecuencias</h3>
       </div>
-      <List height={Math.min(600, rowCount * rowHeight)} itemCount={rowCount} itemSize={rowHeight} width={'100%'}>
-        {Row}
-      </List>
+      <Grid
+        columnCount={columns}
+        columnWidth={columnWidth}
+        height={Math.min(800, rowCount * rowHeight)}
+        rowCount={rowCount}
+        rowHeight={rowHeight}
+        width={width}
+      >
+        {Cell}
+      </Grid>
     </div>
   )
 }
