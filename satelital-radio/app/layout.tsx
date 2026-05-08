@@ -4,8 +4,14 @@ import React from 'react'
 export const metadata = {
   title: 'Radio Satelital',
   description: 'Escucha emisoras de radio en vivo.',
-  manifest: '/manifest.json',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover'
+  manifest: '/manifest.json'
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: 'cover'
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

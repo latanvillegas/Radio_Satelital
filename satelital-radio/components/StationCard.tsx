@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Station } from '../types/station'
 import { Heart, Play, Radio } from 'lucide-react'
 import usePlayer from '../hooks/usePlayer'
@@ -39,14 +39,14 @@ export default function StationCard({ station, onPlay, onToggleFav }: Props){
   const { currentStation, isPlaying } = usePlayer()
   const playing = !!(isPlaying && currentStation && currentStation.url === station.url)
 
-  let touchStartX: number | null = null
-  const handleTouchStart = (e: React.TouchEvent) => { touchStartX = e.touches[0].clientX }
+  const swipeState = useMemo(() => ({ touchStartX: null as number | null }), [])
+  const handleTouchStart = (e: React.TouchEvent) => { swipeState.touchStartX = e.touches[0].clientX }
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if(touchStartX === null) return
-    const dx = e.changedTouches[0].clientX - touchStartX
+    if(swipeState.touchStartX === null) return
+    const dx = e.changedTouches[0].clientX - swipeState.touchStartX
     if(dx > 60) onPlay?.(station) // swipe right -> play
     if(dx < -60) onToggleFav?.(station) // swipe left -> toggle fav
-    touchStartX = null
+    swipeState.touchStartX = null
   }
 
   return (
@@ -59,7 +59,16 @@ export default function StationCard({ station, onPlay, onToggleFav }: Props){
       role="button"
       tabIndex={0}
       aria-label={`Estación ${station.name}`}
-      onKeyDown={(e)=>{ if(e.key === 'Enter') onPlay?.(station) }}
+      onKeyDown={(e)=>{
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onPlay?.(station)
+        }
+        if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault()
+          onToggleFav?.(station)
+        }
+      }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >

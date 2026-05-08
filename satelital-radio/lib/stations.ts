@@ -1,5 +1,5 @@
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, hasFirebaseConfig } from "./firebase";
 import stationsData from "../data/stations.json";
 
 /**
@@ -38,6 +38,7 @@ export function getLocalStations(): Radio[] {
  * Obtiene todas las emisoras públicas de la colección "public_radios" en Firestore
  */
 export async function getPublicRadios(): Promise<Radio[]> {
+  if (!hasFirebaseConfig || !db) return [];
   const col = collection(db, "public_radios");
   const snapshot = await getDocs(col);
   return snapshot.docs.map((doc) => {
@@ -62,6 +63,7 @@ export async function getPublicRadios(): Promise<Radio[]> {
  */
 export async function getMergedStations(): Promise<Radio[]> {
   const localStations = getLocalStations();
+  if (!hasFirebaseConfig || !db) return localStations;
   const firebaseStations = await getPublicRadios();
 
   // Crear un mapa de URLs de Firebase para acceso rápido

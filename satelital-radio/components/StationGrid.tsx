@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import StationCard from './StationCard'
 import SkeletonCard from './SkeletonCard'
 import { FixedSizeGrid as Grid } from 'react-window'
@@ -27,9 +27,14 @@ export default function StationGrid({ stations, playStation, toggleFavorite }: P
     return ()=> ro.disconnect()
   },[])
 
-  // definir columnas según ancho (mismo breakpoints que CSS)
-  const cardWidth = 320 // aprox
-  const gap = 16
+  const gridMetrics = useMemo(() => {
+    if (width < 640) return { cardWidth: 260, rowHeight: 132, gap: 12 }
+    if (width < 1024) return { cardWidth: 280, rowHeight: 136, gap: 14 }
+    if (width < 1440) return { cardWidth: 300, rowHeight: 140, gap: 16 }
+    return { cardWidth: 340, rowHeight: 144, gap: 18 }
+  }, [width])
+
+  const { cardWidth, rowHeight, gap } = gridMetrics
   const columns = Math.max(1, Math.floor((width + gap) / (cardWidth + gap)))
 
   // si pocos items, mostrar grid normal con skeleton o tarjetas
@@ -54,28 +59,32 @@ export default function StationGrid({ stations, playStation, toggleFavorite }: P
 
   // Virtualized grid -> usar FixedSizeGrid por columnas
   const rowCount = Math.ceil(stations.length / columns)
-  const rowHeight = 120 // altura por fila (ajustada para tarjetas)
 
   // columnWidth se calcula dinámicamente según ancho disponible
   const columnWidth = Math.floor((width - gap * (columns - 1)) / columns)
 
-  const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: any }) => {
+  const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: React.CSSProperties }) => {
     const idx = rowIndex * columns + columnIndex
-    if (idx >= stations.length) return null
+    if (idx >= stations.length) {
+      return <div style={{ ...style, padding: '8px' }} aria-hidden="true" />
+    }
     const s = stations[idx]
     return (
-      <div style={{ ...style, padding: '8px' }} key={`${s.name}-${s.url}`}>
+      <div style={{ ...style, padding: '8px' }} key={`${s.name}-${s.url}`} data-grid-cell="true" data-grid-index={idx}>
         <StationCard station={s} onPlay={playStation} onToggleFav={toggleFavorite} />
       </div>
     )
   }
 
   return (
-    <div className="glass-panel rounded-xl shadow-sm hover:shadow-md transition-all duration-200" id="station-list" ref={containerRef}>
+    <div className="glass-panel rounded-xl shadow-sm hover:shadow-md transition-all duration-200" id="station-list" ref={containerRef} aria-label="Lista de frecuencias">
       <div className="panel-head station-panel-head">
         <h3>Frecuencias</h3>
       </div>
       <Grid
+        role="grid"
+        aria-rowcount={rowCount}
+        aria-colcount={columns}
         columnCount={columns}
         columnWidth={columnWidth}
         height={Math.min(800, rowCount * rowHeight)}
