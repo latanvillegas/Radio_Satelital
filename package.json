@@ -1,19 +1,14 @@
 {
-  "name": "radio-satelital-native",
+  "name": "radio-satelital-web",
   "private": true,
   "version": "9.5.0",
   "type": "module",
+  "description": "Radio Satelital - Progressive Web App (PWA)",
   "scripts": {
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
-    "tauri:android": "tauri android dev",
-    "tauri:android:build": "tauri android build"
+    "dev": "cd satelital-radio && npm run dev",
+    "build": "cd satelital-radio && npm run build",
+    "start": "cd satelital-radio && npm run start"
   },
-  "dependencies": {
-    "@tauri-apps/api": "^2.0.0"
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }

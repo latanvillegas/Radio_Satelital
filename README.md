@@ -14,10 +14,10 @@
 
 ### 🏆 Certificación Platino PWA
 Esta versión ha alcanzado el máximo nivel de integración técnica:
-* **✅ Soporte Offline Real:** Nueva interfaz dedicada (`offline.html`) cuando no hay conexión.
-* **✅ Widgets Nativos:** Controla la radio desde la pantalla de inicio de Android (carpeta `widgets/`).
-* **✅ Integración Profunda:** Soporte para Pestañas (Tabbed Display) y Notas Rápidas.
-* **✅ Dual-App Ready:** Verificación de activos (`.well-known`) para coexistir con versiones anteriores.
+* **✅ Soporte Offline Real:** Funciona sin conexión a internet.
+* **✅ Instalable:** Se instala directamente desde el navegador sin tienda de aplicaciones.
+* **✅ Media Session API:** Control completo desde pantalla de bloqueo y notificaciones.
+* **✅ Multi-Dispositivo:** Compatible con escritorio, tablet y teléfono.
 
 ### 🎧 Experiencia de Audio Premium
 * **Motor de Audio v9.5:** Optimizado para cero cortes en segundo plano.
@@ -86,18 +86,43 @@ Para máxima velocidad global:
 
 ```text
 /
-├── .well-known/      # Verificación de activos web
-├── widgets/          # Configuración de Widgets
-│   ├── mini.json
-│   └── data.json
-├── manifest.json     # Manifiesto PWA (Pestañas, Notas, Shortcuts)
-├── sw.js             # Service Worker (Caché inteligente + Offline)
-├── index.html        # App Principal
-├── offline.html      # Pantalla Sin Conexión
-├── style.css         # Motor de Temas v9.5
-├── main.js           # Lógica del reproductor
-├── stations.js       # Base de datos de emisoras
-└── assets/           # Iconos e imágenes
+├── satelital-radio/      # Aplicación Next.js PWA
+│   ├── app/              # Lógica principal
+│   ├── components/       # Componentes React
+│   ├── hooks/            # Hooks personalizados
+│   ├── lib/              # Utilidades y helpers
+│   ├── public/           # Activos públicos
+│   │   ├── manifest.json # Manifiesto PWA
+│   │   ├── icon-*.png    # Iconos para instalación
+│   │   └── robots.txt    # SEO
+│   └── types/            # Tipos TypeScript
+├── docs/                 # Documentación
+├── scripts/              # Scripts útiles
+├── stations.js           # Base de datos de emisoras
+├── supabase.config.js    # Configuración de Supabase
+└── manifest.json         # Manifiesto PWA raíz
+```
+
+## 🛠️ Requisitos
+
+- Node.js 18+
+- npm o yarn
+- Navegador moderno (Chrome, Edge, Firefox)
+
+## ⚡ Instalación Local
+
+```bash
+# 1. Instalar dependencias
+npm install
+
+# 2. Instalar dependencias de la app web
+cd satelital-radio && npm install && cd ..
+
+# 3. Ejecutar en desarrollo
+npm run dev
+
+# 4. Compilar para producción
+npm run build
 ```
 
 ---

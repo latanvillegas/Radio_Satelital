@@ -1,6 +1,7 @@
 "use client"
 import React, { useEffect, useState } from 'react'
 import { getAvailableThemes, getTheme, getUiScaleMode, setTheme, setUiScaleMode, detectScreenSize, type ThemeName, type UiScaleMode } from '../lib/theme'
+import usePWAInstall from '../hooks/usePWAInstall'
 import Filters from './Filters'
 
 type Props = {
@@ -44,6 +45,7 @@ export default function SideMenu({ open, onClose, loading, error, stationsCount,
   const themes = getAvailableThemes()
   const [currentTheme, setCurrentTheme] = useState<ThemeName>('amoled')
   const [currentScaleMode, setCurrentScaleMode] = useState<UiScaleMode>('auto')
+  const { canInstall, isInstalled, install } = usePWAInstall()
 
   useEffect(() => {
     setCurrentTheme(getTheme())
@@ -96,7 +98,15 @@ export default function SideMenu({ open, onClose, loading, error, stationsCount,
               <p className="track-meta">{stationsCount} emisoras disponibles</p>
             )}
             <div className="settings-actions-inline">
-              <button className="settings-primary" id="btnInstall">Instalar app</button>
+              <button 
+                className="settings-primary" 
+                id="btnInstall" 
+                onClick={install}
+                disabled={!canInstall || isInstalled}
+                style={{ opacity: (!canInstall || isInstalled) ? 0.6 : 1, cursor: (!canInstall || isInstalled) ? 'not-allowed' : 'pointer' }}
+              >
+                {isInstalled ? '✅ Instalada' : canInstall ? 'Instalar app' : '📱 Desde navegador'}
+              </button>
               <button className="settings-secondary" id="clearFilters" onClick={onResetFilters}>Reiniciar filtros</button>
             </div>
           </div>

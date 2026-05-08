@@ -19,14 +19,8 @@ Utilizamos **Google AdSense** y otras redes publicitarias para mostrar anuncios.
 * Google y sus socios utilizan cookies para publicar anuncios basados en sus visitas anteriores a nuestro sitio web o a otros sitios web en Internet.
 * Los usuarios pueden inhabilitar la publicidad personalizada visitando la [Configuración de anuncios de Google](https://www.google.com/settings/ads).
 
-## 5. Permisos de Android (TWA)
-Si instala nuestra aplicación como una Trusted Web Activity (TWA) en Android, es posible que se soliciten los siguientes permisos del sistema:
-* **Internet:** Necesario para transmitir el audio de la radio.
-* **Wake Lock:** Para evitar que la radio se corte cuando la pantalla se apaga.
-* **Foreground Service:** Para mostrar la notificación de "Reproduciendo" en la barra de estado.
-
-## 6. Enlaces a Terceros
+## 5. Enlaces a Terceros
 La aplicación contiene enlaces a sitios web externos (redes sociales, páginas de emisoras). No somos responsables de las prácticas de privacidad ni del contenido de esos sitios.
 
-## 7. Contacto
+## 6. Contacto
 Si tiene preguntas sobre esta política, puede contactar al desarrollador a través de las redes sociales integradas oficialmente en el menú lateral de la aplicación.

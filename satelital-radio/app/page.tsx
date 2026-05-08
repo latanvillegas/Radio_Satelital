@@ -69,14 +69,14 @@ export default function Page() {
         <main className="right-col">
           {loading && (
             <div style={{ padding: '2rem', textAlign: 'center' }}>
-              <p>Conectando con Firebase...</p>
+              <p>Cargando emisoras...</p>
             </div>
           )}
           {error && (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#ff6b6b' }}>
               <p><strong>{error}</strong></p>
               <p style={{ fontSize: '0.9rem', marginTop: '1rem' }}>
-                Verifica que las variables NEXT_PUBLIC_FIREBASE_* estén configuradas en .env.local
+                Verifica tu conexión a internet e intenta recargar la página.
               </p>
             </div>
           )}
