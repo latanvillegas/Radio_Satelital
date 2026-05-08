@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 import { Station } from '../types/station'
 import { Heart, Play, Radio } from 'lucide-react'
+import usePlayer from '../hooks/usePlayer'
 import { motion } from 'framer-motion'
 
 const countryClassMap: Record<string, string> = {
@@ -35,6 +36,19 @@ export default function StationCard({ station, onPlay, onToggleFav }: Props){
   const badgeClass = countryClassMap[(station.country || '').toLowerCase()] || 'badge-default'
   const [imgError, setImgError] = useState(false)
 
+  const { currentStation, isPlaying } = usePlayer()
+  const playing = !!(isPlaying && currentStation && currentStation.url === station.url)
+
+  let touchStartX: number | null = null
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX = e.touches[0].clientX }
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if(touchStartX === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX
+    if(dx > 60) onPlay?.(station) // swipe right -> play
+    if(dx < -60) onToggleFav?.(station) // swipe left -> toggle fav
+    touchStartX = null
+  }
+
   return (
     <motion.div
       layout
@@ -46,6 +60,8 @@ export default function StationCard({ station, onPlay, onToggleFav }: Props){
       tabIndex={0}
       aria-label={`Estación ${station.name}`}
       onKeyDown={(e)=>{ if(e.key === 'Enter') onPlay?.(station) }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <div className="st-info">
         <div className={`st-icon ${badgeClass}`} aria-hidden="true">
@@ -67,6 +83,13 @@ export default function StationCard({ station, onPlay, onToggleFav }: Props){
         <div className="st-meta-wrap">
           <span className="st-name">{station.name}</span>
           <span className="st-meta">{station.region || station.country}</span>
+          {playing && (
+            <div className="eq-inline" aria-hidden="true">
+              <span className="eq-bar eq-inline-1" />
+              <span className="eq-bar eq-inline-2" />
+              <span className="eq-bar eq-inline-3" />
+            </div>
+          )}
         </div>
       </div>
 
