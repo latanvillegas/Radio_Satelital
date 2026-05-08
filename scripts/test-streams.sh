@@ -7,7 +7,7 @@ echo "🔍 Verificando disponibilidad de streams de radio..."
 echo "=================================================="
 
 # Leer el archivo JSON de estaciones
-STATIONS_FILE="/workspaces/Radio_Satelital/satelital-radio/data/stations.json"
+STATIONS_FILE="/workspaces/Radio_Satelital/data/stations.json"
 
 # Extraer URLs únicas
 URLS=$(cat "$STATIONS_FILE" | grep -o '"url": "[^"]*"' | cut -d'"' -f4 | sort -u)

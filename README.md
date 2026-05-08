@@ -162,44 +162,18 @@ Para problemas comunes, consulta la documentación específica:
 
 ```text
 /
-├── satelital-radio/              # Aplicación Next.js PWA (principal)
-│   ├── app/
-│   │   ├── page.tsx              # Página principal
-│   │   ├── layout.tsx            # Estructura global
-│   │   └── globals.css           # Estilos responsive
-│   ├── components/               # Componentes React
-│   │   ├── Player.tsx            # Reproductor con 4 modos
-│   │   ├── StationGrid.tsx       # Grilla de emisoras
-│   │   ├── StationCard.tsx       # Tarjeta individual
-│   │   ├── SideMenu.tsx          # Panel de ajustes
-│   │   ├── Filters.tsx           # Búsqueda y filtros
-│   │   ├── BottomNav.tsx         # Navegación inferior
-│   │   └── ThemeInitializer.tsx  # Sistema de temas
-│   ├── hooks/                    # Hooks personalizados
-│   │   ├── usePlayer.ts          # Lógica de reproducción
-│   │   ├── useStations.ts        # Manejo de emisoras
-│   │   ├── useMediaSession.ts    # Controls desde lock screen
-│   │   └── usePWAInstall.ts      # Instalación PWA
-│   ├── lib/                      # Utilidades
-│   │   ├── player.ts             # API de audio
-│   │   ├── stations.ts           # Carga de emisoras
-│   │   ├── firebase.ts           # Configuración Firebase
-│   │   ├── supabase.ts           # Configuración Supabase
-│   │   ├── proxy.ts              # Manejo de CORS
-│   │   ├── theme.ts              # Sistema de temas
-│   │   ├── geo.ts                # Geolocalización
-│   │   ├── favorites.ts          # Gestión de favoritos
-│   │   └── validate.ts           # Validaciones
-│   ├── public/                   # Activos
-│   │   ├── manifest.json         # Manifiesto PWA
-│   │   ├── icon-192.png          # Icono 192x192
-│   │   ├── icon-512.png          # Icono 512x512
-│   │   └── robots.txt            # SEO
-│   ├── types/
-│   │   └── station.ts            # Types TypeScript
-│   └── data/
-│       └── stations.json         # Emisoras por defecto
-│
+├── app/                          # App Router (Next.js)
+├── components/                   # Componentes React
+├── hooks/                        # Hooks personalizados
+├── lib/                          # Utilidades
+├── data/                         # Datos de emisoras
+├── public/                       # Activos estáticos
+├── types/                        # Tipos TypeScript
+├── next.config.ts                # Configuración Next.js
+├── tsconfig.json                 # Configuración TypeScript
+├── tailwind.config.js            # Configuración Tailwind
+├── postcss.config.js             # Configuración PostCSS
+
 ├── docs/                         # Documentación
 │   ├── ADMIN_GUIDE.md           # Guía para administradores
 │   ├── ADMIN_SETUP.md           # Setup de admin
@@ -256,16 +230,11 @@ cd Radio_Satelital
 # 2. Instalar dependencias raíz
 npm install
 
-# 3. Instalar dependencias de la app Next.js
-cd satelital-radio
-npm install
-cd ..
-
-# 4. Crear archivo .env.local (si usas Firebase/Supabase)
+# 3. Crear archivo .env.local (si usas Firebase/Supabase)
 # cp .env.example .env.local
 # (Agrega tus credenciales si quieres sincronización en la nube)
 
-# 5. Ejecutar en desarrollo (hot reload)
+# 4. Ejecutar en desarrollo (hot reload)
 npm run dev
 
 # Abre http://localhost:3000
@@ -277,9 +246,6 @@ npm run dev
 # Compilar versión optimizada
 npm run build
 
-# Verificar que compila sin errores
-cd satelital-radio && npm run build && cd ..
-
 # Servir localmente para testing
 npm start
 ```
@@ -288,7 +254,7 @@ npm start
 
 ```bash
 # Validar que sea instalable (PWA Builder)
-cd satelital-radio && npm run build && npm start
+npm run build && npm start
 
 # Luego abre http://localhost:3000 en Chrome
 # Verás el prompt "Instalar app" o podrás instalar desde menú

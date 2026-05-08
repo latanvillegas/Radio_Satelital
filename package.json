@@ -1,14 +1,29 @@
 {
-  "name": "radio-satelital-web",
+  "name": "satelital-radio",
+  "version": "1.0.0",
   "private": true,
-  "version": "9.5.0",
-  "type": "module",
-  "description": "Radio Satelital - Progressive Web App (PWA)",
   "scripts": {
-    "dev": "cd satelital-radio && npm run dev",
-    "build": "cd satelital-radio && npm run build",
-    "start": "cd satelital-radio && npm run start"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "clsx": "^1.2.1",
+    "firebase": "^12.12.1",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.14.0",
+    "next": "15.0.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-window": "^1.8.11",
+    "tailwindcss": "^3.4.17"
+  },
+  "devDependencies": {
+    "@types/node": "20.4.2",
+    "@types/react": "18.2.27",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "typescript": "5.2.2"
+  }
 }

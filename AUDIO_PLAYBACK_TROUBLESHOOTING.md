@@ -46,7 +46,7 @@ Compilación exitosa ✓ - Los cambios están listos:
 
 ```bash
 # El proyecto ya está compilado
-cd /workspaces/Radio_Satelital/satelital-radio
+cd /workspaces/Radio_Satelital
 npm run build  # ✓ Exitoso
 
 # Archivos generados en: ./out/
