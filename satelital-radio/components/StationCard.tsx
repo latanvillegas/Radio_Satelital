@@ -1,7 +1,8 @@
 "use client"
-import React from 'react'
+import React, { useState } from 'react'
 import { Station } from '../types/station'
 import { Heart, Play, Radio } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 const countryClassMap: Record<string, string> = {
   'perú': 'badge-peru',
@@ -32,23 +33,48 @@ type Props = {
 
 export default function StationCard({ station, onPlay, onToggleFav }: Props){
   const badgeClass = countryClassMap[(station.country || '').toLowerCase()] || 'badge-default'
+  const [imgError, setImgError] = useState(false)
 
   return (
-    <div className="station-card rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.02 }}
+      className="station-card rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+      role="button"
+      tabIndex={0}
+      aria-label={`Estación ${station.name}`}
+      onKeyDown={(e)=>{ if(e.key === 'Enter') onPlay?.(station) }}
+    >
       <div className="st-info">
         <div className={`st-icon ${badgeClass}`} aria-hidden="true">
-          <Radio size={22} strokeWidth={2.2} color="#6200EE" />
+          {station.logoUrl && !imgError ? (
+            <img
+              src={station.logoUrl}
+              alt={`${station.name} logo`}
+              loading="lazy"
+              onError={()=>setImgError(true)}
+              className="st-artwork-img"
+            />
+          ) : (
+            <div className="st-artwork-fallback" aria-hidden="true">
+              <span>{(station.name || '').slice(0,2).toUpperCase()}</span>
+            </div>
+          )}
         </div>
-        <div>
+
+        <div className="st-meta-wrap">
           <span className="st-name">{station.name}</span>
           <span className="st-meta">{station.region || station.country}</span>
         </div>
       </div>
-      <div style={{display:'flex',alignItems:'center',gap:8}}>
-        <button className="sec-btn" onClick={()=>onPlay?.(station)} aria-label="Reproducir">
+
+      <div className="station-actions">
+        <button className="sec-btn" onClick={()=>onPlay?.(station)} aria-label={`Reproducir ${station.name}`}>
           <Play size={18} strokeWidth={2.4} />
         </button>
-        <button className="fav-btn" onClick={()=>onToggleFav?.(station)} aria-label="Favorito">
+        <button className="fav-btn" onClick={()=>onToggleFav?.(station)} aria-pressed={!!station.isFavorite} aria-label={`Favorito ${station.name}`}>
           <Heart
             size={18}
             strokeWidth={2.2}
@@ -57,6 +83,6 @@ export default function StationCard({ station, onPlay, onToggleFav }: Props){
           />
         </button>
       </div>
-    </div>
+    </motion.div>
   )
 }
