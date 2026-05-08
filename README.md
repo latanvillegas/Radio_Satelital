@@ -240,7 +240,7 @@ Para ejecutar localmente:
 ### Requisitos opcionales (para características avanzadas)
 
 - Firebase o Supabase (para sincronización en la nube)
-- Servidor web (nginx, Apache) para producción
+- Servidor web para producción
 
 ---
 
@@ -250,7 +250,7 @@ Para ejecutar localmente:
 
 ```bash
 # 1. Clonar repositorio
-git clone https://github.com/latanvillegas/Radio_Satelital.git
+git clone https://github.com/<owner>/<repo>.git
 cd Radio_Satelital
 
 # 2. Instalar dependencias raíz
@@ -324,12 +324,12 @@ git push origin main
 # 1. Compilar
 npm run build
 
-# 2. Subir archivos de satelital-radio/.next a tu servidor
+# 2. Subir artefactos compilados a tu servidor
 # 3. Instalar dependencias en servidor
 npm ci --production
 
-# 4. Iniciar con PM2 o similar
-pm2 start npm --name radio -- start
+# 4. Iniciar con un gestor de procesos
+npm start
 ```
 
 ---
@@ -338,7 +338,7 @@ pm2 start npm --name radio -- start
 
 ¡Este proyecto está abierto a la comunidad! Si eres desarrollador o tienes ideas para mejorar **Radio Satelital**, tu ayuda es bienvenida.
 
-* 🐛 **Reportar Errores:** Si encuentras algún fallo, abre un [Issue](https://github.com/LatanVillegasAvelino/Radio-Satelital-Latan-Villegas/issues) detallando el problema.
+* 🐛 **Reportar Errores:** Si encuentras algún fallo, abre un Issue en el repositorio detallando el problema.
 * 💡 **Sugerir Funciones:** ¿Se te ocurre algo nuevo? Compártelo en la sección de Issues.
 * 💻 **Pull Requests:** Si mejoras el código, envía tu solicitud para integrarla al proyecto.
 * ⭐ **Deja una Estrella:** Si te gusta el proyecto, ¡apóyanos dando clic en la estrella (Star) arriba a la derecha!
