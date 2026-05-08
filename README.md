@@ -39,46 +39,11 @@ Esta versión ha alcanzado el máximo nivel de integración técnica:
 
 ---
 
-## 🌍 Modo colaborativo global (Supabase)
+## 📲 Características Avanzadas
 
-Con esta versión puedes habilitar que **todas las personas vean las radios que otros agregan**.
+Esta versión soporta sincronización de emisoras a través de servicios en la nube (cuando está habilitado por el administrador).
 
-1. Crea un proyecto en Supabase.
-2. En SQL Editor ejecuta: [docs/supabase_global_stations.sql](docs/supabase_global_stations.sql).
-3. Abre [supabase.config.js](supabase.config.js) y completa:
-   - `url`: URL de tu proyecto Supabase.
-   - `anonKey`: clave pública anon.
-   - `table`: `global_stations` (por defecto).
-4. Agrega una radio desde el formulario web.
-5. Las radios nuevas entran como **pending** (cola de revisión).
-6. Solo radios **approved** se muestran a todos en la app.
-
-> Si `supabase.config.js` queda vacío, la app sigue funcionando en modo local (localStorage).
-
-### 🛡️ Moderación básica anti-spam
-- **Bloqueo de URL inválida** (solo `http/https`, sin `localhost` ni red privada).
-- **Validación de señal** antes de publicar global (prueba rápida del stream).
-- **Límite por minuto en cliente** (`limitPerMinute` en `supabase.config.js`).
-- **Límite por minuto en tabla global** (trigger SQL) + constraints de longitud/URL.
-
-### ✅ Moderación avanzada (cola de revisión)
-La tabla global usa estados:
-- `pending`: enviada por usuario, aún no visible globalmente.
-- `approved`: visible para todos.
-- `rejected`: descartada.
-
-Para moderar, usa [docs/supabase_moderation_queries.sql](docs/supabase_moderation_queries.sql).
-
-Puedes ajustar en [supabase.config.js](supabase.config.js):
-- `limitPerMinute`
-- `streamCheckTimeoutMs`
-- `requireStreamValidation`
-
-### ⚡ DNS público / mayor velocidad
-Para máxima velocidad global:
-- Usa dominio propio de Supabase (CNAME) con Cloudflare.
-- Activa proxy/CDN y caché en rutas de lectura (`/rest/v1/global_stations?select=...`).
-- Si usas endpoint REST personalizado, define `restUrl` en [supabase.config.js](supabase.config.js).
+> **Nota:** Las configuraciones de integración con servicios en la nube deben ser gestionadas por desarrolladores. Para más información, consulta `docs/` o contacta al mantenedor del proyecto.
 
 ---
 
