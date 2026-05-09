@@ -44,7 +44,7 @@ ALTER TABLE public.admin_users REPLICA IDENTITY FULL;
 ALTER TABLE public.approval_history REPLICA IDENTITY FULL;
 ```
 
-### 2. Configurar WebSocket en supabase.config.js
+### 2. Configurar WebSocket en config/supabase.config.js
 
 Asegúrate de que tenga la URL correcta (ya debería estar configurada):
 

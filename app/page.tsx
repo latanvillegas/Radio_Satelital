@@ -1,11 +1,11 @@
 "use client"
 import React, { useState } from 'react'
-import ThemeInitializer from '../components/ThemeInitializer'
-import Player from '../components/Player'
-import StationGrid from '../components/StationGrid'
-import SideMenu from '../components/SideMenu'
-import BottomNav from '../components/BottomNav'
-import useStations from '../hooks/useStations'
+import ThemeInitializer from '../components/common/ThemeInitializer'
+import Player from '../components/layout/Player'
+import StationGrid from '../components/features/StationGrid'
+import SideMenu from '../components/layout/SideMenu'
+import BottomNav from '../components/layout/BottomNav'
+import { useStations } from '../hooks/stations'
 import { Heart, Menu, Search, Settings } from 'lucide-react'
 
 export default function Page() {

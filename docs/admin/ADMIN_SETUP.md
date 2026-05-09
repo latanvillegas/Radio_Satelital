@@ -28,7 +28,7 @@ Este documento proporciona instrucciones paso a paso para instalar el sistema de
 2. **Navega a SQL Editor** (lado izquierdo)
 
 3. **Crea nueva query y copia/pega este contenido:**
-   - Archivo: `/docs/supabase_admin_system.sql`
+  - Archivo: `/docs/database/supabase_admin_system.sql`
    - O copia desde el markdown de abajo
 
 4. **Haz clic en "Run"** (botón azul)
@@ -57,11 +57,11 @@ Checkea que existan estos archivos:
 ✓ admin.js                      (lógica del panel)
 ✓ admin-login.html              (página de login)
 ✓ admin-accept-invitation.html  (página de invitaciones)
-✓ docs/supabase_admin_system.sql (tablas y funciones)
-✓ docs/ADMIN_GUIDE.md           (guía completa)
+✓ docs/database/supabase_admin_system.sql (tablas y funciones)
+✓ docs/admin/ADMIN_GUIDE.md           (guía completa)
 ```
 
-### Paso 4: Configurar supabase.config.js
+### Paso 4: Configurar config/supabase.config.js
 
 Asegúrate de que esté completo:
 
@@ -207,13 +207,13 @@ SELECT id, name, country, status, created_at FROM global_stations WHERE status =
 
 ## 📚 Documentación Completa
 
-Para más detalles, lee: [`docs/ADMIN_GUIDE.md`](./ADMIN_GUIDE.md)
+Para más detalles, lee: [`docs/admin/ADMIN_GUIDE.md`](./ADMIN_GUIDE.md)
 
 ## 💬 Soporte
 
-- **Documentación**: `/docs/ADMIN_GUIDE.md`
+- **Documentación**: `/docs/admin/ADMIN_GUIDE.md`
 - **Código fuente**: `/admin.js`, `/admin.html`
-- **SQL**: `/docs/supabase_admin_system.sql`
+- **SQL**: `/docs/database/supabase_admin_system.sql`
 
 ---
 

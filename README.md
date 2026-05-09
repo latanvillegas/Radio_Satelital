@@ -130,9 +130,9 @@ Esta aplicación implementa múltiples capas de protección:
 
 Para problemas comunes, consulta la documentación específica:
 
-- **Problemas de audio:** [AUDIO_PLAYBACK_TROUBLESHOOTING.md](AUDIO_PLAYBACK_TROUBLESHOOTING.md)
-- **Configuración privada en la nube:** [docs/ADMIN_SETUP.md](docs/ADMIN_SETUP.md)
-- **Notificaciones en tiempo real:** [docs/REALTIME_NOTIFICATIONS.md](docs/REALTIME_NOTIFICATIONS.md)
+- **Problemas de audio:** [docs/features/AUDIO_PLAYBACK_TROUBLESHOOTING.md](docs/features/AUDIO_PLAYBACK_TROUBLESHOOTING.md)
+- **Configuración privada en la nube:** [docs/admin/ADMIN_SETUP.md](docs/admin/ADMIN_SETUP.md)
+- **Notificaciones en tiempo real:** [docs/features/REALTIME_NOTIFICATIONS.md](docs/features/REALTIME_NOTIFICATIONS.md)
 
 ### Problemas Frecuentes
 
@@ -140,7 +140,7 @@ Para problemas comunes, consulta la documentación específica:
 - Verifica que la URL sea válida (http:// o https://)
 - Intenta en otro navegador para descartar problemas de caché
 - Algunos streams pueden estar offline
-- Consulta [AUDIO_PLAYBACK_TROUBLESHOOTING.md](AUDIO_PLAYBACK_TROUBLESHOOTING.md)
+- Consulta [docs/features/AUDIO_PLAYBACK_TROUBLESHOOTING.md](docs/features/AUDIO_PLAYBACK_TROUBLESHOOTING.md)
 
 **P: ¿Cómo instalo en iOS?**
 - Abre en Safari
@@ -154,7 +154,7 @@ Para problemas comunes, consulta la documentación específica:
 **P: ¿Dónde se guardan mis datos?**
 - Todo en tu dispositivo (localStorage)
 - Nada se envía a servidores externos (excepto Supabase si lo activas)
-- Ver [PRIVACY.md](PRIVACY.md) para detalles
+- Ver [docs/policies/PRIVACY.md](docs/policies/PRIVACY.md) para detalles
 
 ---
 
@@ -175,28 +175,31 @@ Para problemas comunes, consulta la documentación específica:
 ├── postcss.config.js             # Configuración PostCSS
 
 ├── docs/                         # Documentación
-│   ├── ADMIN_GUIDE.md           # Guía para administradores
-│   ├── ADMIN_SETUP.md           # Setup de admin
-│   ├── REALTIME_NOTIFICATIONS.md # Notificaciones
-│   └── *.sql                     # Scripts de base de datos
+│   ├── README.md                 # Índice de documentación
+│   ├── admin/                    # Administración y setup
+│   ├── features/                 # Audio, notificaciones y guías de uso
+│   ├── policies/                 # Privacidad y seguridad
+│   ├── history/                  # Changelog
+│   └── database/                 # Scripts SQL
 │
 ├── scripts/
 │   └── test-streams.sh          # Helper para testear streams
 │
 ├── widgets/                      # Widgets para Android
-│   ├── mini.json                # Config de widget pequeño
-│   └── data.json                # Datos de widget
+│   ├── mini.json                 # Config de widget pequeño
+│   └── data.json                 # Datos de widget
 │
-├── stations.js                  # Base de datos de emisoras
-├── supabase.config.js           # Configuración Supabase (opcional)
+├── config/
+│   ├── stations.js              # Base de datos de emisoras
+│   └── supabase.config.js       # Configuración Supabase (opcional)
 ├── manifest.json                # Manifiesto raíz
 └── package.json                 # Dependencias raíz
 ```
 
 ### Archivos Importantes Explicados
 
-- **`stations.js`** - Array de emisoras disponibles al inicio. Se puede extender dinámicamente.
-- **`supabase.config.js`** - (Opcional) Para sincronizar emisoras globalmente entre usuarios. Dejar vacío para modo local.
+- **`config/stations.js`** - Array de emisoras disponibles al inicio. Se puede extender dinámicamente.
+- **`config/supabase.config.js`** - (Opcional) Para sincronizar emisoras globalmente entre usuarios. Dejar vacío para modo local.
 - **Manifest.json** - Define cómo se instala la app (nombre, icono, colores, etc.)
 - **globals.css** - Estilos responsive que funcionan en cualquier dispositivo (320px - 2560px)
 

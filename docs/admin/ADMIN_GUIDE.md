@@ -9,7 +9,7 @@ Este documento describe cómo usar el **Panel de Administración** de Radio Sate
 ### 1. Crear las tablas y funciones
 
 1. Ve a **Supabase Dashboard** → **SQL Editor**
-2. Copia el contenido del archivo `/docs/supabase_admin_system.sql`
+2. Copia el contenido del archivo `/docs/database/supabase_admin_system.sql`
 3. Pégalo en el editor SQL
 4. Haz clic en **"Run"** para ejecutar
 
@@ -179,7 +179,7 @@ SELECT accept_admin_invitation('token_hex_string', 'new@example.com');
 
 ### "Error de CORS"
 - Configura los headers CORS en Supabase si es necesario
-- Verifica que la `apikey` sea correcta en `supabase.config.js`
+- Verifica que la `apikey` sea correcta en `config/supabase.config.js`
 
 ## 📈 Estadísticas
 
