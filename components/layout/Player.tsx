@@ -1,8 +1,8 @@
 "use client"
 import React, { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { usePlayer } from '../../hooks/player'
-import type { Station } from '../../types/station'
+import { usePlayer } from '@/hooks/player'
+import type { Station } from '@/types/station'
 import { Maximize2, Minimize2, Pause, Play, Radio, SkipBack, SkipForward, Volume2, X } from 'lucide-react'
 
 type Props = {

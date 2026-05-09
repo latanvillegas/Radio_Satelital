@@ -1,8 +1,8 @@
 "use client"
 import React, { useMemo, useState } from 'react'
-import { Station } from '../../types/station'
+import { Station } from '@/types/station'
 import { Heart, Play, Radio } from 'lucide-react'
-import { usePlayer } from '../../hooks/player'
+import { usePlayer } from '@/hooks/player'
 import { motion } from 'framer-motion'
 
 const countryClassMap: Record<string, string> = {

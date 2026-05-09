@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "clsx": "^1.2.1",
@@ -24,6 +26,7 @@
     "@types/react": "18.2.27",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
-    "typescript": "5.2.2"
+    "typescript": "5.2.2",
+    "vitest": "^2.1.9"
   }
 }

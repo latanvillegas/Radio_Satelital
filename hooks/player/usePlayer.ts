@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState } from 'react'
-import { playStation as libPlay, togglePlay as libToggle, setPlayingState } from '../../lib/services/player'
-import type { Station } from '../../types/station'
+import { playStation as libPlay, togglePlay as libToggle, setPlayingState } from '@/lib/services/player'
+import type { Station } from '@/types/station'
 
 export default function usePlayer(){
   const [currentStation, setCurrentStation] = useState<Station | null>(null)

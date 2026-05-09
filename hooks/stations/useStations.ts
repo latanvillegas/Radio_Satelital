@@ -1,9 +1,18 @@
 "use client"
 import { useEffect, useState } from 'react'
-import type { Station } from '../../types/station'
-import { getLocalStations, getMergedStations, type Radio } from '../../lib/services/stations'
-import { toggleFavorite as toggleFavoriteStorage, getFavorites } from '../../lib/storage/favorites'
-import { playStation as libPlay } from '../../lib/services/player'
+import type { Station } from '@/types/station'
+import {
+  applyFavoriteState,
+  buildStationFilterOptions,
+  filterStations,
+  findStationIndex,
+  getLocalStations,
+  getMergedStations,
+  stationKey,
+  type Radio,
+} from '@/lib/services/stations'
+import { toggleFavorite as toggleFavoriteStorage, getFavorites } from '@/lib/storage/favorites'
+import { playStation as libPlay } from '@/lib/services/player'
 
 type Filters = {
   countries: string[]
@@ -12,43 +21,28 @@ type Filters = {
   setRegion: (r:string)=>void
 }
 
-function mapRadioToStation(radio: Radio, favorites: Set<string>): Station {
-  return {
-    id: radio.id,
-    name: radio.name,
-    url: radio.streamUrl,
-    streamUrl: radio.streamUrl,
-    country: radio.country,
-    region: radio.region,
-    logoUrl: radio.logoUrl,
-    isFavorite: favorites.has(`${radio.name}|${radio.streamUrl}`),
-    tags: radio.tags,
-  }
-}
-
 export default function useStations(){
-  const [stations, setStations] = useState<Station[]>(() => {
-    const favorites = getFavorites()
-    return getLocalStations().map(radio => mapRadioToStation(radio, favorites))
-  })
+  const [stations, setStations] = useState<Station[]>(() => applyFavoriteState(getLocalStations(), getFavorites()))
   const [currentStation, setCurrentStation] = useState<Station | null>(null)
   const [query, setQuery] = useState('')
   const [onlyFavs, setOnlyFavs] = useState(false)
   const [filters, setFilters] = useState<{country?:string,region?:string}>({})
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(()=>{
     async function load(){
       try {
         setError(null)
+        setLoading(true)
         const radios = await getMergedStations()
         const favorites = getFavorites()
 
         if (radios.length > 0) {
-          setStations(radios.map(radio => mapRadioToStation(radio, favorites)))
+          setStations(applyFavoriteState(radios, favorites))
         }
       } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error cargando emisoras')
         console.error('Error cargando emisoras:', err)
       } finally {
         setLoading(false)
@@ -71,19 +65,14 @@ export default function useStations(){
     setCurrentStation(s)
     libPlay(s)
   }
-  const stationKey = (station: Station) => `${station.name}|${station.url || station.streamUrl}`
   const nextStation = () => {
     if (stations.length === 0) return
-    const currentIndex = currentStation
-      ? stations.findIndex(station => station.id === currentStation.id || station.streamUrl === currentStation.streamUrl || station.url === currentStation.url)
-      : -1
+    const currentIndex = findStationIndex(stations as Radio[], currentStation as Radio | null)
     playAtIndex(currentIndex >= 0 ? currentIndex + 1 : 0)
   }
   const prevStation = () => {
     if (stations.length === 0) return
-    const currentIndex = currentStation
-      ? stations.findIndex(station => station.id === currentStation.id || station.streamUrl === currentStation.streamUrl || station.url === currentStation.url)
-      : -1
+    const currentIndex = findStationIndex(stations as Radio[], currentStation as Radio | null)
     playAtIndex(currentIndex >= 0 ? currentIndex - 1 : stations.length - 1)
   }
   const toggleFavorite = (s:Station)=>{
@@ -95,23 +84,16 @@ export default function useStations(){
     }))
   }
 
-  const filtered = stations.filter(s=>{
-    if(onlyFavs){
-      const favs = getFavorites(); if(!favs.has(`${s.name}|${s.url || s.streamUrl}`)) return false
-    }
-    if(filters.country && s.country !== filters.country) return false
-    if(filters.region && s.region !== filters.region) return false
-    if(query){
-      const nq = query.normalize('NFD').toLowerCase()
-      const t = (s.name + ' ' + (s.region||'') + ' ' + (s.country||'')).normalize('NFD').toLowerCase()
-      if(!t.includes(nq)) return false
-    }
-    return true
+  const favorites = getFavorites()
+  const filtered = filterStations(stations as Radio[], {
+    query,
+    onlyFavs,
+    filters,
+    favorites,
   })
 
   const exposedFilters: Filters = {
-    countries: Array.from(new Set(stations.map(s=>s.country).filter(Boolean))) as string[],
-    regions: Array.from(new Set(stations.map(s=>s.region).filter(Boolean))) as string[],
+    ...buildStationFilterOptions(stations as Radio[]),
     setCountry: (c:string)=> setFilters(f=>({...f,country:c})),
     setRegion: (r:string)=> setFilters(f=>({...f,region:r}))
   }

@@ -1,8 +1,8 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { getAvailableThemes, getTheme, getUiScaleMode, setTheme, setUiScaleMode, detectScreenSize, type ThemeName, type UiScaleMode } from '../../lib/utils/theme'
-import { usePWAInstall } from '../../hooks/pwa'
-import Filters from '../features/Filters'
+import { getAvailableThemes, getTheme, getUiScaleMode, setTheme, setUiScaleMode, detectScreenSize, type ThemeName, type UiScaleMode } from '@/lib/utils/theme'
+import { usePWAInstall } from '@/hooks/pwa'
+import Filters from '@/components/features/Filters'
 
 type Props = {
   open: boolean
