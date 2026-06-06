@@ -11,7 +11,7 @@ type Props = {
   onPrevStation: () => void
 }
 
-type PlayerMode = 'mini' | 'card' | 'full' | 'bubble'
+type PlayerMode = 'mini' | 'card' | 'full' | 'bubble' | 'minimal' | 'dashboard'
 
 function Equalizer({ isPlaying, variant = 'mini' }: { isPlaying: boolean; variant?: 'mini' | 'card' | 'full' }) {
   return (
@@ -256,12 +256,82 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
                       <Maximize2 size={16} strokeWidth={2.2} />
                       Pantalla completa
                     </button>
+                      <button type="button" className="player-secondary-btn" onClick={() => setMode('minimal')}>
+                        Minimal
+                      </button>
+                      <button type="button" className="player-secondary-btn" onClick={() => setMode('dashboard')}>
+                        Dashboard
+                      </button>
                   </div>
                 </div>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
+
+          <AnimatePresence>
+            {mode === 'minimal' && (
+              <motion.div
+                className="player-minimal-bar glass-panel rounded-lg shadow-sm transition-all duration-150"
+                initial={{ y: 28, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 28, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                onClick={() => setMode('card')}
+              >
+                <div className="player-minimal-inner">
+                  <div className="player-minimal-left">
+                    <button type="button" className="player-icon-btn player-icon-btn-ghost" onClick={(e) => { e.stopPropagation(); onPrevStation(); }} aria-label="Anterior">
+                      <SkipBack size={16} strokeWidth={2.2} />
+                    </button>
+                    <button type="button" className="player-icon-btn player-icon-btn-primary" onClick={(e) => { e.stopPropagation(); togglePlay(); }} aria-label={isPlaying ? 'Pausar' : 'Reproducir'}>
+                      {isPlaying ? <Pause size={16} strokeWidth={2.4} /> : <Play size={16} strokeWidth={2.4} />}
+                    </button>
+                    <button type="button" className="player-minimal-title" aria-hidden="true">{stationName}</button>
+                  </div>
+                  <div className="player-minimal-right">
+                    <button type="button" className="player-icon-btn player-icon-btn-ghost" onClick={(e) => { e.stopPropagation(); onNextStation(); }} aria-label="Siguiente">
+                      <SkipForward size={16} strokeWidth={2.2} />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {mode === 'dashboard' && (
+              <motion.div
+                className="player-dashboard glass-panel rounded-xl shadow-md transition-all duration-300"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                transition={{ duration: 0.28 }}
+              >
+                <div className="player-dashboard-grid">
+                  <StationArtwork station={currentStation} isPlaying={isPlaying} size="card" />
+                  <div className="player-dashboard-meta">
+                    <span className={`status-indicator ${isPlaying ? 'live' : ''}`}>{isPlaying ? 'EN VIVO' : 'LISTO'}</span>
+                    <h3 className="player-dashboard-title">{stationName}</h3>
+                    <p className="player-dashboard-sub">{stationMeta}</p>
+                    <div className="player-dashboard-controls">
+                      <ControlButton onClick={onPrevStation} ariaLabel="Anterior">
+                        <SkipBack size={20} strokeWidth={2.2} />
+                      </ControlButton>
+                      <ControlButton onClick={togglePlay} ariaLabel={isPlaying ? 'Pausar' : 'Reproducir'} variant="primary">
+                        {isPlaying ? <Pause size={20} strokeWidth={2.4} /> : <Play size={20} strokeWidth={2.4} />}
+                      </ControlButton>
+                      <ControlButton onClick={onNextStation} ariaLabel="Siguiente">
+                        <SkipForward size={20} strokeWidth={2.2} />
+                      </ControlButton>
+                      <button type="button" className="player-secondary-btn" onClick={() => setMode('full')}>Expandir</button>
+                      <button type="button" className="player-secondary-btn" onClick={() => setMode('mini')}>Cerrar</button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
         <AnimatePresence>
           {mode === 'full' && (
