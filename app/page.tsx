@@ -35,16 +35,8 @@ export default function Page() {
       <div className="container">
         <header className="site-header">
           <div className="header-inner">
-            <div className="brand-mark">
-              <div>
-                <h1 className="site-title">Radio Satelital</h1>
-                <p className="site-subtitle">Wave player v9.5</p>
-              </div>
-            </div>
+            <h1 className="site-title">Radio Satelital</h1>
             <div className="header-actions">
-              <span className="header-status-pill">
-                {onlyFavs ? 'Favoritos activos' : `${stations.length} radios online`}
-              </span>
               <button className="sec-btn header-icon-btn" onClick={toggleMenu} aria-label="Abrir ajustes">
                 <Menu size={20} strokeWidth={2.2} />
               </button>

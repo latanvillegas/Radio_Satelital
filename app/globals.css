@@ -72,11 +72,8 @@ img{max-width:100%;display:block}
 
 .site-header{padding:1.5rem 0 1rem}
 .header-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
-.brand-mark{display:flex;align-items:center;gap:1rem}
 .site-title{margin:0;font-weight:800;font-size:clamp(1.2rem, 4vw, 2rem);letter-spacing:-0.04em;color:var(--text-main)}
-.site-subtitle{margin:0;font-size:clamp(0.6rem, 2vw, 0.85rem);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.15em}
 .header-actions{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
-.header-status-pill{display:inline-flex;align-items:center;min-height:44px;padding:0 .95rem;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--border-glass);color:var(--text-muted);font-size:.78rem;font-weight:700;letter-spacing:.03em}
 .site-header .bottom-nav{position:static;left:auto;bottom:auto;transform:none;width:100%;margin-top:1rem;box-shadow:none;background:rgba(6,12,18,.58)}
 .bottom-nav-top{justify-content:flex-start;padding:.45rem}
 .bottom-nav-top .bottom-nav-item{min-height:50px}
