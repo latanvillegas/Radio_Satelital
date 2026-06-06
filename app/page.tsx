@@ -60,29 +60,6 @@ export default function Page() {
           />
         </header>
 
-        <section className="page-hero glass-panel">
-          <div className="page-hero-copy">
-            <p className="page-hero-kicker">Interfaz limpia</p>
-            <h2>Explora radios con foco, orden y velocidad.</h2>
-            <p>
-              Reproductor principal arriba, catálogo completo debajo y ajustes en un panel lateral.
-            </p>
-          </div>
-          <div className="page-hero-stats">
-            <div className="hero-stat">
-              <strong>{stations.length}</strong>
-              <span>Radios</span>
-            </div>
-            <div className="hero-stat">
-              <strong>{currentStation ? 'En vivo' : 'Listo'}</strong>
-              <span>{currentStation?.name || 'Sin selección'}</span>
-            </div>
-            <button className="hero-stat hero-stat-action" onClick={showAllStations} type="button">
-              Ver catálogo completo
-            </button>
-          </div>
-        </section>
-
         <div className="layout">
           <main className="right-col">
             {loading && (
