@@ -15,6 +15,7 @@ export default function StationGrid({ stations, playStation, toggleFavorite }: P
   const loading = stations.length === 0
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(1200)
+  const stationCountLabel = loading ? 'Cargando emisoras' : `${stations.length} radios disponibles`
 
   useEffect(()=>{
     if(!containerRef.current) return
@@ -40,9 +41,19 @@ export default function StationGrid({ stations, playStation, toggleFavorite }: P
   // si pocos items, mostrar grid normal con skeleton o tarjetas
   if(stations.length <= 200){
     return (
-      <div className="glass-panel rounded-xl shadow-sm hover:shadow-md transition-all duration-200" id="station-list" ref={containerRef}>
+      <div className="glass-panel station-board rounded-xl shadow-sm hover:shadow-md transition-all duration-200" id="station-list" ref={containerRef}>
+        <div className="station-board-head">
+          <div>
+            <p className="station-board-kicker">Catálogo en vivo</p>
+            <h3>Frecuencias</h3>
+          </div>
+          <span className="station-board-pill">{stationCountLabel}</span>
+        </div>
+        <p className="station-board-copy">
+          Explora emisoras de forma rápida, marca favoritas y cambia de estación sin perder contexto.
+        </p>
         <div className="panel-head station-panel-head">
-          <h3>Frecuencias</h3>
+          <h3>Lista de radios</h3>
         </div>
         <div className="station-grid">
           {loading ? (
@@ -77,9 +88,19 @@ export default function StationGrid({ stations, playStation, toggleFavorite }: P
   }
 
   return (
-    <div className="glass-panel rounded-xl shadow-sm hover:shadow-md transition-all duration-200" id="station-list" ref={containerRef} aria-label="Lista de frecuencias">
+    <div className="glass-panel station-board rounded-xl shadow-sm hover:shadow-md transition-all duration-200" id="station-list" ref={containerRef} aria-label="Lista de frecuencias">
+      <div className="station-board-head">
+        <div>
+          <p className="station-board-kicker">Catálogo en vivo</p>
+          <h3>Frecuencias</h3>
+        </div>
+        <span className="station-board-pill">{stationCountLabel}</span>
+      </div>
+      <p className="station-board-copy">
+        Explora emisoras de forma rápida, marca favoritas y cambia de estación sin perder contexto.
+      </p>
       <div className="panel-head station-panel-head">
-        <h3>Frecuencias</h3>
+        <h3>Lista de radios</h3>
       </div>
       <Grid
         role="grid"
