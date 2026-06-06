@@ -169,42 +169,17 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
               <StationArtwork station={currentStation} isPlaying={isPlaying} size="mini" />
               <div className="player-mini-copy">
                 <span className="player-mini-title">{stationName}</span>
-                <span className="player-mini-subtitle">{stationMeta}</span>
+                <span className={`status-indicator ${isPlaying ? 'live' : ''}`}>{isPlaying ? 'EN VIVO' : 'LISTO'}</span>
               </div>
             </div>
 
-            <Equalizer isPlaying={isPlaying} variant="mini" />
-
             <div className="player-mini-actions">
-              <ControlButton onClick={onPrevStation} ariaLabel="Anterior">
-                <SkipBack size={18} strokeWidth={2.2} />
-              </ControlButton>
               <ControlButton onClick={togglePlay} ariaLabel={isPlaying ? 'Pausar' : 'Reproducir'} variant="primary">
                 {isPlaying ? <Pause size={18} strokeWidth={2.4} /> : <Play size={18} strokeWidth={2.4} />}
               </ControlButton>
-              <ControlButton onClick={onNextStation} ariaLabel="Siguiente">
-                <SkipForward size={18} strokeWidth={2.2} />
+              <ControlButton onClick={() => setMode('card')} ariaLabel="Abrir reproductor" variant="ghost">
+                <Maximize2 size={18} strokeWidth={2.1} />
               </ControlButton>
-              <div className="player-volume-wrap" onClick={(event) => event.stopPropagation()}>
-                <ControlButton onClick={() => setShowVolume((value) => !value)} ariaLabel="Volumen" variant="ghost">
-                  <Volume2 size={18} strokeWidth={2.1} />
-                </ControlButton>
-                {showVolume && (
-                  <div className="player-volume-popover">
-                    <Volume2 size={16} strokeWidth={2.1} className="player-volume-icon" aria-hidden="true" />
-                    <input
-                      className="volume-slider"
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={volume}
-                      onChange={(event) => handleVolumeChange(Number(event.target.value))}
-                      aria-label="Volumen"
-                    />
-                  </div>
-                )}
-              </div>
             </div>
           </motion.div>
         )}
