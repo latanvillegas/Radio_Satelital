@@ -8,11 +8,14 @@ type Props = {
   onFavorites: () => void
   onSearch: () => void
   favoritesActive?: boolean
+  placement?: 'top' | 'bottom'
 }
 
-export default function BottomNav({ onHome, onRadio, onFavorites, onSearch, favoritesActive }: Props) {
+export default function BottomNav({ onHome, onRadio, onFavorites, onSearch, favoritesActive, placement = 'bottom' }: Props) {
+  const navClassName = placement === 'top' ? 'bottom-nav bottom-nav-top rounded-xl shadow-sm hover:shadow-md transition-all duration-200' : 'bottom-nav rounded-xl shadow-sm hover:shadow-md transition-all duration-200'
+
   return (
-    <nav className="bottom-nav rounded-xl shadow-sm hover:shadow-md transition-all duration-200" aria-label="Navegación inferior">
+    <nav className={navClassName} aria-label={placement === 'top' ? 'Navegación principal' : 'Navegación inferior'}>
       <button className="bottom-nav-item" onClick={onHome} aria-label="Inicio">
         <Home size={20} strokeWidth={2.2} />
         <span>Inicio</span>

@@ -37,7 +37,7 @@ export default function Page() {
           <div className="header-inner">
             <div className="brand-mark">
               <div>
-                <h1 className="site-title">SATELITAL</h1>
+                <h1 className="site-title">Radio Satelital</h1>
                 <p className="site-subtitle">Wave player v9.5</p>
               </div>
             </div>
@@ -50,6 +50,14 @@ export default function Page() {
               </button>
             </div>
           </div>
+          <BottomNav
+            placement="top"
+            onHome={scrollToPlayer}
+            onRadio={scrollToStations}
+            onFavorites={toggleFavorites}
+            onSearch={focusSearch}
+            favoritesActive={onlyFavs}
+          />
         </header>
 
         <section className="page-hero glass-panel">
@@ -76,9 +84,6 @@ export default function Page() {
         </section>
 
         <div className="layout">
-          <aside className="left-col">
-            <Player currentStation={currentStation} onNextStation={nextStation} onPrevStation={prevStation} />
-          </aside>
           <main className="right-col">
             {loading && (
               <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -102,15 +107,10 @@ export default function Page() {
               <StationGrid stations={stations} playStation={playStation} toggleFavorite={toggleFavorite} />
             )}
           </main>
+          <aside className="player-panel">
+            <Player currentStation={currentStation} onNextStation={nextStation} onPrevStation={prevStation} />
+          </aside>
         </div>
-
-        <BottomNav
-          onHome={scrollToPlayer}
-          onRadio={scrollToStations}
-          onFavorites={toggleFavorites}
-          onSearch={focusSearch}
-          favoritesActive={onlyFavs}
-        />
         <SideMenu
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
