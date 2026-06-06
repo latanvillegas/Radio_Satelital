@@ -55,6 +55,20 @@ img{max-width:100%;display:block}
   .container{padding:0 3rem}
 }
 
+/* Extra-small devices adjustments */
+@media (max-width:359px){
+  :root{--ui-scale:0.9}
+  .player-section{min-height:320px}
+  .bottom-nav{bottom:12px;padding:.5rem}
+}
+
+/* Very large screens */
+@media (min-width:1601px){
+  :root{--ui-scale:1.06}
+  .container{max-width:1800px}
+  .player-section{min-height:520px}
+}
+
 .left-col{width:100%;}
 .right-col{width:100%;overflow:auto}
 
@@ -107,7 +121,7 @@ img{max-width:100%;display:block}
 .volume-slider{width:100%;accent-color:#6200EE}
 
 /* Station card - Responsive grid */
-.station-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(250px, 40vw, 340px),1fr));gap:1rem;max-height:calc(100vh - 280px);min-height:300px;overflow-y:auto;padding-right:5px;align-content:start}
+.station-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;max-height:calc(100vh - 220px);min-height:260px;overflow-y:auto;padding-right:5px;align-content:start}
 @media (min-width:768px){.station-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}}
 @media (min-width:1200px){.station-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem}}
 @media (min-width:1600px){.station-grid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}}
