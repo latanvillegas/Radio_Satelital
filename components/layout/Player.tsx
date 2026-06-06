@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { usePlayer } from '@/hooks/player'
 import type { Station } from '@/types/station'
 import { Maximize2, Minimize2, Pause, Play, Radio, SkipBack, SkipForward, Volume2, X } from 'lucide-react'
@@ -72,8 +72,22 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
   const [mode, setMode] = useState<PlayerMode>('mini')
   const [volume, setVolume] = useState(0.8)
   const [showVolume, setShowVolume] = useState(false)
+  const [dockPosition, setDockPosition] = useState({ x: 0, y: 0 })
+  const dragControls = useDragControls()
 
   useEffect(() => {
+    const savedPosition = window.localStorage.getItem('radio-player-dock-position')
+    if (savedPosition) {
+      try {
+        const parsedPosition = JSON.parse(savedPosition) as { x?: number; y?: number }
+        if (typeof parsedPosition.x === 'number' && typeof parsedPosition.y === 'number') {
+          setDockPosition({ x: parsedPosition.x, y: parsedPosition.y })
+        }
+      } catch {
+        window.localStorage.removeItem('radio-player-dock-position')
+      }
+    }
+
     const audio = document.getElementById('radioPlayer') as HTMLAudioElement | null
     if (!audio) return
 
@@ -95,6 +109,10 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
       audio.removeEventListener('loadstart', handleLoadstart)
     }
   }, [volume])
+
+  useEffect(() => {
+    window.localStorage.setItem('radio-player-dock-position', JSON.stringify(dockPosition))
+  }, [dockPosition])
 
   const handleVolumeChange = (value: number) => {
     const audio = document.getElementById('radioPlayer') as HTMLAudioElement | null
@@ -119,7 +137,34 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
             initial={{ y: 28, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
+            drag
+            dragControls={dragControls}
+            dragMomentum={false}
+            dragElastic={0.05}
+            dragListener={false}
+            onDragEnd={(_, info) => {
+              setDockPosition((currentPosition) => ({
+                x: currentPosition.x + info.offset.x,
+                y: currentPosition.y + info.offset.y,
+              }))
+            }}
+            style={{ x: dockPosition.x, y: dockPosition.y }}
           >
+            <button
+              type="button"
+              className="player-mini-handle"
+              aria-label="Mover reproductor"
+              onPointerDown={(event) => {
+                event.stopPropagation()
+                dragControls.start(event)
+              }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <span className="player-mini-grip" />
+              <span className="player-mini-grip" />
+              <span className="player-mini-grip" />
+            </button>
+
             <div className="player-mini-main">
               <StationArtwork station={currentStation} isPlaying={isPlaying} size="mini" />
               <div className="player-mini-copy">
