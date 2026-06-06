@@ -19,7 +19,7 @@ export default function Page() {
     window.setTimeout(() => document.getElementById('station-search')?.focus(), 150)
   }
   const toggleFavorites = () => toggleOnlyFavs(!onlyFavs)
-  const scrollToPlayer = () => document.getElementById('player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const scrollToPlayer = () => window.scrollTo({ behavior: 'smooth', top: 0 })
   const scrollToStations = () => document.getElementById('station-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   const showAllStations = () => {
     setQuery('')
