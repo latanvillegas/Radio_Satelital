@@ -159,11 +159,12 @@ export default function SideMenu({ open, onClose, loading, error, stationsCount,
 
         <section className="settings-block">
           <div className="settings-block-head">
-            <h3>Redes</h3>
+            <h3>Enfoque</h3>
           </div>
-          <div className="settings-card settings-links">
-            <a href="https://twitter.com" target="_blank" rel="noreferrer">Twitter</a>
-            <a href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
+          <div className="settings-card">
+            <p className="track-meta" style={{ margin: 0 }}>
+              La experiencia queda centrada en escuchar, buscar y ajustar la interfaz.
+            </p>
           </div>
         </section>
       </div>
