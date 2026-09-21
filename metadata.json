@@ -1,0 +1,6 @@
+{
+  "name": "Radio Satelital",
+  "description": "Escucha emisoras de radio en vivo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
