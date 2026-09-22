@@ -1,7 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
 import { getAvailableThemes, getTheme, getUiScaleMode, setTheme, setUiScaleMode, detectScreenSize, type ThemeName, type UiScaleMode } from '@/lib/utils/theme'
-import { usePWAInstall } from '@/hooks/pwa'
 import Filters from '@/components/features/Filters'
 
 type Props = {
@@ -14,8 +13,13 @@ type Props = {
   filters: {
     countries: string[]
     regions: string[]
+    genres: string[]
     setCountry: (value: string) => void
     setRegion: (value: string) => void
+    setGenre: (value: string) => void
+    activeCountry?: string
+    activeRegion?: string
+    activeGenre?: string
   }
   toggleOnlyFavs: (value: boolean) => void
   onResetFilters: () => void
@@ -45,7 +49,6 @@ export default function SideMenu({ open, onClose, loading, error, stationsCount,
   const themes = getAvailableThemes()
   const [currentTheme, setCurrentTheme] = useState<ThemeName>('amoled')
   const [currentScaleMode, setCurrentScaleMode] = useState<UiScaleMode>('auto')
-  const { canInstall, isInstalled, install } = usePWAInstall()
 
   useEffect(() => {
     setCurrentTheme(getTheme())
@@ -98,15 +101,6 @@ export default function SideMenu({ open, onClose, loading, error, stationsCount,
               <p className="track-meta">{stationsCount} emisoras disponibles</p>
             )}
             <div className="settings-actions-inline">
-              <button 
-                className="settings-primary" 
-                id="btnInstall" 
-                onClick={install}
-                disabled={!canInstall || isInstalled}
-                style={{ opacity: (!canInstall || isInstalled) ? 0.6 : 1, cursor: (!canInstall || isInstalled) ? 'not-allowed' : 'pointer' }}
-              >
-                {isInstalled ? '✅ Instalada' : canInstall ? 'Instalar app' : '📱 Desde navegador'}
-              </button>
               <button className="settings-secondary" id="clearFilters" onClick={onResetFilters}>Reiniciar filtros</button>
             </div>
           </div>

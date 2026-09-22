@@ -3,7 +3,22 @@ import React, { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { usePlayer } from '@/hooks/player'
 import type { Station } from '@/types/station'
-import { Maximize2, Minimize2, Pause, Play, Radio, SkipBack, SkipForward, Volume2, X } from 'lucide-react'
+import {
+  Maximize2,
+  Minimize2,
+  Pause,
+  Play,
+  Radio,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  X,
+  Share2,
+  Check,
+} from 'lucide-react'
+import AudioVisualizer from '@/components/features/AudioVisualizer'
+import SleepTimerModal from '@/components/features/SleepTimerModal'
 
 type Props = {
   currentStation: Station | null
@@ -11,20 +26,20 @@ type Props = {
   onPrevStation: () => void
 }
 
-type PlayerMode = 'mini' | 'card' | 'full' | 'bubble' | 'minimal' | 'dashboard'
+type PlayerMode = 'mini' | 'card' | 'full' | 'bubble'
 
-function Equalizer({ isPlaying, variant = 'mini' }: { isPlaying: boolean; variant?: 'mini' | 'card' | 'full' }) {
-  return (
-    <div className={`eq-group eq-group-${variant} ${isPlaying ? 'is-playing' : 'is-paused'}`} aria-hidden="true">
-      <span className="eq-bar eq-bar-1" />
-      <span className="eq-bar eq-bar-2" />
-      <span className="eq-bar eq-bar-3" />
-    </div>
-  )
-}
+function StationArtwork({
+  station,
+  isPlaying,
+  size = 'mini',
+}: {
+  station: Station | null
+  isPlaying: boolean
+  size?: 'mini' | 'card' | 'full'
+}) {
+  const [imgError, setImgError] = useState(false)
+  const hasLogo = Boolean(station?.logoUrl) && !imgError
 
-function StationArtwork({ station, isPlaying, size = 'mini' }: { station: Station | null; isPlaying: boolean; size?: 'mini' | 'card' | 'full' }) {
-  const hasLogo = Boolean(station?.logoUrl)
   return (
     <div className={`station-artwork station-artwork-${size} ${isPlaying ? 'is-playing' : 'is-paused'}`}>
       <span className="artwork-ring artwork-ring-1" />
@@ -32,9 +47,14 @@ function StationArtwork({ station, isPlaying, size = 'mini' }: { station: Statio
       <span className="artwork-ring artwork-ring-3" />
       <div className="station-artwork-core">
         {hasLogo ? (
-          <img className="station-artwork-image" src={station!.logoUrl} alt={station?.name || 'Radio'} />
+          <img
+            className="station-artwork-image"
+            src={station!.logoUrl}
+            alt={station?.name || 'Radio'}
+            onError={() => setImgError(true)}
+          />
         ) : (
-          <Radio size={size === 'mini' ? 20 : size === 'card' ? 54 : 72} strokeWidth={2} />
+          <Radio size={size === 'mini' ? 20 : size === 'card' ? 48 : 64} strokeWidth={2} />
         )}
       </div>
     </div>
@@ -68,51 +88,66 @@ function ControlButton({
 }
 
 export default function Player({ currentStation, onNextStation, onPrevStation }: Props) {
-  const { isPlaying, togglePlay, secondsElapsed } = usePlayer()
+  const {
+    isPlaying,
+    togglePlay,
+    playbackStatus,
+    statusMessage,
+    secondsElapsed,
+    sleepTimerMinutes,
+    setSleepTimer,
+  } = usePlayer()
+
   const [mode, setMode] = useState<PlayerMode>('mini')
-  const [volume, setVolume] = useState(0.8)
-  const [showVolume, setShowVolume] = useState(false)
+  const [volume, setVolume] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('radio_player_volume')
+      return saved ? Number(saved) : 0.85
+    }
+    return 0.85
+  })
+  const [prevVolume, setPrevVolume] = useState(0.85)
+  const [copied, setCopied] = useState(false)
   const [dockPosition, setDockPosition] = useState({ x: 0, y: 0 })
   const dragControls = useDragControls()
 
+  // Sincronizar volumen inicial con el elemento audio
   useEffect(() => {
-    const savedPosition = window.localStorage.getItem('radio-player-dock-position')
-    if (savedPosition) {
-      try {
-        const parsedPosition = JSON.parse(savedPosition) as { x?: number; y?: number }
-        if (typeof parsedPosition.x === 'number' && typeof parsedPosition.y === 'number') {
-          setDockPosition({ x: parsedPosition.x, y: parsedPosition.y })
-        }
-      } catch {
-        window.localStorage.removeItem('radio-player-dock-position')
-      }
-    }
-
     const audio = document.getElementById('radioPlayer') as HTMLAudioElement | null
-    if (!audio) return
-
-    audio.volume = volume
-
-    const handleError = (event: Event) => {
-      console.error('[Player UI] Error de audio:', (event.target as HTMLAudioElement)?.error?.message)
-    }
-
-    const handleLoadstart = () => {
-      console.log('[Player UI] Iniciando carga de stream...')
-    }
-
-    audio.addEventListener('error', handleError)
-    audio.addEventListener('loadstart', handleLoadstart)
-
-    return () => {
-      audio.removeEventListener('error', handleError)
-      audio.removeEventListener('loadstart', handleLoadstart)
+    if (audio) {
+      audio.volume = volume
     }
   }, [volume])
 
+  // Atajos de teclado para control de audio profesional (Espacio = Play/Pause, M = Mute)
   useEffect(() => {
-    window.localStorage.setItem('radio-player-dock-position', JSON.stringify(dockPosition))
-  }, [dockPosition])
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA' ||
+        document.activeElement?.tagName === 'SELECT'
+      ) {
+        return
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault()
+        togglePlay()
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault()
+        toggleMute()
+      } else if (e.key === 'ArrowRight' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        onNextStation()
+      } else if (e.key === 'ArrowLeft' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        onPrevStation()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [volume, prevVolume, isPlaying])
 
   const handleVolumeChange = (value: number) => {
     const audio = document.getElementById('radioPlayer') as HTMLAudioElement | null
@@ -120,12 +155,59 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
       audio.volume = value
     }
     setVolume(value)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('radio_player_volume', value.toString())
+    }
+  }
+
+  const toggleMute = () => {
+    if (volume > 0) {
+      setPrevVolume(volume)
+      handleVolumeChange(0)
+    } else {
+      handleVolumeChange(prevVolume > 0 ? prevVolume : 0.8)
+    }
+  }
+
+  const handleShare = async () => {
+    const station = currentStation
+    if (!station) return
+    const shareText = `Escuchando ${station.name} (${station.country || 'En vivo'}) en Radio Satelital: ${window.location.origin}`
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: station.name, text: shareText, url: window.location.href })
+        return
+      } catch {}
+    }
+    try {
+      await navigator.clipboard.writeText(shareText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {}
   }
 
   const stationName = currentStation?.name || 'Radio Satelital'
-  const stationMeta = currentStation?.country || currentStation?.region || 'Selecciona una emisora'
+  const stationMeta = currentStation?.country
+    ? `${currentStation.country}${currentStation.region ? ` · ${currentStation.region}` : ''}`
+    : 'Catálogo satelital en vivo'
   const timeLabel = new Date(secondsElapsed * 1000).toISOString().substring(14, 19)
   const playingClass = isPlaying ? 'is-playing' : 'is-paused'
+
+  const statusBadgeText =
+    playbackStatus === 'loading'
+      ? 'CONECTANDO'
+      : playbackStatus === 'reconnecting'
+      ? 'RECONECTANDO'
+      : isPlaying
+      ? 'EN VIVO'
+      : 'LISTO'
+
+  const statusBadgeClass =
+    playbackStatus === 'reconnecting'
+      ? 'status-reconnecting'
+      : isPlaying
+      ? 'live'
+      : ''
 
   return (
     <>
@@ -143,9 +225,9 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
             dragElastic={0.05}
             dragListener={false}
             onDragEnd={(_, info) => {
-              setDockPosition((currentPosition) => ({
-                x: currentPosition.x + info.offset.x,
-                y: currentPosition.y + info.offset.y,
+              setDockPosition((curr) => ({
+                x: curr.x + info.offset.x,
+                y: curr.y + info.offset.y,
               }))
             }}
             style={{ x: dockPosition.x, y: dockPosition.y }}
@@ -169,15 +251,31 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
               <StationArtwork station={currentStation} isPlaying={isPlaying} size="mini" />
               <div className="player-mini-copy">
                 <span className="player-mini-title">{stationName}</span>
-                <span className={`status-indicator ${isPlaying ? 'live' : ''}`}>{isPlaying ? 'EN VIVO' : 'LISTO'}</span>
+                <div className="player-mini-meta-row">
+                  <span className={`status-indicator ${statusBadgeClass}`}>{statusBadgeText}</span>
+                  {statusMessage && <span className="player-status-msg">{statusMessage}</span>}
+                </div>
               </div>
             </div>
 
+            {/* Visualizador de audio reactivo en la barra */}
+            <div className="hidden sm:flex items-center px-2">
+              <AudioVisualizer isPlaying={isPlaying} variant="mini" />
+            </div>
+
             <div className="player-mini-actions">
-              <ControlButton onClick={togglePlay} ariaLabel={isPlaying ? 'Pausar' : 'Reproducir'} variant="primary">
+              {/* Temporizador rápido */}
+              <SleepTimerModal currentMinutes={sleepTimerMinutes} onSetTimer={setSleepTimer} />
+
+              <ControlButton
+                onClick={togglePlay}
+                ariaLabel={isPlaying ? 'Pausar (Espacio)' : 'Reproducir (Espacio)'}
+                variant="primary"
+              >
                 {isPlaying ? <Pause size={18} strokeWidth={2.4} /> : <Play size={18} strokeWidth={2.4} />}
               </ControlButton>
-              <ControlButton onClick={() => setMode('card')} ariaLabel="Abrir reproductor" variant="ghost">
+
+              <ControlButton onClick={() => setMode('card')} ariaLabel="Expandir reproductor" variant="ghost">
                 <Maximize2 size={18} strokeWidth={2.1} />
               </ControlButton>
             </div>
@@ -219,44 +317,80 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
               onClick={() => setMode('mini')}
             >
               <motion.div
-                className={`player-card-modal glass-panel rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ${playingClass}`}
-                initial={{ scale: 0.92, opacity: 0, y: 24 }}
+                className={`player-card-modal glass-panel rounded-xl shadow-lg ${playingClass}`}
+                initial={{ scale: 0.94, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.96, opacity: 0, y: 24 }}
+                exit={{ scale: 0.96, opacity: 0, y: 20 }}
                 transition={{ duration: 0.28, ease: 'easeOut' }}
                 onClick={(event) => event.stopPropagation()}
               >
-                <button type="button" className="player-close-btn" onClick={() => setMode('mini')} aria-label="Cerrar reproductor">
-                  <X size={18} strokeWidth={2.4} />
-                </button>
+                <div className="player-card-top-bar">
+                  <div className="flex items-center gap-2">
+                    <span className={`status-indicator ${statusBadgeClass}`}>{statusBadgeText}</span>
+                    {sleepTimerMinutes && (
+                      <span className="text-xs text-amber-400 font-medium">
+                        🌙 {sleepTimerMinutes}m para apagado
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="player-close-btn"
+                    onClick={() => setMode('mini')}
+                    aria-label="Cerrar reproductor"
+                  >
+                    <X size={18} strokeWidth={2.4} />
+                  </button>
+                </div>
 
                 <div className="player-card-header">
                   <StationArtwork station={currentStation} isPlaying={isPlaying} size="card" />
                   <div className="player-card-text">
-                    <span className={`status-indicator ${isPlaying ? 'live' : ''}`}>{isPlaying ? 'EN VIVO' : 'LISTO'}</span>
                     <h2 className="player-card-title">{stationName}</h2>
                     <p className="player-card-meta">{stationMeta}</p>
-                    <p className="player-card-submeta">{timeLabel}</p>
+                    <p className="player-card-submeta">Tiempo de sintonía: {timeLabel}</p>
+                    {statusMessage && (
+                      <p className="text-xs text-amber-400 mt-1 font-semibold">{statusMessage}</p>
+                    )}
                   </div>
                 </div>
 
-                <Equalizer isPlaying={isPlaying} variant="card" />
+                {/* Visualizador de espectro interactivo */}
+                <div className="flex justify-center my-3 py-2 bg-black/25 rounded-lg border border-white/5">
+                  <AudioVisualizer isPlaying={isPlaying} variant="card" />
+                </div>
 
                 <div className="player-card-controls">
-                  <ControlButton onClick={onPrevStation} ariaLabel="Anterior">
+                  <ControlButton onClick={onPrevStation} ariaLabel="Emisora anterior (Ctrl+←)">
                     <SkipBack size={24} strokeWidth={2.2} />
                   </ControlButton>
-                  <ControlButton onClick={togglePlay} ariaLabel={isPlaying ? 'Pausar' : 'Reproducir'} variant="primary">
+                  <ControlButton
+                    onClick={togglePlay}
+                    ariaLabel={isPlaying ? 'Pausar (Espacio)' : 'Reproducir (Espacio)'}
+                    variant="primary"
+                  >
                     {isPlaying ? <Pause size={24} strokeWidth={2.4} /> : <Play size={24} strokeWidth={2.4} />}
                   </ControlButton>
-                  <ControlButton onClick={onNextStation} ariaLabel="Siguiente">
+                  <ControlButton onClick={onNextStation} ariaLabel="Siguiente emisora (Ctrl+→)">
                     <SkipForward size={24} strokeWidth={2.2} />
                   </ControlButton>
                 </div>
 
                 <div className="player-card-footer">
                   <div className="player-volume-inline">
-                    <Volume2 size={18} strokeWidth={2.1} className="player-volume-icon" aria-hidden="true" />
+                    <button
+                      type="button"
+                      className="player-icon-btn player-icon-btn-ghost p-1"
+                      onClick={toggleMute}
+                      title="Silenciar / Activar sonido (M)"
+                      aria-label="Silenciar"
+                    >
+                      {volume === 0 ? (
+                        <VolumeX size={18} strokeWidth={2.1} className="text-red-400" />
+                      ) : (
+                        <Volume2 size={18} strokeWidth={2.1} />
+                      )}
+                    </button>
                     <input
                       className="volume-slider"
                       type="range"
@@ -265,93 +399,34 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
                       step="0.01"
                       value={volume}
                       onChange={(event) => handleVolumeChange(Number(event.target.value))}
-                      aria-label="Volumen"
+                      aria-label="Control de volumen"
                     />
+                    <span className="text-xs font-mono text-zinc-400 w-8 text-right">
+                      {Math.round(volume * 100)}%
+                    </span>
                   </div>
+
                   <div className="player-mode-actions">
-                    <button type="button" className="player-secondary-btn" onClick={() => setMode('bubble')}>
-                      Burbuja
+                    <SleepTimerModal currentMinutes={sleepTimerMinutes} onSetTimer={setSleepTimer} />
+                    <button
+                      type="button"
+                      className="player-secondary-btn"
+                      onClick={handleShare}
+                      title="Compartir emisora"
+                    >
+                      {copied ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
+                      <span>{copied ? 'Copiado' : 'Compartir'}</span>
                     </button>
                     <button type="button" className="player-secondary-btn" onClick={() => setMode('full')}>
-                      <Maximize2 size={16} strokeWidth={2.2} />
-                      Pantalla completa
+                      <Maximize2 size={15} strokeWidth={2.2} />
+                      <span>Pantalla completa</span>
                     </button>
-                      <button type="button" className="player-secondary-btn" onClick={() => setMode('minimal')}>
-                        Minimal
-                      </button>
-                      <button type="button" className="player-secondary-btn" onClick={() => setMode('dashboard')}>
-                        Dashboard
-                      </button>
                   </div>
                 </div>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
-
-          <AnimatePresence>
-            {mode === 'minimal' && (
-              <motion.div
-                className="player-minimal-bar glass-panel rounded-lg shadow-sm transition-all duration-150"
-                initial={{ y: 28, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 28, opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                onClick={() => setMode('card')}
-              >
-                <div className="player-minimal-inner">
-                  <div className="player-minimal-left">
-                    <button type="button" className="player-icon-btn player-icon-btn-ghost" onClick={(e) => { e.stopPropagation(); onPrevStation(); }} aria-label="Anterior">
-                      <SkipBack size={16} strokeWidth={2.2} />
-                    </button>
-                    <button type="button" className="player-icon-btn player-icon-btn-primary" onClick={(e) => { e.stopPropagation(); togglePlay(); }} aria-label={isPlaying ? 'Pausar' : 'Reproducir'}>
-                      {isPlaying ? <Pause size={16} strokeWidth={2.4} /> : <Play size={16} strokeWidth={2.4} />}
-                    </button>
-                    <button type="button" className="player-minimal-title" aria-hidden="true">{stationName}</button>
-                  </div>
-                  <div className="player-minimal-right">
-                    <button type="button" className="player-icon-btn player-icon-btn-ghost" onClick={(e) => { e.stopPropagation(); onNextStation(); }} aria-label="Siguiente">
-                      <SkipForward size={16} strokeWidth={2.2} />
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <AnimatePresence>
-            {mode === 'dashboard' && (
-              <motion.div
-                className="player-dashboard glass-panel rounded-xl shadow-md transition-all duration-300"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 12 }}
-                transition={{ duration: 0.28 }}
-              >
-                <div className="player-dashboard-grid">
-                  <StationArtwork station={currentStation} isPlaying={isPlaying} size="card" />
-                  <div className="player-dashboard-meta">
-                    <span className={`status-indicator ${isPlaying ? 'live' : ''}`}>{isPlaying ? 'EN VIVO' : 'LISTO'}</span>
-                    <h3 className="player-dashboard-title">{stationName}</h3>
-                    <p className="player-dashboard-sub">{stationMeta}</p>
-                    <div className="player-dashboard-controls">
-                      <ControlButton onClick={onPrevStation} ariaLabel="Anterior">
-                        <SkipBack size={20} strokeWidth={2.2} />
-                      </ControlButton>
-                      <ControlButton onClick={togglePlay} ariaLabel={isPlaying ? 'Pausar' : 'Reproducir'} variant="primary">
-                        {isPlaying ? <Pause size={20} strokeWidth={2.4} /> : <Play size={20} strokeWidth={2.4} />}
-                      </ControlButton>
-                      <ControlButton onClick={onNextStation} ariaLabel="Siguiente">
-                        <SkipForward size={20} strokeWidth={2.2} />
-                      </ControlButton>
-                      <button type="button" className="player-secondary-btn" onClick={() => setMode('full')}>Expandir</button>
-                      <button type="button" className="player-secondary-btn" onClick={() => setMode('mini')}>Cerrar</button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
         <AnimatePresence>
           {mode === 'full' && (
@@ -369,30 +444,57 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
               </div>
 
               <div className="player-full-shell">
-                <button type="button" className="player-close-btn player-close-btn-light" onClick={() => setMode('card')} aria-label="Salir de pantalla completa">
-                  <Minimize2 size={18} strokeWidth={2.4} />
+                <button
+                  type="button"
+                  className="player-close-btn player-close-btn-light"
+                  onClick={() => setMode('card')}
+                  aria-label="Salir de pantalla completa"
+                >
+                  <Minimize2 size={20} strokeWidth={2.4} />
                 </button>
 
                 <StationArtwork station={currentStation} isPlaying={isPlaying} size="full" />
                 <div className="player-full-copy">
-                  <span className={`status-indicator ${isPlaying ? 'live' : ''}`}>{isPlaying ? 'EN VIVO' : 'LISTO'}</span>
+                  <span className={`status-indicator ${statusBadgeClass}`}>{statusBadgeText}</span>
                   <h2 className="player-full-title">{stationName}</h2>
                   <p className="player-full-meta">{stationMeta}</p>
                   <p className="player-full-submeta">{timeLabel}</p>
+                  {statusMessage && (
+                    <p className="text-sm text-amber-300 font-semibold mt-1">{statusMessage}</p>
+                  )}
                 </div>
 
-                <Equalizer isPlaying={isPlaying} variant="full" />
+                <div className="my-6">
+                  <AudioVisualizer isPlaying={isPlaying} variant="full" />
+                </div>
 
                 <div className="player-full-controls">
                   <ControlButton onClick={onPrevStation} ariaLabel="Anterior">
-                    <SkipBack size={28} strokeWidth={2.2} />
+                    <SkipBack size={32} strokeWidth={2.2} />
                   </ControlButton>
                   <ControlButton onClick={togglePlay} ariaLabel={isPlaying ? 'Pausar' : 'Reproducir'} variant="primary">
-                    {isPlaying ? <Pause size={28} strokeWidth={2.4} /> : <Play size={28} strokeWidth={2.4} />}
+                    {isPlaying ? <Pause size={32} strokeWidth={2.4} /> : <Play size={32} strokeWidth={2.4} />}
                   </ControlButton>
                   <ControlButton onClick={onNextStation} ariaLabel="Siguiente">
-                    <SkipForward size={28} strokeWidth={2.2} />
+                    <SkipForward size={32} strokeWidth={2.2} />
                   </ControlButton>
+                </div>
+
+                <div className="flex items-center gap-4 mt-6 max-w-xs w-full px-4 py-2 bg-black/30 backdrop-blur-md rounded-full border border-white/10">
+                  <button type="button" onClick={toggleMute} aria-label="Silenciar">
+                    {volume === 0 ? <VolumeX size={18} className="text-red-400" /> : <Volume2 size={18} />}
+                  </button>
+                  <input
+                    className="volume-slider flex-1"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={volume}
+                    onChange={(event) => handleVolumeChange(Number(event.target.value))}
+                    aria-label="Volumen"
+                  />
+                  <span className="text-xs font-mono">{Math.round(volume * 100)}%</span>
                 </div>
               </div>
             </motion.div>
@@ -400,11 +502,7 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
         </AnimatePresence>
       </div>
 
-      <audio
-        id="radioPlayer"
-        crossOrigin="anonymous"
-        preload="none"
-      />
+      <audio id="radioPlayer" crossOrigin="anonymous" preload="none" />
     </>
   )
 }

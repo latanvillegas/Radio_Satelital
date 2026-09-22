@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import "./pro-features.css";
 
 :root{
   --bg-dark: #05070a;
