@@ -62,13 +62,16 @@ export default function Filters({
 
   return (
     <div
-      className="bg-zinc-900/40 border border-white/[0.08] rounded-2xl p-4 sm:p-5 backdrop-blur-md shadow-xl mb-6 space-y-4"
+      className="bg-black border border-white/[0.08] rounded-2xl p-4 sm:p-5 shadow-xl mb-6 space-y-4"
       id="filters-panel"
     >
       {/* Fila superior: Título de sección y botón Sorpréndeme */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+          <div
+            className="w-2.5 h-2.5 rounded-full animate-pulse"
+            style={{ backgroundColor: 'var(--accent)' }}
+          />
           <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-200">
             Explorar Frecuencias
           </h3>
@@ -82,7 +85,12 @@ export default function Filters({
             <button
               type="button"
               onClick={onPlayRandom}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all hover:scale-[1.02] active:scale-[0.98]"
+              style={{
+                backgroundColor: 'var(--accent-subtle)',
+                color: 'var(--accent)',
+                borderColor: 'var(--accent-glow)',
+              }}
               title="Sintonizar una emisora al azar"
             >
               <Shuffle size={13} strokeWidth={2.4} />
@@ -95,9 +103,18 @@ export default function Filters({
             onClick={() => toggleOnlyFavs(!onlyFavs)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
               onlyFavs
-                ? 'bg-red-500/20 text-red-400 border-red-500/40 shadow-sm'
+                ? 'shadow-sm'
                 : 'bg-white/[0.04] text-zinc-300 border-white/[0.08] hover:bg-white/[0.08]'
             }`}
+            style={
+              onlyFavs
+                ? {
+                    backgroundColor: 'var(--accent-subtle)',
+                    color: 'var(--accent)',
+                    borderColor: 'var(--accent-glow)',
+                  }
+                : undefined
+            }
           >
             <Heart size={13} fill={onlyFavs ? 'currentColor' : 'none'} strokeWidth={2.4} />
             <span>Favoritas</span>
@@ -116,7 +133,7 @@ export default function Filters({
           <input
             id="station-search"
             type="text"
-            className="w-full bg-zinc-950/70 border border-white/[0.1] rounded-xl pl-10 pr-9 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/40 transition-colors"
+            className="w-full bg-zinc-950/80 border border-white/[0.1] rounded-xl pl-10 pr-9 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-colors"
             placeholder="Buscar por emisora, país, ciudad o género..."
             value={q}
             onChange={(e) => handleQueryChange(e.target.value)}
@@ -141,15 +158,15 @@ export default function Filters({
           />
           <select
             id="country-filter"
-            className="w-full appearance-none bg-zinc-950/70 border border-white/[0.1] rounded-xl pl-9 pr-8 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/40 cursor-pointer transition-colors"
+            className="w-full appearance-none bg-zinc-950/80 border border-white/[0.1] rounded-xl pl-9 pr-8 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 cursor-pointer transition-colors"
             value={filters.activeCountry || ''}
             onChange={(e) => filters.setCountry(e.target.value)}
           >
-            <option value="" className="bg-zinc-900 text-zinc-100">
+            <option value="" className="bg-zinc-950 text-zinc-100">
               Todos los países ({filters.countries.length})
             </option>
             {filters.countries.map((c) => (
-              <option key={c} value={c} className="bg-zinc-900 text-zinc-100">
+              <option key={c} value={c} className="bg-zinc-950 text-zinc-100">
                 {c}
               </option>
             ))}
@@ -167,15 +184,15 @@ export default function Filters({
           />
           <select
             id="region-filter"
-            className="w-full appearance-none bg-zinc-950/70 border border-white/[0.1] rounded-xl pl-9 pr-8 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/40 cursor-pointer transition-colors"
+            className="w-full appearance-none bg-zinc-950/80 border border-white/[0.1] rounded-xl pl-9 pr-8 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 cursor-pointer transition-colors"
             value={filters.activeRegion || ''}
             onChange={(e) => filters.setRegion(e.target.value)}
           >
-            <option value="" className="bg-zinc-900 text-zinc-100">
+            <option value="" className="bg-zinc-950 text-zinc-100">
               Todas las regiones
             </option>
             {filters.regions.map((r) => (
-              <option key={r} value={r} className="bg-zinc-900 text-zinc-100">
+              <option key={r} value={r} className="bg-zinc-950 text-zinc-100">
                 {r}
               </option>
             ))}
@@ -191,7 +208,7 @@ export default function Filters({
         <div className="pt-1">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
             <div className="flex items-center gap-1 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider pr-2 flex-shrink-0">
-              <Music size={12} className="text-red-400" />
+              <Music size={12} style={{ color: 'var(--accent)' }} />
               <span>Género:</span>
             </div>
 
@@ -200,9 +217,17 @@ export default function Filters({
               onClick={() => filters.setGenre('')}
               className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 ${
                 !filters.activeGenre
-                  ? 'bg-red-500 text-white font-semibold shadow-md shadow-red-500/30'
+                  ? 'text-white font-semibold'
                   : 'bg-white/[0.04] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] border border-white/[0.06]'
               }`}
+              style={
+                !filters.activeGenre
+                  ? {
+                      backgroundColor: 'var(--accent)',
+                      boxShadow: '0 2px 10px var(--accent-glow)',
+                    }
+                  : undefined
+              }
             >
               Todos
             </button>
@@ -216,9 +241,17 @@ export default function Filters({
                   onClick={() => filters.setGenre(isActive ? '' : g)}
                   className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap transition-all flex-shrink-0 ${
                     isActive
-                      ? 'bg-red-500 text-white font-semibold shadow-md shadow-red-500/30'
+                      ? 'text-white font-semibold'
                       : 'bg-white/[0.04] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] border border-white/[0.06]'
                   }`}
+                  style={
+                    isActive
+                      ? {
+                          backgroundColor: 'var(--accent)',
+                          boxShadow: '0 2px 10px var(--accent-glow)',
+                        }
+                      : undefined
+                  }
                 >
                   {g}
                 </button>

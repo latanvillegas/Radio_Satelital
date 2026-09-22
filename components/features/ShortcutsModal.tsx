@@ -47,7 +47,7 @@ export default function ShortcutsModal({ isOpen, onClose }: Props) {
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.96, opacity: 0, y: 10 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="relative z-10 w-full max-w-lg bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl p-6 text-zinc-100 max-h-[85vh] overflow-y-auto"
+          className="relative z-10 w-full max-w-lg bg-black border border-white/10 rounded-2xl shadow-2xl p-6 text-zinc-100 max-h-[85vh] overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-label="Atajos de Teclado de Radio Satelital"

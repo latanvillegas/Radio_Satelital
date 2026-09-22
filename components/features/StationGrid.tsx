@@ -1,10 +1,11 @@
 "use client"
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import StationCard from './StationCard'
+import StationChannelStrip from './StationChannelStrip'
 import SkeletonCard from './SkeletonCard'
 import { FixedSizeGrid as Grid } from 'react-window'
 import type { Station } from '../../types/station'
-import { History, Radio, Sparkles, SearchX } from 'lucide-react'
+import { History, Radio, Sparkles, SearchX, LayoutGrid, List } from 'lucide-react'
 
 type Props = {
   stations: Station[]
@@ -22,7 +23,8 @@ export default function StationGrid({
   const loading = stations.length === 0
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(1200)
-  const stationCountLabel = `${stations.length} emisoras sintonizables`
+  const [viewMode, setViewMode] = useState<'grid' | 'rack'>('grid')
+  const stationCountLabel = `${stations.length} frecuencias activas`
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -47,16 +49,16 @@ export default function StationGrid({
 
   return (
     <div
-      className="bg-zinc-900/40 border border-white/[0.08] rounded-2xl p-4 sm:p-6 backdrop-blur-md shadow-xl"
+      className="bg-black border border-white/[0.08] rounded-2xl p-4 sm:p-6 shadow-xl"
       id="station-list"
       ref={containerRef}
       aria-label="Lista de frecuencias"
     >
       {/* Escuchadas recientemente */}
       {recentStations.length > 0 && (
-        <div className="mb-6 p-3 sm:p-4 rounded-xl bg-zinc-950/40 border border-white/[0.06]">
+        <div className="mb-6 p-3 sm:p-4 rounded-xl bg-zinc-950/80 border border-white/[0.06]">
           <div className="flex items-center gap-2 mb-3">
-            <History size={15} className="text-red-400" />
+            <History size={15} style={{ color: 'var(--accent)' }} />
             <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
               Escuchadas Recientemente
             </h4>
@@ -70,7 +72,10 @@ export default function StationGrid({
                 onClick={() => playStation(s)}
                 title={`Sintonizar ${s.name}`}
               >
-                <span className="w-2 h-2 rounded-full bg-red-500 group-hover:animate-ping" />
+                <span
+                  className="w-2 h-2 rounded-full group-hover:animate-ping"
+                  style={{ backgroundColor: 'var(--accent)' }}
+                />
                 <span className="font-semibold">{s.name}</span>
                 {s.country && <span className="text-zinc-500 text-[11px]">{s.country}</span>}
               </button>
@@ -83,8 +88,11 @@ export default function StationGrid({
       <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Radio size={16} className="text-red-400" />
-            <span className="text-xs font-bold uppercase tracking-wider text-red-400">
+            <Radio size={16} style={{ color: 'var(--accent)' }} />
+            <span
+              className="text-xs font-bold uppercase tracking-wider"
+              style={{ color: 'var(--accent)' }}
+            >
               Transmisiones Activas
             </span>
           </div>
@@ -96,13 +104,62 @@ export default function StationGrid({
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-white/[0.05] text-zinc-200 border border-white/[0.08] shadow-sm">
-          <span className="w-2 h-2 rounded-full bg-emerald-400" />
-          <span>{stationCountLabel}</span>
+        <div className="flex items-center gap-2">
+          {/* Selector de Modo de Vista: Bento Grid vs Rack Channel Strips */}
+          <div className="flex items-center p-1 rounded-xl bg-zinc-950/80 border border-white/[0.08]">
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                viewMode === 'grid'
+                  ? 'text-white shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+              style={
+                viewMode === 'grid'
+                  ? {
+                      backgroundColor: 'var(--accent-subtle)',
+                      color: 'var(--accent)',
+                    }
+                  : undefined
+              }
+              title="Vista en Módulos de Estudio (Bento Grid)"
+            >
+              <LayoutGrid size={13} />
+              <span className="hidden sm:inline">Módulos</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('rack')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                viewMode === 'rack'
+                  ? 'text-white shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+              style={
+                viewMode === 'rack'
+                  ? {
+                      backgroundColor: 'var(--accent-subtle)',
+                      color: 'var(--accent)',
+                    }
+                  : undefined
+              }
+              title="Vista en Consola de Canales (Rack Strips)"
+            >
+              <List size={13} />
+              <span className="hidden sm:inline">Canales</span>
+            </button>
+          </div>
+
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-white/[0.05] text-zinc-200 border border-white/[0.08] shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>{stationCountLabel}</span>
+          </div>
         </div>
       </div>
 
-      {/* Rejilla de Emisoras */}
+      {/* Rejilla o Consola de Canales de Emisoras */}
       {stations.length === 0 ? (
         <div className="py-16 text-center space-y-3">
           <div className="w-12 h-12 mx-auto rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-zinc-500">
@@ -112,6 +169,18 @@ export default function StationGrid({
           <p className="text-xs text-zinc-400 max-w-sm mx-auto">
             Prueba ajustando el término de búsqueda, seleccionando otro país o restableciendo los filtros.
           </p>
+        </div>
+      ) : viewMode === 'rack' ? (
+        <div className="space-y-1.5 pt-2">
+          {stations.map((s, idx) => (
+            <StationChannelStrip
+              key={`rack-${s.name}-${s.url}`}
+              station={s}
+              index={idx}
+              onPlay={playStation}
+              onToggleFav={toggleFavorite}
+            />
+          ))}
         </div>
       ) : stations.length <= 200 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pt-2">

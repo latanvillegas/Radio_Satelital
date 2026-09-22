@@ -68,12 +68,20 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
         const x = i * (barWidth + gap)
         const y = height - barHeight
 
-        // Gradiente profesional rojo/ámbar/dorado de estudio
+        // Gradiente profesional de estudio adaptado al tema actual
+        const accent =
+          (typeof window !== 'undefined'
+            ? getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
+            : '') || '#ef4444'
+        const accentHover =
+          (typeof window !== 'undefined'
+            ? getComputedStyle(document.documentElement).getPropertyValue('--accent-hover').trim()
+            : '') || '#f87171'
+
         const grad = ctx.createLinearGradient(0, height, 0, 0)
-        grad.addColorStop(0, '#dc2626')
-        grad.addColorStop(0.5, '#ef4444')
-        grad.addColorStop(0.85, '#f59e0b')
-        grad.addColorStop(1, '#fef08a')
+        grad.addColorStop(0, accent)
+        grad.addColorStop(0.6, accentHover)
+        grad.addColorStop(1, '#ffffff')
 
         ctx.fillStyle = grad
         ctx.beginPath()

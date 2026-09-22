@@ -188,7 +188,7 @@ export default function StudioDisplayModal({
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.96, opacity: 0, y: 10 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="relative z-10 w-full max-w-5xl bg-[#090b12] border border-white/10 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 flex flex-col text-zinc-100 max-h-[95vh] overflow-y-auto"
+          className="relative z-10 w-full max-w-5xl bg-black border border-white/10 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 flex flex-col text-zinc-100 max-h-[95vh] overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-label="Cabina de Estudio Broadcast On-Air"
@@ -200,14 +200,29 @@ export default function StudioDisplayModal({
               <div
                 className={`px-4 py-1.5 rounded-xl border font-mono font-black text-sm tracking-widest flex items-center gap-2 shadow-lg transition-all ${
                   isPlaying
-                    ? 'bg-red-600/20 text-red-500 border-red-500/50 shadow-red-600/30'
+                    ? 'shadow-lg'
                     : 'bg-zinc-900 text-zinc-600 border-zinc-800'
                 }`}
+                style={
+                  isPlaying
+                    ? {
+                        backgroundColor: 'var(--accent-subtle)',
+                        color: 'var(--accent)',
+                        borderColor: 'var(--accent-glow)',
+                      }
+                    : undefined
+                }
               >
                 <span
-                  className={`w-2.5 h-2.5 rounded-full ${
-                    isPlaying ? 'bg-red-500 animate-ping' : 'bg-zinc-700'
-                  }`}
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={
+                    isPlaying
+                      ? {
+                          backgroundColor: 'var(--accent)',
+                          boxShadow: '0 0 8px var(--accent)',
+                        }
+                      : { backgroundColor: '#3f3f46' }
+                  }
                 />
                 <span>ON AIR</span>
               </div>
@@ -221,7 +236,7 @@ export default function StudioDisplayModal({
             </div>
 
             {/* Relojes de Estudio: Local y UTC */}
-            <div className="flex items-center gap-4 bg-zinc-950/80 px-4 py-2 rounded-2xl border border-white/[0.06] font-mono">
+            <div className="flex items-center gap-4 bg-zinc-950/90 px-4 py-2 rounded-2xl border border-white/[0.06] font-mono">
               <div className="text-right">
                 <span className="text-[10px] uppercase text-zinc-500 block font-sans font-bold">Local</span>
                 <span className="text-sm sm:text-base font-bold text-white tracking-wide">{localTime}</span>
@@ -258,7 +273,7 @@ export default function StudioDisplayModal({
           {/* ÁREA CENTRAL: Emisora Activa, Espectrograma y Vúmetros Estéreo L/R */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 my-6">
             {/* Tarjeta de Información de la Emisora y Espectro (Col 8) */}
-            <div className="lg:col-span-8 flex flex-col justify-between bg-zinc-950/70 border border-white/[0.06] rounded-2xl p-5 sm:p-6">
+            <div className="lg:col-span-8 flex flex-col justify-between bg-zinc-950/80 border border-white/[0.06] rounded-2xl p-5 sm:p-6">
               <div className="flex items-start gap-4">
                 {currentStation?.logoUrl ? (
                   <img
@@ -267,7 +282,10 @@ export default function StudioDisplayModal({
                     className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border border-white/10 shadow-lg"
                   />
                 ) : (
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center text-red-400">
+                  <div
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center"
+                    style={{ color: 'var(--accent)' }}
+                  >
                     <Radio size={32} />
                   </div>
                 )}
@@ -294,12 +312,12 @@ export default function StudioDisplayModal({
               <div className="mt-6 pt-4 border-t border-white/[0.06]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Activity size={13} className="text-red-400" />
+                    <Activity size={13} style={{ color: 'var(--accent)' }} />
                     <span>Espectrograma de Frecuencias (20 Hz - 20 kHz)</span>
                   </span>
                   <span className="text-[10px] font-mono text-zinc-500">FFT 128 Bins</span>
                 </div>
-                <div className="w-full flex justify-center py-2 bg-black/60 rounded-xl border border-white/[0.04]">
+                <div className="w-full flex justify-center py-2 bg-black/80 rounded-xl border border-white/[0.04]">
                   <AudioVisualizer isPlaying={isPlaying} variant="studio" />
                 </div>
               </div>
@@ -312,10 +330,15 @@ export default function StudioDisplayModal({
                     type="button"
                     onClick={handleStartRec}
                     disabled={!isPlaying}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 shadow-sm transition-all active:scale-95 disabled:opacity-40"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border shadow-sm transition-all active:scale-95 disabled:opacity-40"
+                    style={{
+                      backgroundColor: 'var(--accent-subtle)',
+                      color: 'var(--accent)',
+                      borderColor: 'var(--accent-glow)',
+                    }}
                     title="Grabar emisión de audio en vivo"
                   >
-                    <Circle size={14} className="fill-red-500 text-red-500 animate-pulse" />
+                    <Circle size={14} style={{ fill: 'var(--accent)', color: 'var(--accent)' }} className="animate-pulse" />
                     <span>Grabar Emisión (REC)</span>
                   </button>
                 ) : (
@@ -360,14 +383,14 @@ export default function StudioDisplayModal({
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 border border-white/[0.08] transition-all"
                   title="Forzar re-sincronización con el origen"
                 >
-                  <RotateCw size={14} className={isResyncing ? 'animate-spin text-red-400' : ''} />
+                  <RotateCw size={14} className={isResyncing ? 'animate-spin' : ''} style={isResyncing ? { color: 'var(--accent)' } : undefined} />
                   <span>Re-sync Señal</span>
                 </button>
               </div>
             </div>
 
             {/* Vúmetro Estéreo Profesional L / R y Telemetría (Col 4) */}
-            <div className="lg:col-span-4 flex flex-col justify-between bg-zinc-950/70 border border-white/[0.06] rounded-2xl p-5">
+            <div className="lg:col-span-4 flex flex-col justify-between bg-zinc-950/80 border border-white/[0.06] rounded-2xl p-5">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-300">
@@ -379,7 +402,7 @@ export default function StudioDisplayModal({
                 {/* Vúmetro Canal Izquierdo (L) */}
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 mb-1">
-                    <span className="font-bold text-red-400">CH-L</span>
+                    <span className="font-bold" style={{ color: 'var(--accent)' }}>CH-L</span>
                     <span>{isPlaying ? `${Math.round((vuL - 1) * 30)} dB` : '-∞ dB'}</span>
                   </div>
                   <div className="h-4 bg-zinc-900 rounded-lg p-0.5 overflow-hidden flex items-center border border-white/[0.08]">
@@ -393,7 +416,7 @@ export default function StudioDisplayModal({
                 {/* Vúmetro Canal Derecho (R) */}
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 mb-1">
-                    <span className="font-bold text-red-400">CH-R</span>
+                    <span className="font-bold" style={{ color: 'var(--accent)' }}>CH-R</span>
                     <span>{isPlaying ? `${Math.round((vuR - 1) * 30)} dB` : '-∞ dB'}</span>
                   </div>
                   <div className="h-4 bg-zinc-900 rounded-lg p-0.5 overflow-hidden flex items-center border border-white/[0.08]">
@@ -456,7 +479,11 @@ export default function StudioDisplayModal({
               <button
                 type="button"
                 onClick={togglePlay}
-                className="w-12 h-12 rounded-xl bg-red-600 hover:bg-red-500 active:scale-95 text-white flex items-center justify-center shadow-lg shadow-red-600/40 transition-all"
+                className="w-12 h-12 rounded-xl active:scale-95 text-white flex items-center justify-center shadow-lg transition-all"
+                style={{
+                  backgroundColor: 'var(--accent)',
+                  boxShadow: '0 4px 20px var(--accent-glow)',
+                }}
                 title={isPlaying ? 'Pausar transmisión' : 'Iniciar transmisión'}
               >
                 {isPlaying ? <Pause size={22} className="fill-white" /> : <Play size={22} className="fill-white ml-0.5" />}

@@ -59,7 +59,7 @@ export default function EqualizerModal({ isOpen, onClose }: Props) {
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.96, opacity: 0, y: 12 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="relative z-10 w-full max-w-2xl bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col text-zinc-100 max-h-[90vh] overflow-y-auto"
+          className="relative z-10 w-full max-w-2xl bg-black border border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col text-zinc-100 max-h-[90vh] overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-label="Ecualizador de Estudio Broadcast"
@@ -67,13 +67,26 @@ export default function EqualizerModal({ isOpen, onClose }: Props) {
           {/* Cabecera del Ecualizador */}
           <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-amber-600 flex items-center justify-center shadow-lg shadow-red-600/30">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+                style={{
+                  background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)',
+                  boxShadow: '0 4px 18px var(--accent-glow)',
+                }}
+              >
                 <Sliders size={20} className="text-white" />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
                   <span>Ecualizador Paramétrico de Estudio</span>
-                  <span className="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+                  <span
+                    className="text-[10px] uppercase font-mono tracking-widest px-2 py-0.5 rounded-full border"
+                    style={{
+                      backgroundColor: 'var(--accent-subtle)',
+                      color: 'var(--accent)',
+                      borderColor: 'var(--accent-glow)',
+                    }}
+                  >
                     5-Band DSP
                   </span>
                 </h3>
@@ -135,13 +148,26 @@ export default function EqualizerModal({ isOpen, onClose }: Props) {
                     onClick={() => applyPreset(preset.id)}
                     className={`text-left p-2.5 rounded-xl border transition-all ${
                       isActive
-                        ? 'bg-red-500/15 border-red-500/50 text-white shadow-sm'
-                        : 'bg-zinc-900/60 border-white/[0.06] text-zinc-300 hover:bg-white/[0.05]'
+                        ? 'text-white shadow-sm'
+                        : 'bg-zinc-950/60 border-white/[0.06] text-zinc-300 hover:bg-white/[0.05]'
                     }`}
+                    style={
+                      isActive
+                        ? {
+                            backgroundColor: 'var(--accent-subtle)',
+                            borderColor: 'var(--accent-glow)',
+                          }
+                        : undefined
+                    }
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-xs text-zinc-100">{preset.name}</span>
-                      {isActive && <span className="w-1.5 h-1.5 rounded-full bg-red-400" />}
+                      {isActive && (
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: 'var(--accent)' }}
+                        />
+                      )}
                     </div>
                     <p className="text-[10px] text-zinc-400 mt-0.5 line-clamp-1">{preset.description}</p>
                   </button>
@@ -151,13 +177,16 @@ export default function EqualizerModal({ isOpen, onClose }: Props) {
           </div>
 
           {/* Faders Verticales de las 5 Bandas */}
-          <div className="bg-black/50 border border-white/[0.06] rounded-2xl p-5 mb-5">
+          <div className="bg-zinc-950/90 border border-white/[0.06] rounded-2xl p-5 mb-5">
             <div className="grid grid-cols-5 gap-3 sm:gap-6 text-center">
               {BAND_LABELS.map((band, i) => {
                 const gain = dspState.bands[i] || 0
                 return (
                   <div key={band.name} className="flex flex-col items-center">
-                    <span className="text-xs font-mono font-bold text-red-400 mb-2">
+                    <span
+                      className="text-xs font-mono font-bold mb-2"
+                      style={{ color: 'var(--accent)' }}
+                    >
                       {gain > 0 ? `+${gain}` : gain} dB
                     </span>
 

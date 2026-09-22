@@ -4,16 +4,18 @@
 @import "./pro-features.css";
 
 :root{
-  --bg-dark: #05070a;
+  --bg-dark: #000000;
   --bg-glass: rgba(255,255,255,0.03);
   --border-glass: rgba(255,255,255,0.08);
-  --accent: #d32f2f;
-  --accent-hover: #ff5252;
-  --text-main: #e6eef6;
-  --text-muted: #9aa7b7;
-  --input-bg: rgba(8, 12, 18, 0.82);
+  --accent: #ef4444;
+  --accent-hover: #f87171;
+  --accent-glow: rgba(239, 68, 68, 0.28);
+  --accent-subtle: rgba(239, 68, 68, 0.14);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --input-bg: rgba(12, 12, 14, 0.85);
   --card-hover: rgba(255,255,255,0.06);
-  --btn-bg: linear-gradient(135deg, #ff4d4d 0%, #c62828 100%);
+  --btn-bg: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
   --btn-text: #ffffff;
   --touch-target: 44px;
   --radius: 16px;
@@ -22,7 +24,15 @@
 }
 
 html,body,#root,#__next{height:100%;}
-body{margin:0;min-height:100vh;background:radial-gradient(circle at top, rgba(211,47,47,0.16), transparent 35%), var(--bg-dark);font-family:var(--font-main);color:var(--text-main);font-size:calc(16px * var(--ui-scale))}
+body{
+  margin:0;
+  min-height:100vh;
+  background-color: #000000 !important;
+  background-image: radial-gradient(circle at top, var(--accent-glow), transparent 45%), linear-gradient(to bottom, #000000, #000000) !important;
+  font-family:var(--font-main);
+  color:var(--text-main);
+  font-size:calc(16px * var(--ui-scale));
+}
 *{box-sizing:border-box}
 img{max-width:100%;display:block}
 
@@ -223,16 +233,101 @@ img{max-width:100%;display:block}
 *::-webkit-scrollbar{width:10px;height:10px}
 *::-webkit-scrollbar-thumb{background:var(--accent);border-radius:999px}
 
-/* Themes por data-theme */
-[data-theme='amoled']{--bg-dark:#000}
-[data-theme='gold']{--accent:#d4af37}
-[data-theme='purple']{--accent:#7b1fa2}
-[data-theme='white']{--bg-dark:#ffffff;color:#111}
-[data-theme='wear-ocean']{--accent:#00bcd4}
-[data-theme='wear-sunset']{--accent:#ff7043}
-[data-theme='wear-galaxy']{--accent:#536dfe}
-[data-theme='wear-mint']{--accent:#4db6ac}
-[data-theme='wear-cherry']{--accent:#d32f2f}
+/* Themes por data-theme - Base AMOLED Puro (#000000) para todos los temas */
+[data-theme] {
+  --bg-dark: #000000 !important;
+}
+
+[data-theme='amoled'] {
+  --accent: #ef4444;
+  --accent-hover: #f87171;
+  --accent-glow: rgba(239, 68, 68, 0.28);
+  --accent-subtle: rgba(239, 68, 68, 0.14);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --btn-bg: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+}
+
+[data-theme='gold'] {
+  --accent: #d4af37;
+  --accent-hover: #f5d77f;
+  --accent-glow: rgba(212, 175, 55, 0.28);
+  --accent-subtle: rgba(212, 175, 55, 0.14);
+  --text-main: #fffdfa;
+  --text-muted: #c5b591;
+  --btn-bg: linear-gradient(135deg, #d4af37 0%, #a17c18 100%);
+}
+
+[data-theme='purple'] {
+  --accent: #a855f7;
+  --accent-hover: #c084fc;
+  --accent-glow: rgba(168, 85, 247, 0.28);
+  --accent-subtle: rgba(168, 85, 247, 0.14);
+  --text-main: #faf5ff;
+  --text-muted: #baabc9;
+  --btn-bg: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+}
+
+[data-theme='white'] {
+  --accent: #ffffff;
+  --accent-hover: #e2e8f0;
+  --accent-glow: rgba(255, 255, 255, 0.25);
+  --accent-subtle: rgba(255, 255, 255, 0.12);
+  --text-main: #ffffff;
+  --text-muted: #a1a1aa;
+  --btn-bg: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  --btn-text: #000000;
+}
+
+[data-theme='wear-ocean'] {
+  --accent: #06b6d4;
+  --accent-hover: #22d3ee;
+  --accent-glow: rgba(6, 182, 212, 0.28);
+  --accent-subtle: rgba(6, 182, 212, 0.14);
+  --text-main: #f0fdfa;
+  --text-muted: #87bcc5;
+  --btn-bg: linear-gradient(135deg, #06b6d4 0%, #0e7490 100%);
+}
+
+[data-theme='wear-sunset'] {
+  --accent: #f97316;
+  --accent-hover: #fb923c;
+  --accent-glow: rgba(249, 115, 22, 0.28);
+  --accent-subtle: rgba(249, 115, 22, 0.14);
+  --text-main: #fff7ed;
+  --text-muted: #cf9b8a;
+  --btn-bg: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+}
+
+[data-theme='wear-galaxy'] {
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-glow: rgba(59, 130, 246, 0.28);
+  --accent-subtle: rgba(59, 130, 246, 0.14);
+  --text-main: #eff6ff;
+  --text-muted: #99a7e0;
+  --btn-bg: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+[data-theme='wear-mint'] {
+  --accent: #10b981;
+  --accent-hover: #34d399;
+  --accent-glow: rgba(16, 185, 129, 0.28);
+  --accent-subtle: rgba(16, 185, 129, 0.14);
+  --text-main: #ecfdf5;
+  --text-muted: #95bfb8;
+  --btn-bg: linear-gradient(135deg, #10b981 0%, #047857 100%);
+}
+
+[data-theme='wear-cherry'] {
+  --accent: #f43f5e;
+  --accent-hover: #fb7185;
+  --accent-glow: rgba(244, 63, 94, 0.28);
+  --accent-subtle: rgba(244, 63, 94, 0.14);
+  --text-main: #fff1f2;
+  --text-muted: #c79097;
+  --btn-bg: linear-gradient(135deg, #f43f5e 0%, #be123c 100%);
+}
 
 /* Utility */
 .filters.glass-panel{padding:10px;margin-bottom:1rem;display:flex;align-items:center}

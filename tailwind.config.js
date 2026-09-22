@@ -9,11 +9,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'bg-dark': '#05070a',
-        'bg-glass': 'rgba(18,20,26,0.95)',
-        'accent': '#d32f2f',
-        'accent-hover': '#b71c1c',
-        'text-muted': '#cbd5e1'
+        'bg-dark': 'var(--bg-dark)',
+        'bg-glass': 'var(--bg-glass)',
+        'accent': 'var(--accent)',
+        'accent-hover': 'var(--accent-hover)',
+        'accent-glow': 'var(--accent-glow)',
+        'accent-subtle': 'var(--accent-subtle)',
+        'text-main': 'var(--text-main)',
+        'text-muted': 'var(--text-muted)',
+        'border-glass': 'var(--border-glass)'
       },
       borderRadius: {
         'lg-radius': '16px'

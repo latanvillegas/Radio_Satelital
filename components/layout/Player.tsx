@@ -74,7 +74,10 @@ function StationArtwork({
 
         {/* Halo de reproducción en vivo */}
         {isPlaying && (
-          <div className="absolute inset-0 border-2 border-red-500/40 rounded-2xl pointer-events-none animate-pulse" />
+          <div
+            className="absolute inset-0 border-2 rounded-2xl pointer-events-none animate-pulse"
+            style={{ borderColor: 'var(--accent-glow)' }}
+          />
         )}
       </div>
     )
@@ -96,7 +99,10 @@ function StationArtwork({
         </div>
       )}
       {isPlaying && (
-        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border border-black animate-ping" />
+        <div
+          className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-black animate-ping"
+          style={{ backgroundColor: 'var(--accent)' }}
+        />
       )}
     </div>
   )
@@ -133,6 +139,21 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
     return subscribeRecorder((state) => {
       setRecorderState({ ...state })
     })
+  }, [])
+
+  // Eventos globales para abrir consolas y ecualizador desde cualquier botón del dashboard
+  useEffect(() => {
+    const onOpenEq = () => setIsEqOpen(true)
+    const onOpenStudio = () => setIsStudioOpen(true)
+    const onOpenShortcuts = () => setIsShortcutsOpen(true)
+    window.addEventListener('open-eq-modal', onOpenEq)
+    window.addEventListener('open-studio-modal', onOpenStudio)
+    window.addEventListener('open-shortcuts-modal', onOpenShortcuts)
+    return () => {
+      window.removeEventListener('open-eq-modal', onOpenEq)
+      window.removeEventListener('open-studio-modal', onOpenStudio)
+      window.removeEventListener('open-shortcuts-modal', onOpenShortcuts)
+    }
   }, [])
 
   // Sincronizar volumen inicial con el elemento audio
@@ -243,7 +264,7 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
     <>
       {/* Barra de Reproducción Fija al Fondo (Bottom Dock Estilo Spotify/Apple Music) */}
       <footer
-        className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 border-t border-white/[0.08] backdrop-blur-xl shadow-2xl transition-all"
+        className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 border-t border-white/[0.08] backdrop-blur-xl shadow-2xl transition-all"
         id="player-dock"
       >
         <div className="max-w-7xl mx-auto px-4 py-2.5 sm:px-6 flex items-center justify-between gap-3">
@@ -257,7 +278,10 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h4 className="text-sm font-semibold text-zinc-100 truncate group-hover:text-red-400 transition-colors">
+                <h4
+                  className="text-sm font-semibold text-zinc-100 truncate transition-colors"
+                  style={isPlaying ? { color: 'var(--accent)' } : undefined}
+                >
                   {stationName}
                 </h4>
               </div>
@@ -265,14 +289,14 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
                 <span className="truncate">{stationMeta}</span>
                 <span className="hidden sm:inline text-zinc-600">·</span>
                 <span
-                  className={`hidden sm:inline-flex items-center gap-1 font-bold ${
-                    isPlaying ? 'text-red-400' : 'text-zinc-500'
-                  }`}
+                  className="hidden sm:inline-flex items-center gap-1 font-bold"
+                  style={isPlaying ? { color: 'var(--accent)' } : { color: '#71717a' }}
                 >
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isPlaying ? 'bg-red-500 animate-pulse' : 'bg-zinc-600'
-                    }`}
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{
+                      backgroundColor: isPlaying ? 'var(--accent)' : '#52525b',
+                    }}
                   />
                   {statusBadgeText}
                 </span>
@@ -296,7 +320,11 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
               <button
                 type="button"
                 onClick={togglePlay}
-                className="w-11 h-11 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 text-white flex items-center justify-center shadow-lg shadow-red-600/30 transition-all"
+                className="w-11 h-11 rounded-full active:scale-95 text-white flex items-center justify-center shadow-lg transition-all"
+                style={{
+                  background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)',
+                  boxShadow: '0 4px 18px var(--accent-glow)',
+                }}
                 title={isPlaying ? 'Pausar (Espacio)' : 'Reproducir (Espacio)'}
                 aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
               >
@@ -399,7 +427,8 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
                 step="0.01"
                 value={volume}
                 onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                className="w-16 xl:w-20 h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-red-500"
+                className="w-16 xl:w-20 h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
+                style={{ accentColor: 'var(--accent)' }}
                 aria-label="Control de volumen"
               />
             </div>
@@ -439,7 +468,7 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.96, opacity: 0, y: 15 }}
               transition={{ duration: 0.24, ease: 'easeOut' }}
-              className="relative z-10 w-full max-w-lg bg-zinc-950/95 border border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col text-zinc-100 overflow-hidden"
+              className="relative z-10 w-full max-w-lg bg-black border border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col text-zinc-100 overflow-hidden"
               role="dialog"
               aria-modal="true"
               aria-label="Consola de Reproducción Satelital"
@@ -447,8 +476,14 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
               {/* Barra superior del modal */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-red-400">
+                  <span
+                    className="w-2 h-2 rounded-full animate-ping"
+                    style={{ backgroundColor: 'var(--accent)' }}
+                  />
+                  <span
+                    className="text-xs font-bold uppercase tracking-widest"
+                    style={{ color: 'var(--accent)' }}
+                  >
                     {statusBadgeText}
                   </span>
                   {sleepTimerMinutes && (
@@ -484,7 +519,7 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
               </div>
 
               {/* Visualizador de espectro acústico en la consola */}
-              <div className="flex justify-center mb-6 py-3 bg-black/40 rounded-xl border border-white/[0.04]">
+              <div className="flex justify-center mb-6 py-3 bg-zinc-950/80 rounded-xl border border-white/[0.04]">
                 <AudioVisualizer isPlaying={isPlaying} variant="card" />
               </div>
 
@@ -502,7 +537,11 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
                 <button
                   type="button"
                   onClick={togglePlay}
-                  className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 text-white flex items-center justify-center shadow-xl shadow-red-600/40 transition-all"
+                  className="w-16 h-16 rounded-full active:scale-95 text-white flex items-center justify-center shadow-xl transition-all"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)',
+                    boxShadow: '0 4px 24px var(--accent-glow)',
+                  }}
                   title={isPlaying ? 'Pausar' : 'Reproducir'}
                 >
                   {isPlaying ? (
@@ -542,7 +581,12 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
                     setIsModalOpen(false)
                     setIsStudioOpen(true)
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all"
+                  style={{
+                    backgroundColor: 'var(--accent-subtle)',
+                    color: 'var(--accent)',
+                    borderColor: 'var(--accent-glow)',
+                  }}
                 >
                   <Radio size={14} />
                   <span>Cabina On-Air & REC</span>
@@ -566,7 +610,8 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
                     step="0.01"
                     value={volume}
                     onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-red-500"
+                    className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
+                    style={{ accentColor: 'var(--accent)' }}
                   />
                 </div>
 

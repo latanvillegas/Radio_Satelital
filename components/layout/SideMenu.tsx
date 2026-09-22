@@ -43,15 +43,15 @@ const scaleOptions: Array<{ key: UiScaleMode; label: string; hint: string }> = [
 ]
 
 const themeLabels: Record<ThemeName, { label: string; color: string; desc: string }> = {
-  amoled: { label: 'AMOLED Studio', color: '#ef4444', desc: 'Negro puro con acento carmesí' },
-  gold: { label: 'Gold Luxury', color: '#d4af37', desc: 'Tonos cálidos dorados' },
-  purple: { label: 'Neon Purple', color: '#9a4eff', desc: 'Aura púrpura futurista' },
-  white: { label: 'Pure Light', color: '#5b46d9', desc: 'Tema claro de alto contraste' },
-  'wear-ocean': { label: 'Deep Ocean', color: '#00bcd4', desc: 'Turquesa marino profundo' },
-  'wear-sunset': { label: 'Sunset Glow', color: '#ff7043', desc: 'Cálido atardecer' },
-  'wear-galaxy': { label: 'Galaxy Blue', color: '#536dfe', desc: 'Azul cobalto espacial' },
-  'wear-mint': { label: 'Emerald Mint', color: '#4db6ac', desc: 'Verde esmeralda suave' },
-  'wear-cherry': { label: 'Ruby Cherry', color: '#d32f2f', desc: 'Rojo rubí intenso' },
+  amoled: { label: 'AMOLED Carmesí', color: '#ef4444', desc: 'Negro puro con acento carmesí de estudio' },
+  gold: { label: 'AMOLED Gold Luxury', color: '#d4af37', desc: 'Negro puro con acento dorado y ámbar' },
+  purple: { label: 'AMOLED Neon Purple', color: '#a855f7', desc: 'Negro puro con acento violeta neón' },
+  white: { label: 'AMOLED Platinum Silver', color: '#ffffff', desc: 'Negro puro con acento plata y platino' },
+  'wear-ocean': { label: 'AMOLED Deep Ocean', color: '#06b6d4', desc: 'Negro puro con acento cian turquesa' },
+  'wear-sunset': { label: 'AMOLED Sunset Glow', color: '#f97316', desc: 'Negro puro con acento naranja atardecer' },
+  'wear-galaxy': { label: 'AMOLED Galaxy Blue', color: '#3b82f6', desc: 'Negro puro con acento azul cósmico' },
+  'wear-mint': { label: 'AMOLED Emerald Mint', color: '#10b981', desc: 'Negro puro con acento verde esmeralda' },
+  'wear-cherry': { label: 'AMOLED Ruby Cherry', color: '#f43f5e', desc: 'Negro puro con acento rubí cereza' },
 }
 
 export default function SideMenu({
@@ -102,20 +102,28 @@ export default function SideMenu({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 26, stiffness: 240 }}
-            className="relative z-10 w-full max-w-md h-full bg-zinc-950/95 border-l border-white/10 shadow-2xl flex flex-col text-zinc-100 overflow-hidden"
+            className="relative z-10 w-full max-w-md h-full bg-black border-l border-white/10 shadow-2xl flex flex-col text-zinc-100 overflow-hidden"
             role="dialog"
             aria-modal="true"
             aria-label="Panel de Ajustes"
           >
             {/* Cabecera del panel */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.08] bg-zinc-900/40">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.08] bg-zinc-950/80">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
+                  style={{
+                    backgroundColor: 'var(--accent-subtle)',
+                    borderColor: 'var(--accent-glow)',
+                    color: 'var(--accent)',
+                    borderWidth: 1,
+                  }}
+                >
                   <Sliders size={18} strokeWidth={2.4} />
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-white tracking-tight">Ajustes del Sistema</h2>
-                  <p className="text-xs text-zinc-400">Personaliza la apariencia y el motor de audio</p>
+                  <p className="text-xs text-zinc-400">Base AMOLED puro con acentos de color</p>
                 </div>
               </div>
 
@@ -132,7 +140,7 @@ export default function SideMenu({
             {/* Contenido scrolleable */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scrollbar-thin scrollbar-thumb-zinc-800">
               {/* Telemetría y estado de red */}
-              <section className="bg-zinc-900/50 rounded-xl border border-white/[0.06] p-4">
+              <section className="bg-zinc-950/90 rounded-xl border border-white/[0.08] p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2 text-xs font-semibold text-zinc-300 uppercase tracking-wider">
                     <Radio size={14} className="text-red-400" />
@@ -186,9 +194,17 @@ export default function SideMenu({
                         onClick={() => onSelectTheme(theme)}
                         className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
                           isSelected
-                            ? 'bg-white/[0.08] border-white/30 shadow-sm'
-                            : 'bg-zinc-900/30 border-white/[0.06] hover:bg-white/[0.04] hover:border-white/10'
+                            ? 'bg-white/[0.08] shadow-md ring-1'
+                            : 'bg-zinc-950/80 border-white/[0.06] hover:bg-white/[0.04] hover:border-white/10'
                         }`}
+                        style={
+                          isSelected
+                            ? {
+                                borderColor: info.color,
+                                boxShadow: `0 4px 14px ${info.color}33`,
+                              }
+                            : undefined
+                        }
                         aria-pressed={isSelected}
                       >
                         <span
@@ -201,7 +217,10 @@ export default function SideMenu({
                           </p>
                         </div>
                         {isSelected && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                          <span
+                            className="w-2 h-2 rounded-full shadow-sm"
+                            style={{ backgroundColor: info.color }}
+                          />
                         )}
                       </button>
                     )
@@ -212,7 +231,7 @@ export default function SideMenu({
               {/* Escala de Interfaz */}
               <section className="space-y-3">
                 <div className="flex items-center gap-2 text-xs font-semibold text-zinc-300 uppercase tracking-wider">
-                  <Monitor size={14} className="text-red-400" />
+                  <Monitor size={14} style={{ color: 'var(--accent)' }} />
                   <span>Escala de Interfaz</span>
                 </div>
 
@@ -226,9 +245,17 @@ export default function SideMenu({
                         onClick={() => onSelectScaleMode(opt.key)}
                         className={`w-full flex items-center justify-between p-2.5 px-3 rounded-lg border text-left transition-all ${
                           isSelected
-                            ? 'bg-red-500/10 border-red-500/30 text-white'
-                            : 'bg-zinc-900/30 border-white/[0.06] text-zinc-300 hover:bg-white/[0.04]'
+                            ? 'text-white'
+                            : 'bg-zinc-950/80 border-white/[0.06] text-zinc-300 hover:bg-white/[0.04]'
                         }`}
+                        style={
+                          isSelected
+                            ? {
+                                backgroundColor: 'var(--accent-subtle)',
+                                borderColor: 'var(--accent)',
+                              }
+                            : undefined
+                        }
                         aria-pressed={isSelected}
                       >
                         <div>
@@ -236,7 +263,14 @@ export default function SideMenu({
                           <p className="text-[11px] text-zinc-400">{opt.hint}</p>
                         </div>
                         {isSelected && (
-                          <span className="text-[11px] font-bold text-red-400 px-2 py-0.5 rounded bg-red-500/15">
+                          <span
+                            className="text-[11px] font-bold px-2 py-0.5 rounded"
+                            style={{
+                              backgroundColor: 'var(--accent-subtle)',
+                              color: 'var(--accent)',
+                              border: '1px solid var(--accent-glow)',
+                            }}
+                          >
                             Activo
                           </span>
                         )}

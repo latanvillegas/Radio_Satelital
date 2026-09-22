@@ -16,10 +16,13 @@ export type ThemeName =
 export type UiScale = 'small' | 'medium' | 'large' | 'xlarge'
 export type UiScaleMode = 'auto' | UiScale
 
-type ThemeTokens = {
+export type ThemeTokens = {
+  label: string
   themeColor: string
   accent: string
   accentHover: string
+  accentGlow: string
+  accentSubtle: string
   bgDark: string
   textMain: string
   textMuted: string
@@ -27,96 +30,123 @@ type ThemeTokens = {
   borderGlass: string
 }
 
-const THEME_TOKENS: Record<ThemeName, ThemeTokens> = {
+export const THEME_TOKENS: Record<ThemeName, ThemeTokens> = {
   amoled: {
-    themeColor: '#090b10',
+    label: 'AMOLED Carmesí Studio',
+    themeColor: '#000000',
     accent: '#ef4444',
     accentHover: '#f87171',
-    bgDark: '#090b10',
-    textMain: '#f1f5f9',
+    accentGlow: 'rgba(239, 68, 68, 0.28)',
+    accentSubtle: 'rgba(239, 68, 68, 0.14)',
+    bgDark: '#000000',
+    textMain: '#f8fafc',
     textMuted: '#94a3b8',
     bgGlass: 'rgba(255, 255, 255, 0.03)',
     borderGlass: 'rgba(255, 255, 255, 0.08)',
   },
   gold: {
-    themeColor: '#1a1509',
+    label: 'AMOLED Gold Luxury',
+    themeColor: '#000000',
     accent: '#d4af37',
-    accentHover: '#e2c45f',
-    bgDark: '#0f0b04',
-    textMain: '#f4ead0',
-    textMuted: '#c9b88a',
-    bgGlass: 'rgba(255,245,214,0.06)',
-    borderGlass: 'rgba(230,199,117,0.24)',
+    accentHover: '#f5d77f',
+    accentGlow: 'rgba(212, 175, 55, 0.28)',
+    accentSubtle: 'rgba(212, 175, 55, 0.14)',
+    bgDark: '#000000',
+    textMain: '#fffdfa',
+    textMuted: '#c5b591',
+    bgGlass: 'rgba(212, 175, 55, 0.04)',
+    borderGlass: 'rgba(212, 175, 55, 0.18)',
   },
   purple: {
-    themeColor: '#13061f',
-    accent: '#9a4eff',
-    accentHover: '#b681ff',
-    bgDark: '#13061f',
-    textMain: '#efe6ff',
-    textMuted: '#b7a7cf',
-    bgGlass: 'rgba(182,129,255,0.08)',
-    borderGlass: 'rgba(182,129,255,0.25)',
+    label: 'AMOLED Neon Purple',
+    themeColor: '#000000',
+    accent: '#a855f7',
+    accentHover: '#c084fc',
+    accentGlow: 'rgba(168, 85, 247, 0.28)',
+    accentSubtle: 'rgba(168, 85, 247, 0.14)',
+    bgDark: '#000000',
+    textMain: '#faf5ff',
+    textMuted: '#baabc9',
+    bgGlass: 'rgba(168, 85, 247, 0.04)',
+    borderGlass: 'rgba(168, 85, 247, 0.18)',
   },
   white: {
-    themeColor: '#f5f7fa',
-    accent: '#5b46d9',
-    accentHover: '#7665e8',
-    bgDark: '#f5f7fa',
-    textMain: '#162130',
-    textMuted: '#5f6f85',
-    bgGlass: 'rgba(255,255,255,0.75)',
-    borderGlass: 'rgba(95,111,133,0.22)',
+    label: 'AMOLED Platinum Silver',
+    themeColor: '#000000',
+    accent: '#ffffff',
+    accentHover: '#e2e8f0',
+    accentGlow: 'rgba(255, 255, 255, 0.25)',
+    accentSubtle: 'rgba(255, 255, 255, 0.12)',
+    bgDark: '#000000',
+    textMain: '#ffffff',
+    textMuted: '#a1a1aa',
+    bgGlass: 'rgba(255, 255, 255, 0.04)',
+    borderGlass: 'rgba(255, 255, 255, 0.18)',
   },
   'wear-ocean': {
-    themeColor: '#03131a',
-    accent: '#00bcd4',
-    accentHover: '#3ed7ea',
-    bgDark: '#03131a',
-    textMain: '#d9f7fc',
+    label: 'AMOLED Deep Ocean',
+    themeColor: '#000000',
+    accent: '#06b6d4',
+    accentHover: '#22d3ee',
+    accentGlow: 'rgba(6, 182, 212, 0.28)',
+    accentSubtle: 'rgba(6, 182, 212, 0.14)',
+    bgDark: '#000000',
+    textMain: '#f0fdfa',
     textMuted: '#87bcc5',
-    bgGlass: 'rgba(0,188,212,0.09)',
-    borderGlass: 'rgba(62,215,234,0.27)',
+    bgGlass: 'rgba(6, 182, 212, 0.04)',
+    borderGlass: 'rgba(6, 182, 212, 0.18)',
   },
   'wear-sunset': {
-    themeColor: '#1e0d0a',
-    accent: '#ff7043',
-    accentHover: '#ff906d',
-    bgDark: '#1e0d0a',
-    textMain: '#ffe7dd',
+    label: 'AMOLED Sunset Glow',
+    themeColor: '#000000',
+    accent: '#f97316',
+    accentHover: '#fb923c',
+    accentGlow: 'rgba(249, 115, 22, 0.28)',
+    accentSubtle: 'rgba(249, 115, 22, 0.14)',
+    bgDark: '#000000',
+    textMain: '#fff7ed',
     textMuted: '#cf9b8a',
-    bgGlass: 'rgba(255,112,67,0.1)',
-    borderGlass: 'rgba(255,144,109,0.26)',
+    bgGlass: 'rgba(249, 115, 22, 0.04)',
+    borderGlass: 'rgba(249, 115, 22, 0.18)',
   },
   'wear-galaxy': {
-    themeColor: '#0a1029',
-    accent: '#536dfe',
-    accentHover: '#7f92ff',
-    bgDark: '#0a1029',
-    textMain: '#e3e9ff',
+    label: 'AMOLED Galaxy Blue',
+    themeColor: '#000000',
+    accent: '#3b82f6',
+    accentHover: '#60a5fa',
+    accentGlow: 'rgba(59, 130, 246, 0.28)',
+    accentSubtle: 'rgba(59, 130, 246, 0.14)',
+    bgDark: '#000000',
+    textMain: '#eff6ff',
     textMuted: '#99a7e0',
-    bgGlass: 'rgba(83,109,254,0.09)',
-    borderGlass: 'rgba(127,146,255,0.26)',
+    bgGlass: 'rgba(59, 130, 246, 0.04)',
+    borderGlass: 'rgba(59, 130, 246, 0.18)',
   },
   'wear-mint': {
-    themeColor: '#041917',
-    accent: '#4db6ac',
-    accentHover: '#76d1c9',
-    bgDark: '#041917',
-    textMain: '#dff8f4',
+    label: 'AMOLED Emerald Mint',
+    themeColor: '#000000',
+    accent: '#10b981',
+    accentHover: '#34d399',
+    accentGlow: 'rgba(16, 185, 129, 0.28)',
+    accentSubtle: 'rgba(16, 185, 129, 0.14)',
+    bgDark: '#000000',
+    textMain: '#ecfdf5',
     textMuted: '#95bfb8',
-    bgGlass: 'rgba(77,182,172,0.1)',
-    borderGlass: 'rgba(118,209,201,0.28)',
+    bgGlass: 'rgba(16, 185, 129, 0.04)',
+    borderGlass: 'rgba(16, 185, 129, 0.18)',
   },
   'wear-cherry': {
-    themeColor: '#1a060b',
-    accent: '#d32f2f',
-    accentHover: '#e25a5a',
-    bgDark: '#1a060b',
-    textMain: '#ffe3e7',
+    label: 'AMOLED Ruby Cherry',
+    themeColor: '#000000',
+    accent: '#f43f5e',
+    accentHover: '#fb7185',
+    accentGlow: 'rgba(244, 63, 94, 0.28)',
+    accentSubtle: 'rgba(244, 63, 94, 0.14)',
+    bgDark: '#000000',
+    textMain: '#fff1f2',
     textMuted: '#c79097',
-    bgGlass: 'rgba(211,47,47,0.1)',
-    borderGlass: 'rgba(226,90,90,0.26)',
+    bgGlass: 'rgba(244, 63, 94, 0.04)',
+    borderGlass: 'rgba(244, 63, 94, 0.18)',
   },
 }
 
@@ -136,19 +166,32 @@ export function setTheme(name: ThemeName) {
     const selected = THEME_TOKENS[name] ? name : 'amoled'
     const tokens = THEME_TOKENS[selected]
 
-    document.documentElement.setAttribute('data-theme', selected)
-    document.documentElement.style.setProperty('--accent', tokens.accent)
-    document.documentElement.style.setProperty('--accent-hover', tokens.accentHover)
-    document.documentElement.style.setProperty('--bg-dark', tokens.bgDark)
-    document.documentElement.style.setProperty('--text-main', tokens.textMain)
-    document.documentElement.style.setProperty('--text-muted', tokens.textMuted)
-    document.documentElement.style.setProperty('--bg-glass', tokens.bgGlass)
-    document.documentElement.style.setProperty('--border-glass', tokens.borderGlass)
+    const root = document.documentElement
+    root.setAttribute('data-theme', selected)
+    root.style.setProperty('--accent', tokens.accent)
+    root.style.setProperty('--accent-hover', tokens.accentHover)
+    root.style.setProperty('--accent-glow', tokens.accentGlow)
+    root.style.setProperty('--accent-subtle', tokens.accentSubtle)
+    root.style.setProperty('--bg-dark', tokens.bgDark)
+    root.style.setProperty('--text-main', tokens.textMain)
+    root.style.setProperty('--text-muted', tokens.textMuted)
+    root.style.setProperty('--bg-glass', tokens.bgGlass)
+    root.style.setProperty('--border-glass', tokens.borderGlass)
+
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.style.backgroundColor = tokens.bgDark
+    }
 
     localStorage.setItem(THEME_KEY, selected)
 
     const meta = document.querySelector('meta[name="theme-color"]')
     if (meta) meta.setAttribute('content', tokens.themeColor)
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('theme-changed', { detail: { theme: selected, tokens } })
+      )
+    }
   } catch (e) {}
 }
 

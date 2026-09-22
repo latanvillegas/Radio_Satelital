@@ -77,10 +77,10 @@ export default function QuickPresetsBar({ currentStation, onPlayStation, station
   }
 
   return (
-    <div className="bg-zinc-950/70 border border-white/[0.08] rounded-2xl p-3 sm:p-4 mb-6 shadow-xl backdrop-blur-md">
+    <div className="bg-black border border-white/[0.08] rounded-2xl p-3 sm:p-4 mb-6 shadow-xl backdrop-blur-md">
       <div className="flex items-center justify-between gap-2 mb-2.5">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-red-500" />
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
           <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
             Presets de Dial Rápido (Teclas 1 - 6)
           </h3>
@@ -101,19 +101,34 @@ export default function QuickPresetsBar({ currentStation, onPlayStation, station
               onClick={() => handleSlotClick(index)}
               className={`relative group rounded-xl p-2 sm:p-2.5 border text-left cursor-pointer transition-all select-none flex flex-col justify-between min-h-[58px] ${
                 isCurrent
-                  ? 'bg-red-500/20 border-red-500/60 shadow-lg shadow-red-500/20 ring-1 ring-red-500/40'
+                  ? 'shadow-lg'
                   : station
-                  ? 'bg-zinc-900/80 border-white/[0.08] hover:bg-white/[0.06] hover:border-white/20'
-                  : 'bg-zinc-950/40 border-dashed border-white/[0.08] hover:border-red-500/40 hover:bg-red-500/[0.04]'
+                  ? 'bg-zinc-950/80 border-white/[0.08] hover:bg-white/[0.06] hover:border-white/20'
+                  : 'bg-zinc-950/40 border-dashed border-white/[0.08] hover:bg-white/[0.04]'
               }`}
+              style={
+                isCurrent
+                  ? {
+                      backgroundColor: 'var(--accent-subtle)',
+                      borderColor: 'var(--accent-glow)',
+                    }
+                  : undefined
+              }
             >
               <div className="flex items-center justify-between">
                 <span
-                  className={`text-[11px] font-mono font-black px-1.5 py-0.5 rounded ${
+                  className="text-[11px] font-mono font-black px-1.5 py-0.5 rounded"
+                  style={
                     isCurrent
-                      ? 'bg-red-500 text-white'
-                      : 'bg-white/[0.08] text-zinc-400 group-hover:text-zinc-200'
-                  }`}
+                      ? {
+                          backgroundColor: 'var(--accent)',
+                          color: '#ffffff',
+                        }
+                      : {
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          color: '#a1a1aa',
+                        }
+                  }
                 >
                   {index + 1}
                 </span>
