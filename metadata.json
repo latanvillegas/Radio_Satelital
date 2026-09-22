@@ -1,6 +1,6 @@
 {
   "name": "Radio Satelital",
-  "description": "Escucha emisoras de radio en vivo.",
+  "description": "Sintonizador web global en tiempo real con transmisión continua de alta fidelidad.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { AnimatePresence, motion, useDragControls } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { usePlayer } from '@/hooks/player'
 import type { Station } from '@/types/station'
 import {
@@ -16,17 +16,28 @@ import {
   X,
   Share2,
   Check,
+  Disc,
+  Sliders,
+  Keyboard,
+  Circle,
+  Activity,
 } from 'lucide-react'
 import AudioVisualizer from '@/components/features/AudioVisualizer'
 import SleepTimerModal from '@/components/features/SleepTimerModal'
+import EqualizerModal from '@/components/features/EqualizerModal'
+import StudioDisplayModal from '@/components/features/StudioDisplayModal'
+import ShortcutsModal from '@/components/features/ShortcutsModal'
+import {
+  subscribeRecorder,
+  type RecorderState,
+  getRecorderState,
+} from '@/lib/services/recorder'
 
 type Props = {
   currentStation: Station | null
   onNextStation: () => void
   onPrevStation: () => void
 }
-
-type PlayerMode = 'mini' | 'card' | 'full' | 'bubble'
 
 function StationArtwork({
   station,
@@ -35,55 +46,59 @@ function StationArtwork({
 }: {
   station: Station | null
   isPlaying: boolean
-  size?: 'mini' | 'card' | 'full'
+  size?: 'mini' | 'modal'
 }) {
   const [imgError, setImgError] = useState(false)
   const hasLogo = Boolean(station?.logoUrl) && !imgError
 
-  return (
-    <div className={`station-artwork station-artwork-${size} ${isPlaying ? 'is-playing' : 'is-paused'}`}>
-      <span className="artwork-ring artwork-ring-1" />
-      <span className="artwork-ring artwork-ring-2" />
-      <span className="artwork-ring artwork-ring-3" />
-      <div className="station-artwork-core">
+  const cleanName = (station?.name || 'Radio').replace(/[()[\]{}.,\/#!$%\^&\*;:{}=\-_`~?0-9]/g, ' ').trim()
+  const parts = cleanName.split(/\s+/).filter(Boolean)
+  const initials = parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : (cleanName.slice(0, 2) || 'RA').toUpperCase()
+
+  if (size === 'modal') {
+    return (
+      <div className="relative w-36 h-36 sm:w-44 sm:h-44 mx-auto rounded-2xl overflow-hidden shadow-2xl border border-white/10 group">
         {hasLogo ? (
           <img
-            className="station-artwork-image"
+            className="w-full h-full object-cover"
             src={station!.logoUrl}
             alt={station?.name || 'Radio'}
             onError={() => setImgError(true)}
           />
         ) : (
-          <Radio size={size === 'mini' ? 20 : size === 'card' ? 48 : 64} strokeWidth={2} />
+          <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex flex-col items-center justify-center text-white">
+            <Radio size={48} className="text-red-400 mb-2 opacity-80" />
+            <span className="font-extrabold text-2xl tracking-wider text-zinc-300">{initials}</span>
+          </div>
+        )}
+
+        {/* Halo de reproducción en vivo */}
+        {isPlaying && (
+          <div className="absolute inset-0 border-2 border-red-500/40 rounded-2xl pointer-events-none animate-pulse" />
         )}
       </div>
-    </div>
-  )
-}
+    )
+  }
 
-function ControlButton({
-  onClick,
-  ariaLabel,
-  children,
-  variant = 'default',
-}: {
-  onClick: () => void
-  ariaLabel: string
-  children: React.ReactNode
-  variant?: 'default' | 'primary' | 'ghost'
-}) {
+  // Mini mode artwork
   return (
-    <button
-      type="button"
-      className={`player-icon-btn player-icon-btn-${variant}`}
-      onClick={(event) => {
-        event.stopPropagation()
-        onClick()
-      }}
-      aria-label={ariaLabel}
-    >
-      {children}
-    </button>
+    <div className="relative w-11 h-11 flex-shrink-0 rounded-lg overflow-hidden border border-white/10 bg-zinc-900 shadow-sm">
+      {hasLogo ? (
+        <img
+          className="w-full h-full object-cover"
+          src={station!.logoUrl}
+          alt={station?.name || 'Radio'}
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-200">
+          {initials}
+        </div>
+      )}
+      {isPlaying && (
+        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border border-black animate-ping" />
+      )}
+    </div>
   )
 }
 
@@ -98,7 +113,11 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
     setSleepTimer,
   } = usePlayer()
 
-  const [mode, setMode] = useState<PlayerMode>('mini')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEqOpen, setIsEqOpen] = useState(false)
+  const [isStudioOpen, setIsStudioOpen] = useState(false)
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
+  const [recorderState, setRecorderState] = useState<RecorderState>(getRecorderState())
   const [volume, setVolume] = useState<number>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('radio_player_volume')
@@ -108,8 +127,13 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
   })
   const [prevVolume, setPrevVolume] = useState(0.85)
   const [copied, setCopied] = useState(false)
-  const [dockPosition, setDockPosition] = useState({ x: 0, y: 0 })
-  const dragControls = useDragControls()
+
+  // Suscripción a la grabadora para estado en vivo en el dock
+  useEffect(() => {
+    return subscribeRecorder((state) => {
+      setRecorderState({ ...state })
+    })
+  }, [])
 
   // Sincronizar volumen inicial con el elemento audio
   useEffect(() => {
@@ -119,7 +143,7 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
     }
   }, [volume])
 
-  // Atajos de teclado para control de audio profesional (Espacio = Play/Pause, M = Mute)
+  // Atajos de teclado para control de audio profesional (Espacio = Play/Pause, M = Mute, E = EQ, O = OnAir, ? = Shortcuts)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -136,6 +160,20 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
       } else if (e.key === 'm' || e.key === 'M') {
         e.preventDefault()
         toggleMute()
+      } else if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault()
+        setIsEqOpen((prev) => !prev)
+      } else if (e.key === 'o' || e.key === 'O') {
+        e.preventDefault()
+        setIsStudioOpen((prev) => !prev)
+      } else if (e.key === '?') {
+        e.preventDefault()
+        setIsShortcutsOpen((prev) => !prev)
+      } else if (e.key === 'Escape') {
+        setIsEqOpen(false)
+        setIsStudioOpen(false)
+        setIsShortcutsOpen(false)
+        setIsModalOpen(false)
       } else if (e.key === 'ArrowRight' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
         onNextStation()
@@ -147,7 +185,7 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [volume, prevVolume, isPlaying])
+  }, [volume, prevVolume, isPlaying, togglePlay, onNextStation, onPrevStation])
 
   const handleVolumeChange = (value: number) => {
     const audio = document.getElementById('radioPlayer') as HTMLAudioElement | null
@@ -191,7 +229,6 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
     ? `${currentStation.country}${currentStation.region ? ` · ${currentStation.region}` : ''}`
     : 'Catálogo satelital en vivo'
   const timeLabel = new Date(secondsElapsed * 1000).toISOString().substring(14, 19)
-  const playingClass = isPlaying ? 'is-playing' : 'is-paused'
 
   const statusBadgeText =
     playbackStatus === 'loading'
@@ -202,307 +239,380 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
       ? 'EN VIVO'
       : 'LISTO'
 
-  const statusBadgeClass =
-    playbackStatus === 'reconnecting'
-      ? 'status-reconnecting'
-      : isPlaying
-      ? 'live'
-      : ''
-
   return (
     <>
-      <div className={`radio-player-root ${mode === 'bubble' ? 'radio-player-root-bubble' : ''}`} id="player-section">
-        {mode === 'mini' && (
-          <motion.div
-            className={`player-mini-bar glass-panel rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ${playingClass}`}
-            onClick={() => setMode('card')}
-            initial={{ y: 28, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-            drag
-            dragControls={dragControls}
-            dragMomentum={false}
-            dragElastic={0.05}
-            dragListener={false}
-            onDragEnd={(_, info) => {
-              setDockPosition((curr) => ({
-                x: curr.x + info.offset.x,
-                y: curr.y + info.offset.y,
-              }))
-            }}
-            style={{ x: dockPosition.x, y: dockPosition.y }}
+      {/* Barra de Reproducción Fija al Fondo (Bottom Dock Estilo Spotify/Apple Music) */}
+      <footer
+        className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 border-t border-white/[0.08] backdrop-blur-xl shadow-2xl transition-all"
+        id="player-dock"
+      >
+        <div className="max-w-7xl mx-auto px-4 py-2.5 sm:px-6 flex items-center justify-between gap-3">
+          {/* LADO IZQUIERDO: Estación y Metadatos */}
+          <div
+            className="flex items-center gap-3 min-w-0 flex-1 md:max-w-xs cursor-pointer select-none group"
+            onClick={() => setIsModalOpen(true)}
+            title="Haz clic para ver detalles y consola de audio"
           >
+            <StationArtwork station={currentStation} isPlaying={isPlaying} size="mini" />
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-zinc-100 truncate group-hover:text-red-400 transition-colors">
+                  {stationName}
+                </h4>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-zinc-400 truncate">
+                <span className="truncate">{stationMeta}</span>
+                <span className="hidden sm:inline text-zinc-600">·</span>
+                <span
+                  className={`hidden sm:inline-flex items-center gap-1 font-bold ${
+                    isPlaying ? 'text-red-400' : 'text-zinc-500'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isPlaying ? 'bg-red-500 animate-pulse' : 'bg-zinc-600'
+                    }`}
+                  />
+                  {statusBadgeText}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* CENTRO: Controles de Reproducción y Visualizador */}
+          <div className="flex flex-col items-center justify-center flex-1 max-w-md">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <button
+                type="button"
+                onClick={onPrevStation}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] transition-colors"
+                title="Emisora anterior (Ctrl + ←)"
+                aria-label="Anterior"
+              >
+                <SkipBack size={18} />
+              </button>
+
+              <button
+                type="button"
+                onClick={togglePlay}
+                className="w-11 h-11 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 text-white flex items-center justify-center shadow-lg shadow-red-600/30 transition-all"
+                title={isPlaying ? 'Pausar (Espacio)' : 'Reproducir (Espacio)'}
+                aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+              >
+                {isPlaying ? (
+                  <Pause size={20} className="fill-white" />
+                ) : (
+                  <Play size={20} className="fill-white ml-0.5" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={onNextStation}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] transition-colors"
+                title="Siguiente emisora (Ctrl + →)"
+                aria-label="Siguiente"
+              >
+                <SkipForward size={18} />
+              </button>
+            </div>
+
+            {/* Fila de telemetría: visualizador e indicador de tiempo */}
+            <div className="hidden sm:flex items-center gap-2 mt-1">
+              <span className="text-[11px] font-mono text-zinc-400">{timeLabel}</span>
+              <div className="px-1 flex items-center">
+                <AudioVisualizer isPlaying={isPlaying} variant="mini" />
+              </div>
+              {statusMessage && (
+                <span className="text-[11px] text-amber-400 font-medium truncate max-w-[120px]">
+                  {statusMessage}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* LADO DERECHO: Herramientas Broadcast, Volumen, Temporizador y Expandir */}
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 md:max-w-md">
+            {/* Indicador de Grabación Activa en vivo */}
+            {recorderState.isRecording && (
+              <button
+                type="button"
+                onClick={() => setIsStudioOpen(true)}
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600/20 text-red-400 border border-red-500/40 text-[11px] font-mono font-bold animate-pulse"
+                title="Grabación en curso - Clic para ver cabina"
+              >
+                <Circle size={10} className="fill-red-500 text-red-500" />
+                <span>REC</span>
+              </button>
+            )}
+
+            {/* Botón Ecualizador DSP */}
             <button
               type="button"
-              className="player-mini-handle"
-              aria-label="Mover reproductor"
-              onPointerDown={(event) => {
-                event.stopPropagation()
-                dragControls.start(event)
-              }}
-              onClick={(event) => event.stopPropagation()}
+              onClick={() => setIsEqOpen(true)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-amber-400 hover:bg-white/[0.06] transition-colors"
+              title="Ecualizador Paramétrico DSP (E)"
+              aria-label="Ecualizador"
             >
-              <span className="player-mini-grip" />
-              <span className="player-mini-grip" />
-              <span className="player-mini-grip" />
+              <Sliders size={16} />
             </button>
 
-            <div className="player-mini-main">
-              <StationArtwork station={currentStation} isPlaying={isPlaying} size="mini" />
-              <div className="player-mini-copy">
-                <span className="player-mini-title">{stationName}</span>
-                <div className="player-mini-meta-row">
-                  <span className={`status-indicator ${statusBadgeClass}`}>{statusBadgeText}</span>
-                  {statusMessage && <span className="player-status-msg">{statusMessage}</span>}
-                </div>
-              </div>
-            </div>
+            {/* Botón Cabina de Estudio On-Air */}
+            <button
+              type="button"
+              onClick={() => setIsStudioOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/30 text-xs font-bold transition-all"
+              title="Cabina de Estudio On-Air y Vúmetros (O)"
+              aria-label="Cabina On-Air"
+            >
+              <Radio size={14} />
+              <span className="hidden md:inline">On-Air</span>
+            </button>
 
-            {/* Visualizador de audio reactivo en la barra */}
-            <div className="hidden sm:flex items-center px-2">
-              <AudioVisualizer isPlaying={isPlaying} variant="mini" />
-            </div>
+            {/* Botón Atajos de Teclado */}
+            <button
+              type="button"
+              onClick={() => setIsShortcutsOpen(true)}
+              className="hidden md:flex w-8 h-8 rounded-lg items-center justify-center text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors"
+              title="Atajos de teclado (?)"
+              aria-label="Atajos de teclado"
+            >
+              <Keyboard size={16} />
+            </button>
 
-            <div className="player-mini-actions">
-              {/* Temporizador rápido */}
-              <SleepTimerModal currentMinutes={sleepTimerMinutes} onSetTimer={setSleepTimer} />
-
-              <ControlButton
-                onClick={togglePlay}
-                ariaLabel={isPlaying ? 'Pausar (Espacio)' : 'Reproducir (Espacio)'}
-                variant="primary"
+            {/* Control de volumen (Desktop) */}
+            <div className="hidden lg:flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleMute}
+                className="text-zinc-400 hover:text-zinc-200 transition-colors"
+                title={volume === 0 ? 'Activar sonido (M)' : 'Silenciar (M)'}
+                aria-label="Silenciar"
               >
-                {isPlaying ? <Pause size={18} strokeWidth={2.4} /> : <Play size={18} strokeWidth={2.4} />}
-              </ControlButton>
-
-              <ControlButton onClick={() => setMode('card')} ariaLabel="Expandir reproductor" variant="ghost">
-                <Maximize2 size={18} strokeWidth={2.1} />
-              </ControlButton>
+                {volume === 0 ? <VolumeX size={17} /> : <Volume2 size={17} />}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                className="w-16 xl:w-20 h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-red-500"
+                aria-label="Control de volumen"
+              />
             </div>
-          </motion.div>
-        )}
 
-        {mode === 'bubble' && (
-          <motion.button
-            type="button"
-            className="player-bubble"
-            drag
-            dragMomentum={false}
-            whileTap={{ scale: 0.96 }}
-            initial={{ scale: 0.85, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.85, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            onClick={() => setMode('card')}
-            aria-label="Abrir reproductor"
-          >
-            <span className={`player-bubble-rings ${playingClass}`}>
-              <span className="player-bubble-ring" />
-              <span className="player-bubble-ring player-bubble-ring-2" />
-            </span>
-            <span className={`player-bubble-core ${playingClass}`}>
-              <Radio size={22} strokeWidth={2.2} />
-            </span>
-          </motion.button>
-        )}
+            {/* Temporizador de apagado rápido */}
+            <SleepTimerModal currentMinutes={sleepTimerMinutes} onSetTimer={setSleepTimer} />
 
-        <AnimatePresence>
-          {mode === 'card' && (
+            {/* Botón para expandir consola */}
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] transition-colors"
+              title="Expandir consola de audio"
+              aria-label="Expandir"
+            >
+              <Maximize2 size={16} />
+            </button>
+          </div>
+        </div>
+      </footer>
+
+      {/* Modal / Consola de Audio Expandida de Alta Fidelidad */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
             <motion.div
-              className="player-overlay"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setMode('mini')}
+              className="fixed inset-0 bg-black/85 backdrop-blur-md cursor-pointer"
+              onClick={() => setIsModalOpen(false)}
+              aria-hidden="true"
+            />
+
+            <motion.div
+              initial={{ scale: 0.94, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.96, opacity: 0, y: 15 }}
+              transition={{ duration: 0.24, ease: 'easeOut' }}
+              className="relative z-10 w-full max-w-lg bg-zinc-950/95 border border-white/10 rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col text-zinc-100 overflow-hidden"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Consola de Reproducción Satelital"
             >
-              <motion.div
-                className={`player-card-modal glass-panel rounded-xl shadow-lg ${playingClass}`}
-                initial={{ scale: 0.94, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.96, opacity: 0, y: 20 }}
-                transition={{ duration: 0.28, ease: 'easeOut' }}
-                onClick={(event) => event.stopPropagation()}
-              >
-                <div className="player-card-top-bar">
-                  <div className="flex items-center gap-2">
-                    <span className={`status-indicator ${statusBadgeClass}`}>{statusBadgeText}</span>
-                    {sleepTimerMinutes && (
-                      <span className="text-xs text-amber-400 font-medium">
-                        🌙 {sleepTimerMinutes}m para apagado
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    className="player-close-btn"
-                    onClick={() => setMode('mini')}
-                    aria-label="Cerrar reproductor"
-                  >
-                    <X size={18} strokeWidth={2.4} />
-                  </button>
-                </div>
-
-                <div className="player-card-header">
-                  <StationArtwork station={currentStation} isPlaying={isPlaying} size="card" />
-                  <div className="player-card-text">
-                    <h2 className="player-card-title">{stationName}</h2>
-                    <p className="player-card-meta">{stationMeta}</p>
-                    <p className="player-card-submeta">Tiempo de sintonía: {timeLabel}</p>
-                    {statusMessage && (
-                      <p className="text-xs text-amber-400 mt-1 font-semibold">{statusMessage}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Visualizador de espectro interactivo */}
-                <div className="flex justify-center my-3 py-2 bg-black/25 rounded-lg border border-white/5">
-                  <AudioVisualizer isPlaying={isPlaying} variant="card" />
-                </div>
-
-                <div className="player-card-controls">
-                  <ControlButton onClick={onPrevStation} ariaLabel="Emisora anterior (Ctrl+←)">
-                    <SkipBack size={24} strokeWidth={2.2} />
-                  </ControlButton>
-                  <ControlButton
-                    onClick={togglePlay}
-                    ariaLabel={isPlaying ? 'Pausar (Espacio)' : 'Reproducir (Espacio)'}
-                    variant="primary"
-                  >
-                    {isPlaying ? <Pause size={24} strokeWidth={2.4} /> : <Play size={24} strokeWidth={2.4} />}
-                  </ControlButton>
-                  <ControlButton onClick={onNextStation} ariaLabel="Siguiente emisora (Ctrl+→)">
-                    <SkipForward size={24} strokeWidth={2.2} />
-                  </ControlButton>
-                </div>
-
-                <div className="player-card-footer">
-                  <div className="player-volume-inline">
-                    <button
-                      type="button"
-                      className="player-icon-btn player-icon-btn-ghost p-1"
-                      onClick={toggleMute}
-                      title="Silenciar / Activar sonido (M)"
-                      aria-label="Silenciar"
-                    >
-                      {volume === 0 ? (
-                        <VolumeX size={18} strokeWidth={2.1} className="text-red-400" />
-                      ) : (
-                        <Volume2 size={18} strokeWidth={2.1} />
-                      )}
-                    </button>
-                    <input
-                      className="volume-slider"
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={volume}
-                      onChange={(event) => handleVolumeChange(Number(event.target.value))}
-                      aria-label="Control de volumen"
-                    />
-                    <span className="text-xs font-mono text-zinc-400 w-8 text-right">
-                      {Math.round(volume * 100)}%
+              {/* Barra superior del modal */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-red-400">
+                    {statusBadgeText}
+                  </span>
+                  {sleepTimerMinutes && (
+                    <span className="text-xs text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full">
+                      🌙 {sleepTimerMinutes}m para apagado
                     </span>
-                  </div>
-
-                  <div className="player-mode-actions">
-                    <SleepTimerModal currentMinutes={sleepTimerMinutes} onSetTimer={setSleepTimer} />
-                    <button
-                      type="button"
-                      className="player-secondary-btn"
-                      onClick={handleShare}
-                      title="Compartir emisora"
-                    >
-                      {copied ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
-                      <span>{copied ? 'Copiado' : 'Compartir'}</span>
-                    </button>
-                    <button type="button" className="player-secondary-btn" onClick={() => setMode('full')}>
-                      <Maximize2 size={15} strokeWidth={2.2} />
-                      <span>Pantalla completa</span>
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {mode === 'full' && (
-            <motion.div
-              className={`player-fullscreen ${playingClass}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-            >
-              <div className="player-full-background" aria-hidden="true">
-                <span className="player-full-orb player-full-orb-1" />
-                <span className="player-full-orb player-full-orb-2" />
-                <span className="player-full-orb player-full-orb-3" />
-              </div>
-
-              <div className="player-full-shell">
-                <button
-                  type="button"
-                  className="player-close-btn player-close-btn-light"
-                  onClick={() => setMode('card')}
-                  aria-label="Salir de pantalla completa"
-                >
-                  <Minimize2 size={20} strokeWidth={2.4} />
-                </button>
-
-                <StationArtwork station={currentStation} isPlaying={isPlaying} size="full" />
-                <div className="player-full-copy">
-                  <span className={`status-indicator ${statusBadgeClass}`}>{statusBadgeText}</span>
-                  <h2 className="player-full-title">{stationName}</h2>
-                  <p className="player-full-meta">{stationMeta}</p>
-                  <p className="player-full-submeta">{timeLabel}</p>
-                  {statusMessage && (
-                    <p className="text-sm text-amber-300 font-semibold mt-1">{statusMessage}</p>
                   )}
                 </div>
 
-                <div className="my-6">
-                  <AudioVisualizer isPlaying={isPlaying} variant="full" />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+                  aria-label="Cerrar consola"
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
-                <div className="player-full-controls">
-                  <ControlButton onClick={onPrevStation} ariaLabel="Anterior">
-                    <SkipBack size={32} strokeWidth={2.2} />
-                  </ControlButton>
-                  <ControlButton onClick={togglePlay} ariaLabel={isPlaying ? 'Pausar' : 'Reproducir'} variant="primary">
-                    {isPlaying ? <Pause size={32} strokeWidth={2.4} /> : <Play size={32} strokeWidth={2.4} />}
-                  </ControlButton>
-                  <ControlButton onClick={onNextStation} ariaLabel="Siguiente">
-                    <SkipForward size={32} strokeWidth={2.2} />
-                  </ControlButton>
-                </div>
+              {/* Artwork y título de la emisora */}
+              <div className="text-center space-y-4 mb-6">
+                <StationArtwork station={currentStation} isPlaying={isPlaying} size="modal" />
 
-                <div className="flex items-center gap-4 mt-6 max-w-xs w-full px-4 py-2 bg-black/30 backdrop-blur-md rounded-full border border-white/10">
-                  <button type="button" onClick={toggleMute} aria-label="Silenciar">
-                    {volume === 0 ? <VolumeX size={18} className="text-red-400" /> : <Volume2 size={18} />}
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    {stationName}
+                  </h2>
+                  <p className="text-sm text-zinc-400 mt-1">{stationMeta}</p>
+                  <p className="text-xs font-mono text-zinc-500 mt-1">
+                    Tiempo de sintonización activa: {timeLabel}
+                  </p>
+                </div>
+              </div>
+
+              {/* Visualizador de espectro acústico en la consola */}
+              <div className="flex justify-center mb-6 py-3 bg-black/40 rounded-xl border border-white/[0.04]">
+                <AudioVisualizer isPlaying={isPlaying} variant="card" />
+              </div>
+
+              {/* Controles de transporte principales */}
+              <div className="flex items-center justify-center gap-6 mb-6">
+                <button
+                  type="button"
+                  onClick={onPrevStation}
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+                  title="Emisora anterior"
+                >
+                  <SkipBack size={24} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={togglePlay}
+                  className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 text-white flex items-center justify-center shadow-xl shadow-red-600/40 transition-all"
+                  title={isPlaying ? 'Pausar' : 'Reproducir'}
+                >
+                  {isPlaying ? (
+                    <Pause size={28} className="fill-white" />
+                  ) : (
+                    <Play size={28} className="fill-white ml-1" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onNextStation}
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+                  title="Siguiente emisora"
+                >
+                  <SkipForward size={24} />
+                </button>
+              </div>
+
+              {/* Fila de herramientas de estudio dentro de la consola */}
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false)
+                    setIsEqOpen(true)
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/[0.06] hover:bg-white/[0.1] text-amber-300 border border-white/[0.08] transition-all"
+                >
+                  <Sliders size={14} />
+                  <span>Ecualizador DSP</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false)
+                    setIsStudioOpen(true)
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 transition-all"
+                >
+                  <Radio size={14} />
+                  <span>Cabina On-Air & REC</span>
+                </button>
+              </div>
+
+              {/* Fila de volumen y compartir en la consola */}
+              <div className="flex items-center justify-between gap-4 pt-4 border-t border-white/[0.08]">
+                <div className="flex items-center gap-2.5 flex-1">
+                  <button
+                    type="button"
+                    onClick={toggleMute}
+                    className="text-zinc-400 hover:text-zinc-200 transition-colors"
+                  >
+                    {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
                   </button>
                   <input
-                    className="volume-slider flex-1"
                     type="range"
                     min="0"
                     max="1"
                     step="0.01"
                     value={volume}
-                    onChange={(event) => handleVolumeChange(Number(event.target.value))}
-                    aria-label="Volumen"
+                    onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-red-500"
                   />
-                  <span className="text-xs font-mono">{Math.round(volume * 100)}%</span>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 transition-colors"
+                >
+                  {copied ? (
+                    <>
+                      <Check size={14} className="text-emerald-400" />
+                      <span className="text-emerald-400">¡Enlace copiado!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 size={14} />
+                      <span>Compartir</span>
+                    </>
+                  )}
+                </button>
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+          </div>
+        )}
+      </AnimatePresence>
 
-      <audio id="radioPlayer" crossOrigin="anonymous" preload="none" />
+      {/* Modal de Ecualizador Paramétrico de 5 Bandas */}
+      <EqualizerModal isOpen={isEqOpen} onClose={() => setIsEqOpen(false)} />
+
+      {/* Modo Pantalla de Estudio "On-Air" & Grabadora */}
+      <StudioDisplayModal
+        isOpen={isStudioOpen}
+        onClose={() => setIsStudioOpen(false)}
+        currentStation={currentStation}
+        isPlaying={isPlaying}
+        togglePlay={togglePlay}
+        onNextStation={onNextStation}
+        onPrevStation={onPrevStation}
+        onOpenEq={() => {
+          setIsStudioOpen(false)
+          setIsEqOpen(true)
+        }}
+      />
+
+      {/* Modal de Atajos de Teclado */}
+      <ShortcutsModal isOpen={isShortcutsOpen} onClose={() => setIsShortcutsOpen(false)} />
     </>
   )
 }

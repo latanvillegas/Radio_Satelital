@@ -13,4 +13,6 @@ export interface Station {
   logoUrl?: string
   isFavorite?: boolean
   tags?: string[]
+  bitrate?: number
+  codec?: string
 }

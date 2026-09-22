@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react'
-import { Heart, Search, Shuffle, X } from 'lucide-react'
+import { Heart, Search, Shuffle, X, Globe, MapPin, Music } from 'lucide-react'
 
 type Props = {
   setQuery: (value: string) => void
@@ -35,7 +35,6 @@ export default function Filters({
     setQ(searchQuery)
   }, [searchQuery])
 
-  // Atajo de teclado: presionar '/' para enfocar el buscador instantáneamente
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -62,121 +61,172 @@ export default function Filters({
   }
 
   return (
-    <div className="glass-panel filters rounded-xl shadow-sm hover:shadow-md transition-all duration-200" id="filters-panel">
-      <div className="panel-head filter-panel-head">
-        <div className="filter-title-group">
-          <h3 className="text-lg font-bold">Explorar Emisoras</h3>
-          <span className="search-shortcut-hint" title="Atajo de teclado">
-            Presiona <kbd>/</kbd> para buscar
+    <div
+      className="bg-zinc-900/40 border border-white/[0.08] rounded-2xl p-4 sm:p-5 backdrop-blur-md shadow-xl mb-6 space-y-4"
+      id="filters-panel"
+    >
+      {/* Fila superior: Título de sección y botón Sorpréndeme */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+          <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-200">
+            Explorar Frecuencias
+          </h3>
+          <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-zinc-400 bg-white/[0.04] border border-white/[0.08] px-2 py-0.5 rounded-md">
+            Atajo: <kbd className="font-mono text-zinc-200 font-bold bg-white/10 px-1 rounded">/</kbd>
           </span>
         </div>
 
-        {onPlayRandom && (
+        <div className="flex items-center gap-2">
+          {onPlayRandom && (
+            <button
+              type="button"
+              onClick={onPlayRandom}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              title="Sintonizar una emisora al azar"
+            >
+              <Shuffle size={13} strokeWidth={2.4} />
+              <span>Sorpréndeme</span>
+            </button>
+          )}
+
           <button
             type="button"
-            className="random-station-btn"
-            onClick={onPlayRandom}
-            title="Sintonizar una emisora al azar"
-            aria-label="Emisora aleatoria"
+            onClick={() => toggleOnlyFavs(!onlyFavs)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+              onlyFavs
+                ? 'bg-red-500/20 text-red-400 border-red-500/40 shadow-sm'
+                : 'bg-white/[0.04] text-zinc-300 border-white/[0.08] hover:bg-white/[0.08]'
+            }`}
           >
-            <Shuffle size={15} />
-            <span>Sorpréndeme</span>
+            <Heart size={13} fill={onlyFavs ? 'currentColor' : 'none'} strokeWidth={2.4} />
+            <span>Favoritas</span>
           </button>
-        )}
+        </div>
       </div>
 
-      <div className="filter-row">
-        <div className="form-group search-form-group">
-          <div className="input-icon-wrap">
-            <Search size={16} strokeWidth={2.2} className="input-leading-icon" aria-hidden="true" />
-            <input
-              id="station-search"
-              className="input-dark search-input input-with-icon"
-              placeholder="Buscar por emisora, país, ciudad o género..."
-              value={q}
-              onChange={(e) => handleQueryChange(e.target.value)}
-            />
-            {q && (
-              <button
-                type="button"
-                className="input-clear-btn"
-                onClick={clearSearch}
-                aria-label="Limpiar búsqueda"
-              >
-                <X size={15} />
-              </button>
-            )}
-          </div>
+      {/* Fila intermedia: Buscador y Selectores de País y Región */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+        {/* Campo de búsqueda */}
+        <div className="md:col-span-6 relative">
+          <Search
+            size={16}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+          />
+          <input
+            id="station-search"
+            type="text"
+            className="w-full bg-zinc-950/70 border border-white/[0.1] rounded-xl pl-10 pr-9 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/40 transition-colors"
+            placeholder="Buscar por emisora, país, ciudad o género..."
+            value={q}
+            onChange={(e) => handleQueryChange(e.target.value)}
+          />
+          {q && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-0.5 rounded transition-colors"
+              aria-label="Limpiar búsqueda"
+            >
+              <X size={15} />
+            </button>
+          )}
         </div>
 
-        <div className="form-group">
+        {/* Filtro de País */}
+        <div className="md:col-span-3 relative">
+          <Globe
+            size={15}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+          />
           <select
             id="country-filter"
-            className="input-dark"
+            className="w-full appearance-none bg-zinc-950/70 border border-white/[0.1] rounded-xl pl-9 pr-8 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/40 cursor-pointer transition-colors"
             value={filters.activeCountry || ''}
             onChange={(e) => filters.setCountry(e.target.value)}
           >
-            <option value="">Todos los países ({filters.countries.length})</option>
+            <option value="" className="bg-zinc-900 text-zinc-100">
+              Todos los países ({filters.countries.length})
+            </option>
             {filters.countries.map((c) => (
-              <option key={c} value={c}>
+              <option key={c} value={c} className="bg-zinc-900 text-zinc-100">
                 {c}
               </option>
             ))}
           </select>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400 text-xs">
+            ▼
+          </div>
         </div>
 
-        <div className="form-group">
+        {/* Filtro de Región */}
+        <div className="md:col-span-3 relative">
+          <MapPin
+            size={15}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+          />
           <select
             id="region-filter"
-            className="input-dark"
+            className="w-full appearance-none bg-zinc-950/70 border border-white/[0.1] rounded-xl pl-9 pr-8 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/40 cursor-pointer transition-colors"
             value={filters.activeRegion || ''}
             onChange={(e) => filters.setRegion(e.target.value)}
           >
-            <option value="">Todas las regiones</option>
+            <option value="" className="bg-zinc-900 text-zinc-100">
+              Todas las regiones
+            </option>
             {filters.regions.map((r) => (
-              <option key={r} value={r}>
+              <option key={r} value={r} className="bg-zinc-900 text-zinc-100">
                 {r}
               </option>
             ))}
           </select>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400 text-xs">
+            ▼
+          </div>
         </div>
       </div>
 
-      {/* Píldoras de Género Musical / Temática */}
+      {/* Píldoras de Género Musical con carrusel horizontal suave */}
       {filters.genres.length > 0 && (
-        <div className="genre-pill-bar">
-          <button
-            type="button"
-            className={`genre-pill ${!filters.activeGenre ? 'active' : ''}`}
-            onClick={() => filters.setGenre('')}
-          >
-            Todos
-          </button>
-          {filters.genres.map((g) => (
+        <div className="pt-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider pr-2 flex-shrink-0">
+              <Music size={12} className="text-red-400" />
+              <span>Género:</span>
+            </div>
+
             <button
-              key={g}
               type="button"
-              className={`genre-pill capitalize ${filters.activeGenre === g ? 'active' : ''}`}
-              onClick={() => filters.setGenre(filters.activeGenre === g ? '' : g)}
+              onClick={() => filters.setGenre('')}
+              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                !filters.activeGenre
+                  ? 'bg-red-500 text-white font-semibold shadow-md shadow-red-500/30'
+                  : 'bg-white/[0.04] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] border border-white/[0.06]'
+              }`}
             >
-              {g}
+              Todos
             </button>
-          ))}
+
+            {filters.genres.map((g) => {
+              const isActive = filters.activeGenre === g
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => filters.setGenre(isActive ? '' : g)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap transition-all flex-shrink-0 ${
+                    isActive
+                      ? 'bg-red-500 text-white font-semibold shadow-md shadow-red-500/30'
+                      : 'bg-white/[0.04] text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] border border-white/[0.06]'
+                  }`}
+                >
+                  {g}
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
-
-      <div className="filter-footer-row">
-        <label className="switch-label">
-          <input
-            type="checkbox"
-            id="favoritesToggle"
-            checked={onlyFavs}
-            onChange={(e) => toggleOnlyFavs(e.target.checked)}
-          />
-          <Heart size={16} strokeWidth={2.2} fill={onlyFavs ? 'currentColor' : 'none'} />
-          <span>Solo mis favoritas</span>
-        </label>
-      </div>
     </div>
   )
 }

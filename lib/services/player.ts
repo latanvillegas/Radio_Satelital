@@ -2,12 +2,14 @@ import type { Station } from '../../types/station'
 import { getOptimalUrl } from './proxy'
 import { addRecentStation } from '../storage/recents'
 import { stationKey } from './station-normalizer'
+import { initAudioDsp } from './audio-dsp'
 
 const AUDIO_ID = 'radioPlayer'
 
 let sleepTimerId: ReturnType<typeof setTimeout> | null = null
 let sleepTimerEndsAt: number | null = null
 let currentPlayingStation: Station | null = null
+let currentStreamMeta: { url: string; isProxied: boolean } | null = null
 let retryCount = 0
 const MAX_RETRIES = 2
 let isReconnecting = false
@@ -36,7 +38,54 @@ export function subscribePlaybackStatus(listener: StatusListener): () => void {
 
 export function getAudio(): HTMLAudioElement | null {
   if (typeof window === 'undefined') return null
-  return document.getElementById(AUDIO_ID) as HTMLAudioElement | null
+  let audio = document.getElementById(AUDIO_ID) as HTMLAudioElement | null
+  if (!audio) {
+    audio = document.createElement('audio')
+    audio.id = AUDIO_ID
+    audio.crossOrigin = 'anonymous'
+    audio.preload = 'none'
+    document.body.appendChild(audio)
+  }
+  return audio
+}
+
+export function getCurrentPlayingStation(): Station | null {
+  return currentPlayingStation
+}
+
+export function getCurrentStreamTelemetry() {
+  const audio = getAudio()
+  const station = currentPlayingStation
+  const rawUrl = currentStreamMeta?.url || station?.streamUrl || station?.url || ''
+  
+  // Detección heurística del formato/códec
+  let codec = 'MP3 (MPEG Audio)'
+  if (rawUrl.includes('.m3u8') || rawUrl.includes('hls')) {
+    codec = 'HLS / AAC Live'
+  } else if (rawUrl.includes('aac') || rawUrl.includes('.aac') || rawUrl.includes('audio/aac')) {
+    codec = 'AAC+ High Efficiency'
+  } else if (rawUrl.includes('ogg') || rawUrl.includes('opus')) {
+    codec = 'Ogg Opus'
+  } else if (rawUrl.includes('flac')) {
+    codec = 'FLAC Lossless'
+  }
+
+  // Bitrate heurístico o declarado
+  const bitrate = station?.bitrate || (rawUrl.includes('320') ? 320 : rawUrl.includes('256') ? 256 : rawUrl.includes('192') ? 192 : 128)
+
+  return {
+    codec,
+    bitrate,
+    isProxied: currentStreamMeta?.isProxied ?? false,
+    url: rawUrl,
+    bufferedSeconds: audio && audio.buffered.length > 0 ? Math.max(0, audio.buffered.end(audio.buffered.length - 1) - audio.currentTime) : 0,
+  }
+}
+
+export function resyncStream() {
+  if (!currentPlayingStation) return
+  console.log('[Player] Re-sincronizando señal en vivo...')
+  playStation(currentPlayingStation, false)
 }
 
 function updateMediaSession(station: Station) {
@@ -83,6 +132,7 @@ export function playStation(s: Station, isAutoRetry = false) {
   }
 
   const { url, isProxied } = getOptimalUrl(s)
+  currentStreamMeta = { url, isProxied }
   notifyStatus(isAutoRetry ? 'reconnecting' : 'loading')
 
   audio.src = url
@@ -115,6 +165,9 @@ export function playStation(s: Station, isAutoRetry = false) {
     retryCount = 0
     isReconnecting = false
     notifyStatus('playing')
+    try {
+      initAudioDsp(audio)
+    } catch {}
   }
 
   audio.onpause = () => {

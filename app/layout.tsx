@@ -2,9 +2,13 @@ import './globals.css'
 import React from 'react'
 
 export const metadata = {
-  title: 'Radio Satelital',
-  description: 'Escucha emisoras de radio en vivo.',
-  manifest: '/manifest.json'
+  title: 'Radio Satelital - Sintonizador Global en Vivo',
+  description: 'Sintonizador web global en tiempo real con transmisión continua de alta fidelidad.',
+  manifest: '/manifest.json',
+  openGraph: {
+    title: 'Radio Satelital - Sintonizador Global en Vivo',
+    description: 'Sintonizador web global en tiempo real con transmisión continua de alta fidelidad.',
+  },
 }
 
 export const viewport = {

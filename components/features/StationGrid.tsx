@@ -4,7 +4,7 @@ import StationCard from './StationCard'
 import SkeletonCard from './SkeletonCard'
 import { FixedSizeGrid as Grid } from 'react-window'
 import type { Station } from '../../types/station'
-import { History } from 'lucide-react'
+import { History, Radio, Sparkles, SearchX } from 'lucide-react'
 
 type Props = {
   stations: Station[]
@@ -13,11 +13,16 @@ type Props = {
   toggleFavorite: (station: Station) => void
 }
 
-export default function StationGrid({ stations, recentStations = [], playStation, toggleFavorite }: Props) {
+export default function StationGrid({
+  stations,
+  recentStations = [],
+  playStation,
+  toggleFavorite,
+}: Props) {
   const loading = stations.length === 0
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(1200)
-  const stationCountLabel = loading ? 'Cargando emisoras' : `${stations.length} radios disponibles`
+  const stationCountLabel = `${stations.length} emisoras sintonizables`
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -31,10 +36,10 @@ export default function StationGrid({ stations, recentStations = [], playStation
   }, [])
 
   const gridMetrics = useMemo(() => {
-    if (width < 640) return { cardWidth: 260, rowHeight: 124, gap: 12 }
-    if (width < 1024) return { cardWidth: 280, rowHeight: 128, gap: 14 }
-    if (width < 1440) return { cardWidth: 300, rowHeight: 132, gap: 16 }
-    return { cardWidth: 340, rowHeight: 136, gap: 18 }
+    if (width < 640) return { cardWidth: 280, rowHeight: 110, gap: 12 }
+    if (width < 1024) return { cardWidth: 320, rowHeight: 114, gap: 14 }
+    if (width < 1440) return { cardWidth: 340, rowHeight: 118, gap: 16 }
+    return { cardWidth: 360, rowHeight: 120, gap: 16 }
   }, [width])
 
   const { cardWidth, rowHeight, gap } = gridMetrics
@@ -42,62 +47,82 @@ export default function StationGrid({ stations, recentStations = [], playStation
 
   return (
     <div
-      className="glass-panel station-board rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+      className="bg-zinc-900/40 border border-white/[0.08] rounded-2xl p-4 sm:p-6 backdrop-blur-md shadow-xl"
       id="station-list"
       ref={containerRef}
       aria-label="Lista de frecuencias"
     >
       {/* Escuchadas recientemente */}
       {recentStations.length > 0 && (
-        <div className="recent-stations-section mb-6">
-          <div className="recent-stations-header">
-            <History size={16} className="text-red-400" />
-            <h4 className="text-sm font-semibold tracking-wide text-zinc-300">Escuchadas recientemente</h4>
+        <div className="mb-6 p-3 sm:p-4 rounded-xl bg-zinc-950/40 border border-white/[0.06]">
+          <div className="flex items-center gap-2 mb-3">
+            <History size={15} className="text-red-400" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+              Escuchadas Recientemente
+            </h4>
           </div>
-          <div className="recent-stations-scroller">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             {recentStations.map((s) => (
               <button
                 key={`recent-${s.name}-${s.url}`}
                 type="button"
-                className="recent-station-chip"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 border border-white/[0.08] transition-all whitespace-nowrap group flex-shrink-0"
                 onClick={() => playStation(s)}
                 title={`Sintonizar ${s.name}`}
               >
-                <span className="recent-chip-dot" />
-                <span className="recent-chip-name">{s.name}</span>
-                {s.country && <span className="recent-chip-country">{s.country}</span>}
+                <span className="w-2 h-2 rounded-full bg-red-500 group-hover:animate-ping" />
+                <span className="font-semibold">{s.name}</span>
+                {s.country && <span className="text-zinc-500 text-[11px]">{s.country}</span>}
               </button>
             ))}
           </div>
         </div>
       )}
 
-      <div className="station-board-head">
+      {/* Cabecera del catálogo */}
+      <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
         <div>
-          <p className="station-board-kicker">Catálogo en vivo</p>
-          <h3 className="text-xl font-bold">Frecuencias</h3>
+          <div className="flex items-center gap-2 mb-1">
+            <Radio size={16} className="text-red-400" />
+            <span className="text-xs font-bold uppercase tracking-wider text-red-400">
+              Transmisiones Activas
+            </span>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+            Catálogo Global de Frecuencias
+          </h3>
+          <p className="text-xs sm:text-sm text-zinc-400 mt-0.5">
+            Emisoras satelitales en vivo con audio digital continuo y baja latencia.
+          </p>
         </div>
-        <span className="station-board-pill">{stationCountLabel}</span>
+
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-white/[0.05] text-zinc-200 border border-white/[0.08] shadow-sm">
+          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+          <span>{stationCountLabel}</span>
+        </div>
       </div>
 
-      <p className="station-board-copy">
-        Explora emisoras de alta fidelidad, filtra por género o país y sintoniza al instante con reproducción continua.
-      </p>
-
-      {stations.length <= 200 ? (
-        <div className="station-grid">
-          {loading ? (
-            Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={`sk-${i}`} />)
-          ) : (
-            stations.map((s) => (
-              <StationCard
-                key={`${s.name}-${s.url}`}
-                station={s}
-                onPlay={playStation}
-                onToggleFav={toggleFavorite}
-              />
-            ))
-          )}
+      {/* Rejilla de Emisoras */}
+      {stations.length === 0 ? (
+        <div className="py-16 text-center space-y-3">
+          <div className="w-12 h-12 mx-auto rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-zinc-500">
+            <SearchX size={24} />
+          </div>
+          <h4 className="text-base font-bold text-zinc-200">No se encontraron emisoras</h4>
+          <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+            Prueba ajustando el término de búsqueda, seleccionando otro país o restableciendo los filtros.
+          </p>
+        </div>
+      ) : stations.length <= 200 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pt-2">
+          {stations.map((s) => (
+            <StationCard
+              key={`${s.name}-${s.url}`}
+              station={s}
+              onPlay={playStation}
+              onToggleFav={toggleFavorite}
+            />
+          ))}
         </div>
       ) : (
         (() => {
@@ -115,12 +140,12 @@ export default function StationGrid({ stations, recentStations = [], playStation
           }) => {
             const idx = rowIndex * columns + columnIndex
             if (idx >= stations.length) {
-              return <div style={{ ...style, padding: '6px' }} aria-hidden="true" />
+              return <div style={{ ...style, padding: '4px' }} aria-hidden="true" />
             }
             const s = stations[idx]
             return (
               <div
-                style={{ ...style, padding: '6px' }}
+                style={{ ...style, padding: '4px' }}
                 key={`${s.name}-${s.url}`}
                 data-grid-cell="true"
                 data-grid-index={idx}
@@ -131,19 +156,21 @@ export default function StationGrid({ stations, recentStations = [], playStation
           }
 
           return (
-            <Grid
-              role="grid"
-              aria-rowcount={rowCount}
-              aria-colcount={columns}
-              columnCount={columns}
-              columnWidth={columnWidth}
-              height={Math.min(780, rowCount * rowHeight)}
-              rowCount={rowCount}
-              rowHeight={rowHeight}
-              width={width}
-            >
-              {Cell}
-            </Grid>
+            <div className="pt-2">
+              <Grid
+                role="grid"
+                aria-rowcount={rowCount}
+                aria-colcount={columns}
+                columnCount={columns}
+                columnWidth={columnWidth}
+                height={Math.min(780, rowCount * rowHeight)}
+                rowCount={rowCount}
+                rowHeight={rowHeight}
+                width={width}
+              >
+                {Cell}
+              </Grid>
+            </div>
           )
         })()
       )}

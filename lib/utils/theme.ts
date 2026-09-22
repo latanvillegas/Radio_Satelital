@@ -29,14 +29,14 @@ type ThemeTokens = {
 
 const THEME_TOKENS: Record<ThemeName, ThemeTokens> = {
   amoled: {
-    themeColor: '#05070a',
-    accent: '#7d27ff',
-    accentHover: '#9f5dff',
-    bgDark: '#05070a',
-    textMain: '#e6eef6',
-    textMuted: '#9aa7b7',
-    bgGlass: 'rgba(255,255,255,0.03)',
-    borderGlass: 'rgba(255,255,255,0.08)',
+    themeColor: '#090b10',
+    accent: '#ef4444',
+    accentHover: '#f87171',
+    bgDark: '#090b10',
+    textMain: '#f1f5f9',
+    textMuted: '#94a3b8',
+    bgGlass: 'rgba(255, 255, 255, 0.03)',
+    borderGlass: 'rgba(255, 255, 255, 0.08)',
   },
   gold: {
     themeColor: '#1a1509',
