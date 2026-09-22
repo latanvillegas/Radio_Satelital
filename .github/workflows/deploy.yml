@@ -30,6 +30,12 @@ jobs:
         run: |
           rm -rf docs
           cp -r out docs
+          # Ensure CNAME and .nojekyll exist in docs
+          echo "latanvillegas.online" > docs/CNAME
+          touch docs/.nojekyll
+          # Also ensure root has CNAME and .nojekyll
+          echo "latanvillegas.online" > CNAME
+          touch .nojekyll
 
       - name: Commit docs folder
         run: |
