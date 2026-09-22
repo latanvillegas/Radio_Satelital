@@ -29,8 +29,10 @@ jobs:
       - name: Deploy build artifacts to main
         run: |
           # Ensure static build files are in root for main branch
-          rm -rf _next
+          rm -rf _next docs
           cp -r out/_next .
+          cp out/index.html .
+          cp -r out/docs .
           cp out/404.html . 2>/dev/null || true
           cp out/sitemap.xml . 2>/dev/null || true
           cp out/robots.txt . 2>/dev/null || true
@@ -41,8 +43,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add _next/ CNAME .nojekyll 404.html sitemap.xml robots.txt
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update main branch with latest build" && git push origin main)
+          git add index.html _next/ docs/ CNAME .nojekyll 404.html sitemap.xml robots.txt
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update main branch with latest build and docs redirect" && git push origin main)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
