@@ -51,7 +51,7 @@ describe('station-normalizer', () => {
   it('prioriza las emisoras frescas al fusionar por streamUrl', () => {
     const merged = mergeStationsByStreamUrl(
       [
-        { id: 'firebase-1', name: 'La Mega', url: 'https://example.com/stream', streamUrl: 'https://example.com/stream', country: 'VE', region: '', logoUrl: '', isFavorite: false, tags: [], source: 'firebase' },
+        { id: 'custom-1', name: 'La Mega', url: 'https://example.com/stream', streamUrl: 'https://example.com/stream', country: 'VE', region: '', logoUrl: '', isFavorite: false, tags: [], source: 'local' },
       ],
       [
         { id: 'local-1', name: 'La Mega Local', url: 'https://example.com/stream', streamUrl: 'https://example.com/stream', country: 'VE', region: '', logoUrl: '', isFavorite: false, tags: [], source: 'local' },

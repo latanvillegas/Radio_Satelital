@@ -27,7 +27,7 @@ export default function useStations(){
   const [query, setQuery] = useState('')
   const [onlyFavs, setOnlyFavs] = useState(false)
   const [filters, setFilters] = useState<{country?:string,region?:string}>({})
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(()=>{

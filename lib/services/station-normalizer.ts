@@ -1,6 +1,6 @@
 import type { Station } from '../../types/station'
 
-export type StationSource = 'local' | 'firebase'
+export type StationSource = 'local'
 
 export type StationInput = {
   id?: string
