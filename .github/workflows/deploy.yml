@@ -26,22 +26,34 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Copy build to docs folder
+      - name: Deploy build artifacts to main
         run: |
-          rm -rf docs
-          cp -r out docs
-          # Ensure CNAME and .nojekyll exist in docs
-          echo "latanvillegas.online" > docs/CNAME
-          touch docs/.nojekyll
-          # Also ensure root has CNAME and .nojekyll
+          # Ensure static build files are in root for main branch
+          rm -rf _next
+          cp -r out/_next .
+          cp out/404.html . 2>/dev/null || true
+          cp out/sitemap.xml . 2>/dev/null || true
+          cp out/robots.txt . 2>/dev/null || true
           echo "latanvillegas.online" > CNAME
           touch .nojekyll
 
-      - name: Commit docs folder
+      - name: Commit build to main branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update docs folder with latest build" && git push)
+          git add _next/ CNAME .nojekyll 404.html sitemap.xml robots.txt
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update main branch with latest build" && git push origin main)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

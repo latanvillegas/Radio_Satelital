@@ -128,33 +128,26 @@ Esta aplicación implementa múltiples capas de protección:
 
 ## 🔧 Troubleshooting
 
-Para problemas comunes, consulta la documentación específica:
-
-- **Problemas de audio:** [docs/features/AUDIO_PLAYBACK_TROUBLESHOOTING.md](docs/features/AUDIO_PLAYBACK_TROUBLESHOOTING.md)
-- **Configuración privada en la nube:** [docs/admin/ADMIN_SETUP.md](docs/admin/ADMIN_SETUP.md)
-- **Notificaciones en tiempo real:** [docs/features/REALTIME_NOTIFICATIONS.md](docs/features/REALTIME_NOTIFICATIONS.md)
-
 ### Problemas Frecuentes
 
 **P: ¿Por qué no suena una emisora?**
 - Verifica que la URL sea válida (http:// o https://)
 - Intenta en otro navegador para descartar problemas de caché
-- Algunos streams pueden estar offline
-- Consulta [docs/features/AUDIO_PLAYBACK_TROUBLESHOOTING.md](docs/features/AUDIO_PLAYBACK_TROUBLESHOOTING.md)
+- Algunos streams pueden estar offline temporalmente o tener restricciones geográficas
+- Verifica que tu navegador permita la reproducción automática de audio (autoplay)
 
 **P: ¿Cómo instalo en iOS?**
 - Abre en Safari
-- Menú (↑) → Agregar a pantalla de inicio
-- Se instalará como app web
+- Menú Compartir (↑) → "Agregar a pantalla de inicio"
+- Se instalará como app web progresiva (PWA)
 
 **P: ¿Funciona sin internet?**
-- Sí, pero limitado. Necesitas internet para escuchar streams en vivo.
-- Puedes buscar entre emisoras agregadas sin conexión.
+- Sí, la interfaz y las listas guardadas funcionan sin conexión
+- Para escuchar la transmisión en vivo se requiere conexión a internet
 
 **P: ¿Dónde se guardan mis datos?**
-- Todo en tu dispositivo (localStorage)
-- Nada se envía a servidores externos (excepto Supabase si lo activas)
-- Ver [docs/policies/PRIVACY.md](docs/policies/PRIVACY.md) para detalles
+- Todo se almacena localmente en tu dispositivo (localStorage)
+- No se envían datos personales a servidores externos
 
 ---
 
@@ -174,14 +167,6 @@ Para problemas comunes, consulta la documentación específica:
 ├── tailwind.config.js            # Configuración Tailwind
 ├── postcss.config.js             # Configuración PostCSS
 
-├── docs/                         # Documentación
-│   ├── README.md                 # Índice de documentación
-│   ├── admin/                    # Administración y setup
-│   ├── features/                 # Audio, notificaciones y guías de uso
-│   ├── policies/                 # Privacidad y seguridad
-│   ├── history/                  # Changelog
-│   └── database/                 # Scripts SQL
-│
 ├── scripts/
 │   └── test-streams.sh          # Helper para testear streams
 │
