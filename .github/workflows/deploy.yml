@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
@@ -51,7 +51,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html _next/ docs/ CNAME .nojekyll 404.html sitemap.xml robots.txt
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update main branch with latest build and docs redirect" && git push origin main)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update main branch with latest build and docs redirect [skip ci]" && git push origin main)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
