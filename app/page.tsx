@@ -1,14 +1,12 @@
 "use client"
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState } from 'react'
 import ThemeInitializer from '@/components/common/ThemeInitializer'
 import Player from '@/components/layout/Player'
 import StationGrid from '@/components/features/StationGrid'
 import SideMenu from '@/components/layout/SideMenu'
 import Filters from '@/components/features/Filters'
-import QuickPresetsBar from '@/components/features/QuickPresetsBar'
-import MasterConsoleRack from '@/components/features/MasterConsoleRack'
 import { useStations } from '@/hooks/stations'
-import { Radio, Sliders, Shuffle, Heart, Sparkles, AlertCircle, Activity } from 'lucide-react'
+import { Radio, Sliders, Shuffle, Heart, AlertCircle } from 'lucide-react'
 
 export default function Page() {
   const {
@@ -30,29 +28,6 @@ export default function Page() {
   } = useStations()
 
   const [menuOpen, setMenuOpen] = useState(false)
-  const [consoleInView, setConsoleInView] = useState(true)
-  const [isConsoleCollapsed, setIsConsoleCollapsed] = useState(false)
-  const consoleRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const el = consoleRef.current
-    if (!el) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // La consola se considera en pantalla si al menos un 15% está visible
-        setConsoleInView(entry.isIntersecting)
-      },
-      { threshold: 0.15 }
-    )
-
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
-
-  // La barra flotante inferior solo se muestra cuando el usuario hace scroll hacia abajo
-  // o cuando ha minimizado el rack superior, evitando así que los reproductores se dupliquen.
-  const showBottomDock = !consoleInView || isConsoleCollapsed
 
   const toggleMenu = () => setMenuOpen((open) => !open)
   const toggleFavorites = () => toggleOnlyFavs(!onlyFavs)
@@ -207,33 +182,7 @@ export default function Page() {
         </header>
 
         {/* Contenido Principal */}
-        <main
-          className={`max-w-7xl mx-auto px-4 sm:px-6 py-6 relative z-10 transition-all duration-300 ${
-            showBottomDock ? 'pb-36' : 'pb-16'
-          }`}
-        >
-          {/* Consola Maestra de Estudio Broadcast (Rack de Audio Central) */}
-          <div ref={consoleRef}>
-            <MasterConsoleRack
-              currentStation={currentStation}
-              onPlayNext={nextStation}
-              onPlayPrev={prevStation}
-              onToggleFav={toggleFavorite}
-              onOpenEq={() => window.dispatchEvent(new CustomEvent('open-eq-modal'))}
-              onOpenStudio={() => window.dispatchEvent(new CustomEvent('open-studio-modal'))}
-              onPlayRandom={playRandomStation}
-              isCollapsed={isConsoleCollapsed}
-              onToggleCollapse={() => setIsConsoleCollapsed((prev) => !prev)}
-            />
-          </div>
-
-          {/* Barra de Presets Rápidos de Estudio (Dial 1 a 6) */}
-          <QuickPresetsBar
-            currentStation={currentStation}
-            onPlayStation={playStation}
-            stations={stations}
-          />
-
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 relative z-10 transition-all duration-300 pb-32">
           {/* Panel de Filtros y Búsqueda */}
           <Filters
             setQuery={setQuery}
@@ -266,12 +215,14 @@ export default function Page() {
           />
         </main>
 
-        {/* Reproductor Fijo en el Pie (Bottom Dock Inteligente) */}
+        {/* Reproductor Fijo en el Pie (Bottom Dock Profesional Siempre Accesible) */}
         <Player
           currentStation={currentStation}
           onNextStation={nextStation}
           onPrevStation={prevStation}
-          visible={showBottomDock}
+          stations={stations}
+          onPlayStation={playStation}
+          visible={true}
         />
 
         {/* Panel Deslizante de Ajustes */}

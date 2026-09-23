@@ -1,11 +1,10 @@
 "use client"
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { usePlayer } from '@/hooks/player'
 import type { Station } from '@/types/station'
 import {
   Maximize2,
-  Minimize2,
   Pause,
   Play,
   Radio,
@@ -16,11 +15,14 @@ import {
   X,
   Share2,
   Check,
-  Disc,
   Sliders,
   Keyboard,
   Circle,
-  Activity,
+  RotateCw,
+  BookmarkPlus,
+  RadioTower,
+  Sparkles,
+  Download,
 } from 'lucide-react'
 import AudioVisualizer from '@/components/features/AudioVisualizer'
 import SleepTimerModal from '@/components/features/SleepTimerModal'
@@ -31,12 +33,28 @@ import {
   subscribeRecorder,
   type RecorderState,
   getRecorderState,
+  startRecording,
+  stopRecording,
+  downloadRecording,
 } from '@/lib/services/recorder'
+import {
+  resyncStream,
+  getCurrentStreamTelemetry,
+} from '@/lib/services/player'
+import {
+  getQuickPresets,
+  setQuickPreset,
+  clearQuickPreset,
+  subscribeQuickPresets,
+  initQuickPresets,
+} from '@/lib/services/quick-presets'
 
 type Props = {
   currentStation: Station | null
   onNextStation: () => void
   onPrevStation: () => void
+  stations?: Station[]
+  onPlayStation?: (station: Station) => void
   visible?: boolean
 }
 
@@ -113,6 +131,8 @@ export default function Player({
   currentStation,
   onNextStation,
   onPrevStation,
+  stations = [],
+  onPlayStation,
   visible = true,
 }: Props) {
   const {
@@ -129,6 +149,12 @@ export default function Player({
   const [isEqOpen, setIsEqOpen] = useState(false)
   const [isStudioOpen, setIsStudioOpen] = useState(false)
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false)
+  const [isPresetsOpen, setIsPresetsOpen] = useState(false)
+  const [isResyncing, setIsResyncing] = useState(false)
+  const [presets, setPresets] = useState<(Station | null)[]>([])
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const presetsRef = useRef<HTMLDivElement>(null)
+
   const [recorderState, setRecorderState] = useState<RecorderState>(getRecorderState())
   const [volume, setVolume] = useState<number>(() => {
     if (typeof window !== 'undefined') {
@@ -139,6 +165,35 @@ export default function Player({
   })
   const [prevVolume, setPrevVolume] = useState(0.85)
   const [copied, setCopied] = useState(false)
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg)
+    setTimeout(() => {
+      setToastMessage((curr) => (curr === msg ? null : curr))
+    }, 3000)
+  }
+
+  // Suscripción a presets rápidos de estudio
+  useEffect(() => {
+    if (stations.length > 0) {
+      initQuickPresets(stations.slice(0, 6))
+    }
+    return subscribeQuickPresets((updated) => {
+      setPresets([...updated])
+    })
+  }, [stations])
+
+  // Cerrar popover de presets al hacer clic fuera
+  useEffect(() => {
+    if (!isPresetsOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (presetsRef.current && !presetsRef.current.contains(e.target as Node)) {
+        setIsPresetsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isPresetsOpen])
 
   // Suscripción a la grabadora para estado en vivo en el dock
   useEffect(() => {
@@ -170,7 +225,7 @@ export default function Player({
     }
   }, [volume])
 
-  // Atajos de teclado para control de audio profesional (Espacio = Play/Pause, M = Mute, E = EQ, O = OnAir, ? = Shortcuts)
+  // Atajos de teclado para control de audio profesional (Espacio, M, E, O, ?, 1-6)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -201,18 +256,35 @@ export default function Player({
         setIsStudioOpen(false)
         setIsShortcutsOpen(false)
         setIsModalOpen(false)
+        setIsPresetsOpen(false)
       } else if (e.key === 'ArrowRight' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
         onNextStation()
       } else if (e.key === 'ArrowLeft' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
         onPrevStation()
+      } else {
+        // Teclas numéricas 1-6 para sintonizar presets
+        const num = parseInt(e.key, 10)
+        if (num >= 1 && num <= 6) {
+          const slot = num - 1
+          const target = presets[slot]
+          if (target && onPlayStation) {
+            e.preventDefault()
+            onPlayStation(target)
+            showToast(`Sintonizando Preset ${num}: ${target.name}`)
+          } else if (currentStation) {
+            e.preventDefault()
+            setQuickPreset(slot, currentStation)
+            showToast(`Preset ${num} guardado: ${currentStation.name}`)
+          }
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [volume, prevVolume, isPlaying, togglePlay, onNextStation, onPrevStation])
+  }, [volume, prevVolume, isPlaying, togglePlay, onNextStation, onPrevStation, presets, currentStation, onPlayStation])
 
   const handleVolumeChange = (value: number) => {
     const audio = document.getElementById('radioPlayer') as HTMLAudioElement | null
@@ -231,6 +303,40 @@ export default function Player({
       handleVolumeChange(0)
     } else {
       handleVolumeChange(prevVolume > 0 ? prevVolume : 0.8)
+    }
+  }
+
+  const handleResync = () => {
+    if (isResyncing) return
+    setIsResyncing(true)
+    resyncStream()
+    showToast('Re-sincronizando señal en vivo...')
+    setTimeout(() => {
+      setIsResyncing(false)
+    }, 1200)
+  }
+
+  const handleToggleRecord = () => {
+    if (recorderState.isRecording) {
+      const blob = stopRecording()
+      if (blob) {
+        downloadRecording(blob)
+        showToast('Grabación guardada y descargada')
+      }
+    } else {
+      if (!currentStation) {
+        showToast('Selecciona una emisora antes de grabar')
+        return
+      }
+      if (!isPlaying) {
+        togglePlay()
+      }
+      const success = startRecording(currentStation.name)
+      if (success) {
+        showToast('Grabando transmisión en vivo...')
+      } else {
+        showToast(recorderState.error || 'Error al iniciar la grabación')
+      }
     }
   }
 
@@ -257,6 +363,13 @@ export default function Player({
     : 'Catálogo satelital en vivo'
   const timeLabel = new Date(secondsElapsed * 1000).toISOString().substring(14, 19)
 
+  const recMins = Math.floor(recorderState.durationSeconds / 60)
+    .toString()
+    .padStart(2, '0')
+  const recSecs = (recorderState.durationSeconds % 60).toString().padStart(2, '0')
+
+  const telemetry = getCurrentStreamTelemetry()
+
   const statusBadgeText =
     playbackStatus === 'loading'
       ? 'CONECTANDO'
@@ -268,7 +381,22 @@ export default function Player({
 
   return (
     <>
-      {/* Barra de Reproducción Fija al Fondo (Bottom Dock Estilo Spotify/Apple Music) */}
+      {/* Notificación Toast flotante sobre el dock */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-zinc-950/90 border border-white/20 text-white text-xs font-semibold shadow-2xl backdrop-blur-md flex items-center gap-2 pointer-events-none"
+          >
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
+            <span>{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Barra de Reproducción Fija al Fondo (Bottom Dock Estilo Spotify/Apple Music con funciones Pro) */}
       <footer
         className={`fixed bottom-0 left-0 right-0 z-40 bg-black/95 border-t border-white/[0.08] backdrop-blur-xl shadow-2xl transition-all duration-300 ease-out transform ${
           visible
@@ -277,7 +405,7 @@ export default function Player({
         }`}
         id="player-dock"
       >
-        <div className="max-w-7xl mx-auto px-4 py-2.5 sm:px-6 flex items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-4 py-2.5 sm:px-6 flex items-center justify-between gap-3 relative">
           {/* LADO IZQUIERDO: Estación y Metadatos */}
           <div
             className="flex items-center gap-3 min-w-0 flex-1 md:max-w-xs cursor-pointer select-none group"
@@ -289,7 +417,7 @@ export default function Player({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h4
-                  className="text-sm font-semibold text-zinc-100 truncate transition-colors"
+                  className="text-sm font-semibold text-zinc-100 truncate transition-colors group-hover:text-white"
                   style={isPlaying ? { color: 'var(--accent)' } : undefined}
                 >
                   {stationName}
@@ -310,13 +438,29 @@ export default function Player({
                   />
                   {statusBadgeText}
                 </span>
+                <span className="hidden md:inline-flex items-center text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/[0.05] border border-white/[0.08] text-zinc-400">
+                  {telemetry.bitrate}k
+                </span>
               </div>
             </div>
           </div>
 
-          {/* CENTRO: Controles de Reproducción y Visualizador */}
+          {/* CENTRO: Controles de Reproducción, Re-sincronización y Visualizador */}
           <div className="flex flex-col items-center justify-center flex-1 max-w-md">
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Botón Re-sync de baja latencia */}
+              <button
+                type="button"
+                onClick={handleResync}
+                disabled={isResyncing}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] transition-colors"
+                title="Re-sincronizar señal en vivo (baja latencia)"
+                aria-label="Re-sincronizar señal"
+              >
+                <RotateCw size={15} className={isResyncing ? 'animate-spin text-amber-400' : ''} />
+              </button>
+
+              {/* Emisora Anterior */}
               <button
                 type="button"
                 onClick={onPrevStation}
@@ -327,6 +471,7 @@ export default function Player({
                 <SkipBack size={18} />
               </button>
 
+              {/* Botón Play / Pause Principal */}
               <button
                 type="button"
                 onClick={togglePlay}
@@ -345,6 +490,7 @@ export default function Player({
                 )}
               </button>
 
+              {/* Emisora Siguiente */}
               <button
                 type="button"
                 onClick={onNextStation}
@@ -370,20 +516,146 @@ export default function Player({
             </div>
           </div>
 
-          {/* LADO DERECHO: Herramientas Broadcast, Volumen, Temporizador y Expandir */}
-          <div className="flex items-center justify-end gap-1.5 sm:gap-2 flex-1 md:max-w-md">
-            {/* Indicador de Grabación Activa en vivo */}
-            {recorderState.isRecording && (
+          {/* LADO DERECHO: Herramientas Broadcast, REC, Presets, Volumen, Temporizador y Expandir */}
+          <div className="flex items-center justify-end gap-1 sm:gap-2 flex-1 md:max-w-md">
+            {/* Botón Grabar / REC en vivo */}
+            {recorderState.isRecording ? (
               <button
                 type="button"
-                onClick={() => setIsStudioOpen(true)}
-                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600/20 text-red-400 border border-red-500/40 text-[11px] font-mono font-bold animate-pulse"
-                title="Grabación en curso - Clic para ver cabina"
+                onClick={handleToggleRecord}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600/20 text-red-400 border border-red-500/40 text-[11px] font-mono font-bold animate-pulse shadow-sm"
+                title="Grabación activa - Haz clic para detener y descargar audio"
               >
                 <Circle size={10} className="fill-red-500 text-red-500" />
-                <span>REC</span>
+                <span>REC {recMins}:{recSecs}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleToggleRecord}
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 text-zinc-300 border border-white/[0.08] text-xs font-semibold transition-all"
+                title="Grabar audio en vivo de esta emisión"
+              >
+                <Circle size={10} className="fill-red-500 text-red-500" />
+                <span className="hidden md:inline">Grabar</span>
               </button>
             )}
+
+            {/* Botón Presets Dial Rápido (1 a 6) con Popover */}
+            <div className="relative" ref={presetsRef}>
+              <button
+                type="button"
+                onClick={() => setIsPresetsOpen((prev) => !prev)}
+                className={`inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                  isPresetsOpen
+                    ? 'bg-white/10 text-white border-white/20'
+                    : 'bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 border-white/[0.08]'
+                }`}
+                title="Presets de Dial Rápido (Teclas 1 al 6)"
+                aria-label="Presets rápidos"
+              >
+                <BookmarkPlus size={14} className="text-amber-400" />
+                <span className="hidden lg:inline">Presets</span>
+                <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-white/[0.08] text-zinc-400">1-6</span>
+              </button>
+
+              {/* Popover flotante de Presets 1 a 6 anclado encima del dock */}
+              {isPresetsOpen && (
+                <div className="absolute bottom-full right-0 mb-3 w-72 sm:w-84 bg-zinc-950/95 border border-white/10 rounded-2xl p-3 sm:p-4 shadow-2xl backdrop-blur-xl z-50">
+                  <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/[0.08]">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-200">
+                        Dial Presets (1 - 6)
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-mono text-zinc-500">Teclas 1-6</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {Array.from({ length: 6 }).map((_, index) => {
+                      const slotStation = presets[index]
+                      const isCurrent = currentStation && slotStation && currentStation.name === slotStation.name
+
+                      return (
+                        <div
+                          key={index}
+                          onClick={() => {
+                            if (slotStation && onPlayStation) {
+                              onPlayStation(slotStation)
+                              setIsPresetsOpen(false)
+                            } else if (currentStation) {
+                              setQuickPreset(index, currentStation)
+                              showToast(`Preset ${index + 1} guardado`)
+                            }
+                          }}
+                          className={`relative group rounded-xl p-2 border text-left cursor-pointer transition-all select-none flex flex-col justify-between min-h-[54px] ${
+                            isCurrent
+                              ? 'shadow-md'
+                              : slotStation
+                              ? 'bg-zinc-900/80 border-white/[0.08] hover:bg-white/[0.08] hover:border-white/20'
+                              : 'bg-zinc-900/40 border-dashed border-white/[0.08] hover:bg-white/[0.04]'
+                          }`}
+                          style={
+                            isCurrent
+                              ? {
+                                  backgroundColor: 'var(--accent-subtle)',
+                                  borderColor: 'var(--accent-glow)',
+                                }
+                              : undefined
+                          }
+                        >
+                          <div className="flex items-center justify-between">
+                            <span
+                              className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded"
+                              style={
+                                isCurrent
+                                  ? { backgroundColor: 'var(--accent)', color: '#ffffff' }
+                                  : { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#a1a1aa' }
+                              }
+                            >
+                              {index + 1}
+                            </span>
+                            {slotStation ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  clearQuickPreset(index)
+                                }}
+                                className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 p-0.5 transition-opacity"
+                                title="Borrar preset"
+                              >
+                                <X size={12} />
+                              </button>
+                            ) : currentStation ? (
+                              <BookmarkPlus size={12} className="text-zinc-500 group-hover:text-amber-400" />
+                            ) : null}
+                          </div>
+
+                          {slotStation ? (
+                            <div className="mt-1 min-w-0">
+                              <p className="text-xs font-semibold text-zinc-100 truncate leading-tight">
+                                {slotStation.name}
+                              </p>
+                              <p className="text-[10px] text-zinc-400 truncate mt-0.5">
+                                {slotStation.country || 'En vivo'}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="mt-1">
+                              <p className="text-[11px] font-medium text-zinc-500 group-hover:text-zinc-300">
+                                + Asignar
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Botón Ecualizador DSP */}
             <button
@@ -400,19 +672,19 @@ export default function Player({
             <button
               type="button"
               onClick={() => setIsStudioOpen(true)}
-              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/30 text-xs font-bold transition-all"
+              className="hidden sm:inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/30 text-xs font-bold transition-all"
               title="Cabina de Estudio On-Air y Vúmetros (O)"
               aria-label="Cabina On-Air"
             >
               <Radio size={14} />
-              <span className="hidden md:inline">On-Air</span>
+              <span className="hidden xl:inline">On-Air</span>
             </button>
 
             {/* Botón Atajos de Teclado */}
             <button
               type="button"
               onClick={() => setIsShortcutsOpen(true)}
-              className="hidden md:flex w-8 h-8 rounded-lg items-center justify-center text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors"
+              className="hidden lg:flex w-8 h-8 rounded-lg items-center justify-center text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06] transition-colors"
               title="Atajos de teclado (?)"
               aria-label="Atajos de teclado"
             >
@@ -523,7 +795,7 @@ export default function Player({
                   </h2>
                   <p className="text-sm text-zinc-400 mt-1">{stationMeta}</p>
                   <p className="text-xs font-mono text-zinc-500 mt-1">
-                    Tiempo de sintonización activa: {timeLabel}
+                    Tiempo de sintonización activa: {timeLabel} · {telemetry.codec} ({telemetry.bitrate} kbps)
                   </p>
                 </div>
               </div>
@@ -572,7 +844,7 @@ export default function Player({
               </div>
 
               {/* Fila de herramientas de estudio dentro de la consola */}
-              <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
                 <button
                   type="button"
                   onClick={() => {
@@ -600,6 +872,16 @@ export default function Player({
                 >
                   <Radio size={14} />
                   <span>Cabina On-Air & REC</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResync}
+                  disabled={isResyncing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/[0.06] hover:bg-white/[0.1] text-zinc-300 border border-white/[0.08] transition-all"
+                >
+                  <RotateCw size={14} className={isResyncing ? 'animate-spin text-amber-400' : ''} />
+                  <span>Re-sincronizar</span>
                 </button>
               </div>
 

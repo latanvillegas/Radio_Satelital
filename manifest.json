@@ -2,8 +2,8 @@
   "name": "Radio Satelital",
   "short_name": "Satelital",
   "description": "Escucha emisoras de radio en vivo. Desarrollado por Latán Villegas.",
-  "id": "/index.html",
-  "start_url": "/index.html",
+  "id": "/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#05070a",
   "theme_color": "#05070a",
@@ -45,7 +45,7 @@
     {
       "name": "Play Radio",
       "short_name": "Play",
-      "url": "/index.html?action=play",
+      "url": "/?action=play",
       "icons": [
         {
           "src": "icon-192.png",
@@ -72,7 +72,7 @@
     }
   ],
   "share_target": {
-    "action": "/index.html",
+    "action": "/",
     "method": "GET",
     "enctype": "application/x-www-form-urlencoded",
     "params": {
@@ -87,7 +87,7 @@
     "standalone",
     "minimal-ui"
   ],
-  "new_note_url": "/index.html?note=true",
+  "new_note_url": "/?note=true",
   "widgets": [
     {
       "name": "Radio Widget",
@@ -115,7 +115,7 @@
   "protocol_handlers": [
     {
       "protocol": "web+radio",
-      "url": "/index.html?station=%s"
+      "url": "/?station=%s"
     }
   ],
   "edge_side_panel": {
@@ -129,7 +129,7 @@
   "handle_links": "preferred",
   "file_handlers": [
     {
-      "action": "/index.html",
+      "action": "/",
       "accept": {
         "audio/mpeg": [
           ".mp3"
