@@ -1,6 +1,29 @@
 "use client"
-import React, { useState, useEffect } from 'react'
-import { Heart, Search, Shuffle, X, Globe, MapPin, Music } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import {
+  Search,
+  X,
+  Globe,
+  MapPin,
+  Music,
+  Circle,
+  BookmarkPlus,
+} from 'lucide-react'
+import type { Station } from '@/types/station'
+import {
+  subscribeRecorder,
+  type RecorderState,
+  getRecorderState,
+  startRecording,
+  stopRecording,
+  downloadRecording,
+} from '@/lib/services/recorder'
+import {
+  setQuickPreset,
+  clearQuickPreset,
+  subscribeQuickPresets,
+  initQuickPresets,
+} from '@/lib/services/quick-presets'
 
 type Props = {
   setQuery: (value: string) => void
@@ -19,6 +42,9 @@ type Props = {
   toggleOnlyFavs: (value: boolean) => void
   onlyFavs?: boolean
   onPlayRandom?: () => void
+  currentStation?: Station | null
+  onPlayStation?: (station: Station) => void
+  stations?: Station[]
 }
 
 export default function Filters({
@@ -28,8 +54,52 @@ export default function Filters({
   toggleOnlyFavs,
   onlyFavs = false,
   onPlayRandom,
+  currentStation = null,
+  onPlayStation,
+  stations = [],
 }: Props) {
   const [q, setQ] = useState(searchQuery)
+  const [recorderState, setRecorderState] = useState<RecorderState>(getRecorderState())
+  const [presets, setPresets] = useState<(Station | null)[]>([])
+  const [isPresetsOpen, setIsPresetsOpen] = useState(false)
+  const [statusNotification, setStatusNotification] = useState<string | null>(null)
+  const presetsRef = useRef<HTMLDivElement>(null)
+
+  const showNotification = (msg: string) => {
+    setStatusNotification(msg)
+    setTimeout(() => {
+      setStatusNotification((curr) => (curr === msg ? null : curr))
+    }, 2800)
+  }
+
+  // Suscripción a la grabadora de audio
+  useEffect(() => {
+    return subscribeRecorder((state) => {
+      setRecorderState({ ...state })
+    })
+  }, [])
+
+  // Inicializar y suscribirse a Presets 1 a 6
+  useEffect(() => {
+    if (stations.length > 0) {
+      initQuickPresets(stations.slice(0, 6))
+    }
+    return subscribeQuickPresets((updated) => {
+      setPresets([...updated])
+    })
+  }, [stations])
+
+  // Cerrar popover de presets al hacer clic fuera
+  useEffect(() => {
+    if (!isPresetsOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (presetsRef.current && !presetsRef.current.contains(e.target as Node)) {
+        setIsPresetsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isPresetsOpen])
 
   useEffect(() => {
     setQ(searchQuery)
@@ -60,12 +130,46 @@ export default function Filters({
     setQuery('')
   }
 
+  const handleToggleRecord = () => {
+    if (recorderState.isRecording) {
+      const blob = stopRecording()
+      if (blob) {
+        downloadRecording(blob)
+        showNotification('Grabación guardada y descargada')
+      }
+    } else {
+      if (!currentStation) {
+        showNotification('Sintoniza una emisora para iniciar la grabación')
+        return
+      }
+      const success = startRecording(currentStation.name)
+      if (success) {
+        showNotification(`Grabando en vivo: ${currentStation.name}`)
+      } else {
+        showNotification(recorderState.error || 'Error al iniciar la grabación')
+      }
+    }
+  }
+
+  const recMins = Math.floor(recorderState.durationSeconds / 60)
+    .toString()
+    .padStart(2, '0')
+  const recSecs = (recorderState.durationSeconds % 60).toString().padStart(2, '0')
+
   return (
     <div
-      className="bg-black border border-white/[0.08] rounded-2xl p-4 sm:p-5 shadow-xl mb-6 space-y-4"
+      className="bg-black border border-white/[0.08] rounded-2xl p-4 sm:p-5 shadow-xl mb-6 space-y-4 relative"
       id="filters-panel"
     >
-      {/* Fila superior: Título de sección y botón Sorpréndeme */}
+      {/* Toast informativo local si hay acción de preset o grabación */}
+      {statusNotification && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-lg bg-zinc-900 border border-white/20 text-white text-xs font-semibold shadow-xl backdrop-blur-md flex items-center gap-1.5 pointer-events-none">
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
+          <span>{statusNotification}</span>
+        </div>
+      )}
+
+      {/* Fila superior: Título de sección y Botones reubicados: Grabar (lime) y Presets 1-6 (cyan) */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2.5">
           <div
@@ -80,45 +184,147 @@ export default function Filters({
           </span>
         </div>
 
+        {/* Acciones reubicadas: [Grabar] (círculo verde) y [Presets 1-6] (círculo cian) */}
         <div className="flex items-center gap-2">
-          {onPlayRandom && (
+          {/* Botón Grabar / REC en vivo (Reubicado desde el reproductor inferior) */}
+          {recorderState.isRecording ? (
             <button
               type="button"
-              onClick={onPlayRandom}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all hover:scale-[1.02] active:scale-[0.98]"
-              style={{
-                backgroundColor: 'var(--accent-subtle)',
-                color: 'var(--accent)',
-                borderColor: 'var(--accent-glow)',
-              }}
-              title="Sintonizar una emisora al azar"
+              onClick={handleToggleRecord}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600/20 text-red-400 border border-red-500/40 text-xs font-mono font-bold animate-pulse shadow-sm cursor-pointer transition-all"
+              title="Grabación activa - Haz clic para detener y descargar audio"
             >
-              <Shuffle size={13} strokeWidth={2.4} />
-              <span>Sorpréndeme</span>
+              <Circle size={10} className="fill-red-500 text-red-500" />
+              <span>REC {recMins}:{recSecs}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleToggleRecord}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 text-zinc-200 border border-white/[0.08] text-xs font-semibold transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+              title="Grabar audio en vivo de la emisora activa"
+            >
+              <Circle size={10} className="fill-red-500 text-red-500" />
+              <span>Grabar</span>
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={() => toggleOnlyFavs(!onlyFavs)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-              onlyFavs
-                ? 'shadow-sm'
-                : 'bg-white/[0.04] text-zinc-300 border-white/[0.08] hover:bg-white/[0.08]'
-            }`}
-            style={
-              onlyFavs
-                ? {
-                    backgroundColor: 'var(--accent-subtle)',
-                    color: 'var(--accent)',
-                    borderColor: 'var(--accent-glow)',
-                  }
-                : undefined
-            }
-          >
-            <Heart size={13} fill={onlyFavs ? 'currentColor' : 'none'} strokeWidth={2.4} />
-            <span>Favoritas</span>
-          </button>
+          {/* Botón Presets Dial Rápido (1 a 6) con Popover (Reubicado desde el reproductor inferior) */}
+          <div className="relative" ref={presetsRef}>
+            <button
+              type="button"
+              onClick={() => setIsPresetsOpen((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                isPresetsOpen
+                  ? 'bg-white/10 text-white border-white/20 shadow-sm'
+                  : 'bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 border-white/[0.08] hover:scale-[1.02]'
+              }`}
+              title="Presets de Dial Rápido (Teclas 1 al 6)"
+              aria-label="Presets rápidos"
+            >
+              <BookmarkPlus size={13} className="text-amber-400" />
+              <span>Presets</span>
+              <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-white/[0.08] text-zinc-400">1-6</span>
+            </button>
+
+            {/* Popover desplegable hacia abajo anclado al botón */}
+            {isPresetsOpen && (
+              <div className="absolute top-full right-0 mt-2 w-72 sm:w-80 bg-zinc-950/95 border border-white/10 rounded-2xl p-3 sm:p-4 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/[0.08]">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--accent)' }} />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-200">
+                      Dial Presets (1 - 6)
+                    </h4>
+                  </div>
+                  <span className="text-[10px] font-mono text-zinc-500">Teclas 1-6</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {Array.from({ length: 6 }).map((_, index) => {
+                    const slotStation = presets[index]
+                    const isCurrent = currentStation && slotStation && currentStation.name === slotStation.name
+
+                    return (
+                      <div
+                        key={index}
+                        onClick={() => {
+                          if (slotStation && onPlayStation) {
+                            onPlayStation(slotStation)
+                            setIsPresetsOpen(false)
+                          } else if (currentStation) {
+                            setQuickPreset(index, currentStation)
+                            showNotification(`Preset ${index + 1} guardado: ${currentStation.name}`)
+                          }
+                        }}
+                        className={`relative group rounded-xl p-2 border text-left cursor-pointer transition-all select-none flex flex-col justify-between min-h-[54px] ${
+                          isCurrent
+                            ? 'shadow-md'
+                            : slotStation
+                            ? 'bg-zinc-900/80 border-white/[0.08] hover:bg-white/[0.08] hover:border-white/20'
+                            : 'bg-zinc-900/40 border-dashed border-white/[0.08] hover:bg-white/[0.04]'
+                        }`}
+                        style={
+                          isCurrent
+                            ? {
+                                backgroundColor: 'var(--accent-subtle)',
+                                borderColor: 'var(--accent-glow)',
+                              }
+                            : undefined
+                        }
+                      >
+                        <div className="flex items-center justify-between">
+                          <span
+                            className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded"
+                            style={
+                              isCurrent
+                                ? { backgroundColor: 'var(--accent)', color: '#ffffff' }
+                                : { backgroundColor: 'rgba(255, 255, 255, 0.08)', color: '#a1a1aa' }
+                            }
+                          >
+                            {index + 1}
+                          </span>
+                          {slotStation ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                clearQuickPreset(index)
+                                showNotification(`Preset ${index + 1} eliminado`)
+                              }}
+                              className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 p-0.5 transition-opacity"
+                              title="Borrar preset"
+                            >
+                              <X size={12} />
+                            </button>
+                          ) : currentStation ? (
+                            <BookmarkPlus size={12} className="text-zinc-500 group-hover:text-amber-400" />
+                          ) : null}
+                        </div>
+
+                        {slotStation ? (
+                          <div className="mt-1 min-w-0">
+                            <p className="text-xs font-semibold text-zinc-100 truncate leading-tight">
+                              {slotStation.name}
+                            </p>
+                            <p className="text-[10px] text-zinc-400 truncate mt-0.5">
+                              {slotStation.country || 'En vivo'}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="mt-1">
+                            <p className="text-[11px] font-medium text-zinc-500 group-hover:text-zinc-300">
+                              + Asignar
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

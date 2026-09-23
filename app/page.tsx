@@ -191,6 +191,9 @@ export default function Page() {
             toggleOnlyFavs={toggleOnlyFavs}
             onlyFavs={onlyFavs}
             onPlayRandom={playRandomStation}
+            currentStation={currentStation}
+            onPlayStation={playStation}
+            stations={stations}
           />
 
           {/* Banner de error si falla la conexión */}
