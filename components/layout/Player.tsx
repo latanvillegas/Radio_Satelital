@@ -37,6 +37,7 @@ type Props = {
   currentStation: Station | null
   onNextStation: () => void
   onPrevStation: () => void
+  visible?: boolean
 }
 
 function StationArtwork({
@@ -108,7 +109,12 @@ function StationArtwork({
   )
 }
 
-export default function Player({ currentStation, onNextStation, onPrevStation }: Props) {
+export default function Player({
+  currentStation,
+  onNextStation,
+  onPrevStation,
+  visible = true,
+}: Props) {
   const {
     isPlaying,
     togglePlay,
@@ -264,7 +270,11 @@ export default function Player({ currentStation, onNextStation, onPrevStation }:
     <>
       {/* Barra de Reproducción Fija al Fondo (Bottom Dock Estilo Spotify/Apple Music) */}
       <footer
-        className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 border-t border-white/[0.08] backdrop-blur-xl shadow-2xl transition-all"
+        className={`fixed bottom-0 left-0 right-0 z-40 bg-black/95 border-t border-white/[0.08] backdrop-blur-xl shadow-2xl transition-all duration-300 ease-out transform ${
+          visible
+            ? 'translate-y-0 opacity-100 pointer-events-auto'
+            : 'translate-y-full opacity-0 pointer-events-none'
+        }`}
         id="player-dock"
       >
         <div className="max-w-7xl mx-auto px-4 py-2.5 sm:px-6 flex items-center justify-between gap-3">

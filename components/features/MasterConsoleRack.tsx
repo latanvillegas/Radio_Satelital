@@ -20,6 +20,8 @@ import {
   Activity,
   Maximize2,
   Download,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import type { Station } from '@/types/station'
 import { usePlayer } from '@/hooks/player'
@@ -46,6 +48,8 @@ type Props = {
   onOpenEq: () => void
   onOpenStudio: () => void
   onPlayRandom: () => void
+  isCollapsed?: boolean
+  onToggleCollapse?: () => void
 }
 
 export default function MasterConsoleRack({
@@ -56,6 +60,8 @@ export default function MasterConsoleRack({
   onOpenEq,
   onOpenStudio,
   onPlayRandom,
+  isCollapsed = false,
+  onToggleCollapse,
 }: Props) {
   const { isPlaying, togglePlay, playbackStatus, statusMessage } = usePlayer()
   const [recorderState, setRecorderState] = useState<RecorderState>(getRecorderState())
@@ -239,10 +245,66 @@ export default function MasterConsoleRack({
             <Radio size={13} />
             <span>Modo Cabina</span>
           </button>
+
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 border border-white/[0.08] transition-all"
+              title={isCollapsed ? 'Expandir consola maestra' : 'Minimizar consola maestra'}
+            >
+              {isCollapsed ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+              <span className="hidden sm:inline">{isCollapsed ? 'Expandir' : 'Minimizar'}</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* CUERPO CENTRAL DE LA CONSOLA: Dial de Emisora, Espectrograma y Vúmetros */}
+      {isCollapsed ? (
+        /* Modo compacto cuando la consola está minimizada */
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-3 border-t border-white/[0.05]">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/10 flex items-center justify-center flex-shrink-0">
+              <Radio size={16} style={{ color: 'var(--accent)' }} className={isPlaying ? 'animate-pulse' : ''} />
+            </div>
+            <div className="min-w-0">
+              <p className="font-bold text-sm text-white truncate">{stationName}</p>
+              <p className="text-xs text-zinc-400 truncate">{stationLocation}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onPlayPrev}
+              className="w-8 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 flex items-center justify-center border border-white/[0.08] transition-all"
+              title="Emisora Anterior"
+            >
+              <SkipBack size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={togglePlay}
+              className="w-8 h-8 rounded-lg text-white flex items-center justify-center shadow transition-all"
+              style={{
+                background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)',
+              }}
+              title={isPlaying ? 'Pausar' : 'Reproducir'}
+            >
+              {isPlaying ? <Pause size={15} className="fill-white" /> : <Play size={15} className="fill-white ml-0.5" />}
+            </button>
+            <button
+              type="button"
+              onClick={onPlayNext}
+              className="w-8 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 flex items-center justify-center border border-white/[0.08] transition-all"
+              title="Siguiente Emisora"
+            >
+              <SkipForward size={15} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* CUERPO CENTRAL DE LA CONSOLA: Dial de Emisora, Espectrograma y Vúmetros */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 my-6 items-center">
         {/* LADO IZQUIERDO (Col 4): Carátula de vinilo y metadatos */}
         <div className="lg:col-span-4 flex items-center gap-4">
@@ -433,6 +495,8 @@ export default function MasterConsoleRack({
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   )
 }
