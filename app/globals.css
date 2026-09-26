@@ -7,12 +7,11 @@
 html,body,#root,#__next{height:100%}body{margin:0;min-height:100vh;background:var(--bg-dark)!important;color:var(--text-main);font-family:var(--font-main);font-size:calc(16px * var(--ui-scale))}*{box-sizing:border-box}img{max-width:100%;display:block}.recent-stations-scroll{scrollbar-width:none;-ms-overflow-style:none}.recent-stations-scroll::-webkit-scrollbar{display:none;width:0;height:0}input[type='range']{accent-color:var(--accent)}
 .container{width:100%;max-width:none;margin:0 auto;padding:0 1rem}.layout{display:grid;grid-template-columns:1fr;gap:1.25rem;padding-bottom:11rem;margin-top:1rem;align-items:start}.left-col,.right-col{width:100%;min-width:0}.glass-panel{background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:16px}@media(min-width:768px){.container{padding:0 1.5rem}.layout{gap:1.5rem;padding-bottom:12rem}}@media(min-width:900px){.container{padding:0 2rem}.layout{gap:1.75rem;padding-bottom:12rem}}@media(min-width:1200px){.container{padding:0 2.5rem}}@media(max-width:359px){:root{--ui-scale:.9}}
 
-/* Alto contraste para uso exterior. Cubre utilidades Tailwind oscuras existentes. */
 html[data-appearance='light']{color-scheme:light;background:#fff}
 html[data-appearance='light'] body{background:#fff!important;background-image:none!important;color:#09090b!important}
-html[data-appearance='light'] .bg-black,html[data-appearance='light'] .bg-black\/90{background-color:#fff!important}
-html[data-appearance='light'] .bg-zinc-950,html[data-appearance='light'] .bg-zinc-950\/70,html[data-appearance='light'] .bg-zinc-900,html[data-appearance='light'] .bg-zinc-900\/70{background-color:#fff!important}
-html[data-appearance='light'] .bg-white\/\[0\.025\],html[data-appearance='light'] .bg-white\/\[0\.04\],html[data-appearance='light'] .bg-white\/\[0\.05\]{background-color:#f4f4f5!important}
+html[data-appearance='light'] .bg-black,html[data-appearance='light'] .bg-black\/90,html[data-appearance='light'] .bg-black\/80{background-color:#fff!important}
+html[data-appearance='light'] .bg-zinc-950,html[data-appearance='light'] .bg-zinc-950\/90,html[data-appearance='light'] .bg-zinc-950\/80,html[data-appearance='light'] .bg-zinc-950\/70,html[data-appearance='light'] .bg-zinc-900,html[data-appearance='light'] .bg-zinc-900\/70{background-color:#fff!important}
+html[data-appearance='light'] .bg-white\/\[0\.025\],html[data-appearance='light'] .bg-white\/\[0\.04\],html[data-appearance='light'] .bg-white\/\[0\.05\],html[data-appearance='light'] .bg-white\/\[0\.06\],html[data-appearance='light'] .bg-white\/\[0\.08\],html[data-appearance='light'] .bg-white\/\[0\.1\]{background-color:#f4f4f5!important}
 html[data-appearance='light'] .text-white,html[data-appearance='light'] .text-zinc-100,html[data-appearance='light'] .text-zinc-200,html[data-appearance='light'] .text-zinc-300{color:#09090b!important}
 html[data-appearance='light'] .text-zinc-400{color:#3f3f46!important}html[data-appearance='light'] .text-zinc-500{color:#52525b!important}html[data-appearance='light'] .text-zinc-600{color:#71717a!important}
 html[data-appearance='light'] [class*="border-white"]{border-color:rgba(0,0,0,.14)!important}
@@ -23,3 +22,11 @@ html[data-appearance='light'] article{background:#fff!important;border-color:rgb
 html[data-appearance='light'] [class*="fixed bottom-0"]{background:#fff!important;border-color:rgba(0,0,0,.14)!important;color:#09090b!important}
 html[data-appearance='light'] button.bg-white\/\[0\.05\],html[data-appearance='light'] button.bg-white\/\[0\.04\]{background:#f4f4f5!important;color:#18181b!important}
 html[data-appearance='light'] .glass-panel{background:#fff!important;border-color:rgba(0,0,0,.14)!important;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+
+/* Cabina Studio: el modal usa fondos zinc con opacidades propias. En exterior también deben aclararse. */
+html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air']{background:#fff!important;color:#09090b!important;border-color:#d4d4d8!important;box-shadow:0 24px 70px rgba(0,0,0,.18)!important}
+html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .bg-zinc-950\/80,html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .bg-zinc-950\/90{background:#f4f4f5!important}
+html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .bg-black\/80{background:#fafafa!important;border-color:#d4d4d8!important}
+html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .text-white,html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .text-zinc-100,html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .text-zinc-200,html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .text-zinc-300{color:#09090b!important}
+html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .text-zinc-400{color:#3f3f46!important}html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .text-zinc-500{color:#52525b!important}
+html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] [class*='border-white']{border-color:rgba(0,0,0,.14)!important}
