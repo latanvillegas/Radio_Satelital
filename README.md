@@ -10,7 +10,7 @@
 
 [![Web](https://img.shields.io/badge/🌐_ESCUCHAR_AHORA-latanvillegas.online-10b981?style=for-the-badge)](https://latanvillegas.online/)
 [![Version](https://img.shields.io/badge/VERSIÓN-1.0.1-18181b?style=for-the-badge)](#)
-[![License](https://img.shields.io/badge/LICENCIA-MIT-f43f5e?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/badge/LICENCIA-Apache_2.0-f43f5e?style=for-the-badge)](LICENSE)
 
 <br />
 
@@ -267,7 +267,7 @@ Abre **`http://localhost:3000`**.
 | `npm run dev` | Servidor de desarrollo |
 | `npm run build` | Compilación de producción |
 | `npm start` | Servidor de producción |
-| `npm run lint` | Comprobación TypeScript |
+| `npm run lint` | Comprobación de tipos TypeScript (`tsc --noEmit`) |
 | `npm test` | Pruebas con Vitest |
 | `npm run test:watch` | Vitest en modo watch |
 
@@ -368,9 +368,9 @@ Si Radio Satelital te resulta útil, puedes apoyar su mantenimiento y evolución
 
 ## 📜 Licencia
 
-Distribuido bajo la licencia **MIT**. Consulta [`LICENSE`](LICENSE) para el texto completo.
+Distribuido bajo la **Apache License 2.0**. Consulta [`LICENSE`](LICENSE) para conocer los términos completos.
 
-**Copyright © 2026 Latán Villegas Avelino.** Los avisos de licencia y copyright deben conservarse conforme a los términos de MIT.
+**Copyright © 2026 Latán Villegas Avelino.** Al redistribuir o modificar el proyecto deben conservarse los avisos de copyright, licencia y atribución aplicables conforme a Apache-2.0.
 
 ### 🙏 Atribuciones
 
