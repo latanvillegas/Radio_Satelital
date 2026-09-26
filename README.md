@@ -1,207 +1,277 @@
-# 📻 Radio Satelital
+<div align="center">
 
-![Version](https://img.shields.io/badge/version-1.0.1-10b981?style=for-the-badge)
-![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.2-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![PWA](https://img.shields.io/badge/Web-PWA-5A0FC8?style=for-the-badge&logo=pwa)
+# 📡 RADIO SATELITAL
 
-**Radio Satelital** es un sintonizador web de emisoras en vivo, diseñado para escuchar radios de Perú y del mundo desde una interfaz rápida, adaptable y centrada en la reproducción continua.
+### 🎧 Emisoras en vivo de Perú y el mundo
 
-🌐 **Web oficial:** [latanvillegas.online](https://latanvillegas.online/)
+**Sintonizador web moderno · PWA · Cabina Broadcast · DSP · Modo Exterior**
 
----
+<br />
 
-## ✨ Funciones principales
+[![Web](https://img.shields.io/badge/🌐_ESCUCHAR_AHORA-latanvillegas.online-10b981?style=for-the-badge)](https://latanvillegas.online/)
+[![Version](https://img.shields.io/badge/VERSIÓN-1.0.1-18181b?style=for-the-badge)](#)
+[![License](https://img.shields.io/badge/LICENCIA-MIT-f43f5e?style=for-the-badge)](LICENSE)
 
-### 📡 Catálogo de emisoras
+<br />
 
-- Catálogo global de radios en vivo.
-- Búsqueda por nombre, ciudad, país o género.
-- Filtros y accesos rápidos por categorías.
-- Emisoras favoritas.
-- Historial de emisoras escuchadas recientemente.
-- Logotipos, ubicación y metadatos disponibles de cada emisora.
-
-### 🎧 Reproductor
-
-- Reproducción y pausa.
-- Emisora anterior y siguiente.
-- Control de volumen.
-- Reproductor persistente en la parte inferior.
-- Reproductor expandido con portada centrada, información de la emisora y visualizador de audio.
-- Compartir emisora.
-- Temporizador de sueño.
-- Reconexión y recuperación del streaming cuando corresponde.
-
-### 🎛️ Herramientas de estudio
-
-Radio Satelital incluye una **Cabina de Estudio Broadcast** para visualizar y controlar la señal con una interfaz inspirada en herramientas profesionales de radio:
-
-- Estado **ON AIR**.
-- Reloj local y UTC.
-- Monitor principal de la emisora.
-- Espectrograma de frecuencias.
-- Vúmetros estéreo L/R.
-- Información de códec, bitrate y buffer disponible.
-- Re-sincronización de señal.
-- Acceso al ecualizador.
-- Controles de reproducción integrados.
-- Panel de ayuda con atajos de teclado.
-
-### ⌨️ Atajos de la Cabina de Estudio
-
-| Tecla | Acción |
-|---|---|
-| `Espacio` | Reproducir / Pausar |
-| `←` | Emisora anterior |
-| `→` | Emisora siguiente |
-| `E` | Abrir ecualizador |
-| `R` | Grabar emisión, cuando la función esté disponible |
-| `S` | Re-sincronizar señal |
-| `F` | Pantalla completa |
-| `?` | Mostrar ayuda de atajos |
-| `Esc` | Cerrar panel/modal |
-
-> Algunos atajos dependen de las capacidades disponibles en el navegador y de la función activa en ese momento.
-
-### 🎚️ Ecualizador DSP
-
-- Ecualizador paramétrico de 5 bandas.
-- Presets de monitorización.
-- Ajustes para voz/noticias, graves, pop, acústico/jazz y estudio.
-- Control de pre-amplificación.
-- Compresor broadcast.
-- Interfaz adaptada a modo oscuro y modo exterior.
+![Next.js](https://img.shields.io/badge/Next.js_15-000000?style=flat-square&logo=next.js&logoColor=white)
+![React](https://img.shields.io/badge/React_18-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript_5.2-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind_CSS_3.4-0F172A?style=flat-square&logo=tailwindcss&logoColor=38BDF8)
+![PWA](https://img.shields.io/badge/PWA-5A0FC8?style=flat-square&logo=pwa&logoColor=white)
 
 ---
 
-## ☀️ Apariencia y accesibilidad visual
+**Radio Satelital** reúne emisoras en directo en una experiencia rápida y adaptable, con reproducción continua, herramientas de estudio y una interfaz preparada tanto para ambientes oscuros como para uso bajo luz intensa.
 
-El sistema de apariencia está separado del color de acento para que la interfaz completa pueda adaptarse al entorno.
+[🚀 Abrir Radio Satelital](https://latanvillegas.online/) · [🐛 Reportar un problema](https://github.com/latanvillegas/Radio_Satelital/issues) · [⭐ Ver repositorio](https://github.com/latanvillegas/Radio_Satelital)
 
-### Modos de apariencia
-
-- **Oscuro AMOLED:** negro puro y superficies oscuras para uso nocturno y pantallas OLED/AMOLED.
-- **Claro / Exterior:** fondo blanco, superficies claras, texto oscuro y contraste elevado para mejorar la visibilidad con mucha iluminación o bajo el sol.
-- **Automático:** sigue la preferencia clara/oscura del dispositivo.
-
-El modo elegido se aplica a la interfaz principal, tarjetas, buscador, reproductores, panel de ajustes, Cabina de Estudio, ecualizador y demás superficies compatibles.
-
-### Colores de acento
-
-El color de acento es independiente del modo de apariencia. Actualmente se incluyen opciones como rojo, dorado, morado, plata, océano, naranja, azul, verde y rosa.
-
-Los acentos se utilizan en botones, estados activos, indicadores y controles sin convertir el color de acento en el fondo general de la aplicación.
-
-### Escala de interfaz
-
-La interfaz puede ajustarse para diferentes tamaños de pantalla mediante escalas compacta, estándar y amplia, además del comportamiento adaptativo utilizado por la aplicación.
+</div>
 
 ---
 
-## 📱 Diseño responsive
+## ✨ Una experiencia de radio completa
 
-Radio Satelital está preparada para:
+<table>
+<tr>
+<td width="50%" valign="top">
 
-- Teléfonos.
-- Tablets.
-- Laptops.
-- Escritorio.
-- Navegadores compatibles con instalación PWA.
+### 📡 Explora
 
-El diseño reorganiza controles y contenido según el espacio disponible, manteniendo el reproductor accesible durante la navegación.
+Busca emisoras por **nombre, ciudad, país o género** y navega por un catálogo internacional con filtros, favoritos y accesos rápidos.
+
+- Catálogo global de radios
+- Filtros y búsqueda instantánea
+- Favoritos
+- Escuchadas recientemente
+- Logos, ubicación y metadatos
+
+</td>
+<td width="50%" valign="top">
+
+### 🎧 Escucha
+
+Un reproductor persistente mantiene la transmisión mientras navegas por la aplicación.
+
+- Play / pausa
+- Anterior / siguiente
+- Volumen
+- Reproductor expandido
+- Visualizador de audio
+- Compartir emisora
+- Temporizador de sueño
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 🎛️ Controla
+
+La **Cabina de Estudio Broadcast** lleva la experiencia más allá de un reproductor convencional.
+
+- Estado ON AIR
+- Espectrograma
+- Vúmetros estéreo L/R
+- Reloj local + UTC
+- Códec, bitrate y buffer
+- Re-sincronización
+
+</td>
+<td width="50%" valign="top">
+
+### 🎚️ Personaliza
+
+Ajusta la experiencia visual y de audio según el dispositivo y el entorno.
+
+- Ecualizador DSP de 5 bandas
+- Presets de monitorización
+- Pre-Amp y compresor Broadcast
+- AMOLED / Exterior / Automático
+- Colores de acento
+- Escala de interfaz
+
+</td>
+</tr>
+</table>
 
 ---
 
-## 📲 PWA
+## 🎙️ Cabina de Estudio Broadcast
 
-El proyecto incluye soporte de aplicación web progresiva mediante manifiesto y service worker. La disponibilidad exacta de instalación, funcionamiento en segundo plano y controles multimedia depende del navegador y del sistema operativo.
+> **Un centro de monitorización integrado directamente en el reproductor.**
 
-### Instalación general
+La Cabina de Estudio permite visualizar y controlar la señal mediante una interfaz inspirada en herramientas profesionales de radio.
 
-1. Abre [latanvillegas.online](https://latanvillegas.online/) en un navegador compatible.
-2. Utiliza la opción **Instalar aplicación** o **Agregar a pantalla de inicio** disponible en el navegador.
-3. Abre Radio Satelital desde el acceso instalado.
+| 📊 Monitorización | 🎚️ Controles | 🛰️ Señal |
+| :--- | :--- | :--- |
+| Espectrograma de frecuencias | Reproducir / Pausar | Re-sincronización |
+| Vúmetros estéreo L/R | Anterior / Siguiente | Códec disponible |
+| Reloj local y UTC | Acceso al ecualizador | Bitrate disponible |
+| Estado **ON AIR** | Atajos de teclado | Estado del buffer |
 
-> La interfaz puede almacenarse para mejorar la experiencia PWA, pero escuchar una radio en vivo requiere conexión a Internet y que el servidor de la emisora esté disponible.
+### ⌨️ Atajos rápidos
+
+<div align="center">
+
+| Tecla | Acción | Tecla | Acción |
+| :---: | :--- | :---: | :--- |
+| `Espacio` | ▶️ Reproducir / Pausar | `E` | 🎚️ Ecualizador |
+| `←` | ⏮️ Emisora anterior | `R` | 🔴 Grabar* |
+| `→` | ⏭️ Emisora siguiente | `S` | 🔄 Re-sincronizar |
+| `F` | ⛶ Pantalla completa | `?` | ⌨️ Mostrar atajos |
+| `Esc` | ✕ Cerrar panel |  |  |
+
+</div>
+
+> \* La grabación depende de que la función esté disponible y de las capacidades del navegador.
 
 ---
 
-## 🛠️ Stack tecnológico
+## 🎚️ Ecualizador DSP
 
-| Categoría | Tecnología | Uso |
-|---|---|---|
-| Framework | Next.js 15 | Aplicación web y App Router |
-| UI | React 18 | Componentes interactivos |
-| Lenguaje | TypeScript 5.2 | Tipado y mantenimiento |
-| Estilos | Tailwind CSS 3.4 + CSS | Diseño responsive y temas |
-| Animaciones | Framer Motion | Transiciones y modales |
-| Iconos | Lucide React | Iconografía SVG |
-| Audio | HTML5 Audio / APIs del navegador | Streaming y reproducción |
-| Testing | Vitest | Pruebas automatizadas |
-| PWA | Manifest + Service Worker | Experiencia instalable |
+<table>
+<tr>
+<td align="center">🎚️<br /><b>5 bandas</b><br /><sub>Control paramétrico</sub></td>
+<td align="center">🎙️<br /><b>Voz / Noticias</b><br /><sub>Preset vocal</sub></td>
+<td align="center">🔊<br /><b>Bass Boost</b><br /><sub>Refuerzo de graves</sub></td>
+<td align="center">🎵<br /><b>Pop & Éxitos</b><br /><sub>Alta energía</sub></td>
+<td align="center">🎷<br /><b>Acústico & Jazz</b><br /><sub>Respuesta natural</sub></td>
+</tr>
+</table>
 
-Las versiones anteriores se basan en las dependencias declaradas actualmente en `package.json`.
+Además incorpora **Pre-Amp de ganancia**, **Compresor Broadcast** y una interfaz adaptada tanto al modo oscuro como al modo exterior.
 
 ---
 
-## 📂 Estructura principal
+## ☀️ Diseñada para cualquier entorno
+
+### 🌑 Oscuro AMOLED
+
+Negro puro y superficies oscuras para uso nocturno y pantallas OLED/AMOLED.
+
+### ☀️ Claro / Exterior
+
+La interfaz completa cambia a **fondos blancos, superficies claras y texto oscuro de alto contraste**, pensados para mejorar la visibilidad con iluminación intensa o bajo el sol.
+
+### 💻 Automático
+
+Sigue la preferencia clara u oscura configurada en el dispositivo.
+
+> [!NOTE]
+> **Apariencia y color de acento son independientes.** Puedes utilizar una interfaz clara u oscura y elegir aparte el color de botones, estados activos e indicadores.
+
+#### 🎨 Acentos disponibles
+
+`🔴 Rojo` · `🟡 Dorado` · `🟣 Morado` · `⚪ Plata` · `🔵 Océano` · `🟠 Naranja` · `🔷 Azul` · `🟢 Verde` · `🌸 Rosa`
+
+---
+
+## 📱 Responsive + PWA
+
+<div align="center">
+
+| 📱 Móvil | 📲 Tablet | 💻 Laptop | 🖥️ Escritorio |
+| :---: | :---: | :---: | :---: |
+| ✅ | ✅ | ✅ | ✅ |
+
+</div>
+
+Radio Satelital reorganiza controles y contenido según el espacio disponible y mantiene el reproductor accesible durante la navegación.
+
+### 📲 Instalar como aplicación
+
+1. Abre **[latanvillegas.online](https://latanvillegas.online/)** en un navegador compatible.
+2. Selecciona **Instalar aplicación** o **Agregar a pantalla de inicio**.
+3. Abre Radio Satelital desde el nuevo acceso.
+
+> [!IMPORTANT]
+> La interfaz puede almacenarse para mejorar la experiencia PWA, pero escuchar una emisora en vivo requiere conexión a Internet y que su servidor de streaming esté disponible.
+
+---
+
+## 🧰 Tecnología
+
+<div align="center">
+
+| Tecnología | Versión | Función |
+| :--- | :---: | :--- |
+| ⚫ **Next.js** | 15 | Framework y App Router |
+| ⚛️ **React** | 18 | Interfaz interactiva |
+| 🔷 **TypeScript** | 5.2 | Tipado y mantenimiento |
+| 🎨 **Tailwind CSS** | 3.4 | Diseño responsive y temas |
+| 🎞️ **Framer Motion** | 12 | Animaciones y transiciones |
+| ✨ **Lucide React** | 1.x | Iconografía SVG |
+| 🔊 **HTML5 Audio** | Web API | Streaming y reproducción |
+| 🧪 **Vitest** | 3 | Pruebas automatizadas |
+| 📲 **PWA** | — | Experiencia instalable |
+
+</div>
+
+---
+
+## 🗂️ Arquitectura
 
 ```text
-Radio_Satelital/
-├── app/                  # App Router, páginas y estilos globales
-├── components/
-│   ├── features/         # Cabina, ecualizador, visualizador, etc.
-│   └── layout/           # Reproductor, ajustes y estructura visual
-├── data/                 # Datos de emisoras
-├── hooks/                # Estado y lógica reutilizable
-├── lib/                  # Utilidades y sistema de temas
-├── public/               # Recursos públicos y PWA
-├── types/                # Tipos TypeScript
-├── package.json
-├── tailwind.config.js
-├── tsconfig.json
-└── README.md
+📦 Radio_Satelital
+ ┣ 📂 app                 → App Router, páginas y estilos globales
+ ┣ 📂 components
+ ┃ ┣ 📂 features          → Cabina, ecualizador, visualizador…
+ ┃ ┗ 📂 layout            → Reproductor, ajustes y estructura visual
+ ┣ 📂 data                → Catálogo de emisoras
+ ┣ 📂 hooks               → Estado y lógica reutilizable
+ ┣ 📂 lib                 → Utilidades y sistema de temas
+ ┣ 📂 public              → Recursos públicos y PWA
+ ┣ 📂 types               → Tipos TypeScript
+ ┣ 📜 package.json
+ ┣ 📜 tailwind.config.js
+ ┣ 📜 tsconfig.json
+ ┗ 📖 README.md
 ```
 
 ---
 
-## ⚡ Desarrollo local
+## 🚀 Ejecutar localmente
 
 ### Requisitos
 
-- Node.js 18.17 o superior; Node.js 20 LTS recomendado.
-- npm.
-- Git.
-- Navegador moderno.
+`Node.js 18.17+` · `npm` · `Git` · navegador moderno
 
-### Instalación
+> Node.js 20 LTS es recomendado para desarrollo.
+
+### 1 · Clonar
 
 ```bash
 git clone https://github.com/latanvillegas/Radio_Satelital.git
 cd Radio_Satelital
+```
+
+### 2 · Instalar
+
+```bash
 npm install
+```
+
+### 3 · Ejecutar
+
+```bash
 npm run dev
 ```
 
-Después abre:
+Abre **`http://localhost:3000`**.
 
-```text
-http://localhost:3000
-```
+### 🧪 Comandos
 
-### Scripts disponibles
+| Comando | Uso |
+| :--- | :--- |
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Compilación de producción |
+| `npm start` | Servidor de producción |
+| `npm run lint` | Comprobación TypeScript |
+| `npm test` | Pruebas con Vitest |
+| `npm run test:watch` | Vitest en modo watch |
 
-```bash
-npm run dev        # Servidor de desarrollo
-npm run build      # Compilación de producción
-npm start          # Servidor de producción
-npm run lint       # Comprobación TypeScript sin emitir archivos
-npm test           # Ejecutar pruebas con Vitest
-npm run test:watch # Vitest en modo watch
-```
-
-Antes de publicar cambios importantes es recomendable ejecutar como mínimo:
+Antes de publicar cambios importantes:
 
 ```bash
 npm run lint
@@ -211,116 +281,109 @@ npm run build
 
 ---
 
-## 📻 Streaming y disponibilidad
+## 📻 Sobre las transmisiones
 
-Radio Satelital reproduce transmisiones proporcionadas por servidores externos de las propias emisoras o sus proveedores de streaming. Por ello:
+> [!WARNING]
+> Las transmisiones pertenecen a servidores externos de las emisoras o sus proveedores. La disponibilidad de una radio individual puede cambiar sin que exista un fallo en Radio Satelital.
 
-- Una emisora puede quedar temporalmente fuera de línea.
-- Un servidor puede cambiar su URL o formato.
-- Algunas transmisiones pueden aplicar restricciones regionales, CORS u otras políticas externas.
-- La calidad y latencia dependen de la emisora, la conexión del usuario y el servidor de origen.
-
-Un fallo en una emisora individual no implica necesariamente un fallo de la aplicación.
+Una emisora puede quedar temporalmente fuera de línea, cambiar su URL o formato, aplicar restricciones regionales/CORS o presentar una latencia distinta según el servidor y la conexión del usuario.
 
 ---
 
-## 🔒 Privacidad y seguridad
+## 🔐 Privacidad y seguridad
 
-El proyecto procura mantener la experiencia principal sin exigir registro al usuario y utiliza almacenamiento local para preferencias como apariencia, escala de interfaz y otros estados compatibles.
+La experiencia principal no requiere registro. Las preferencias compatibles —como apariencia y escala de interfaz— pueden conservarse mediante almacenamiento local del navegador.
 
-Al contribuir al proyecto:
-
-- No publiques claves, tokens ni credenciales en el frontend.
-- No añadas secretos a archivos versionados.
-- Valida datos y URLs externas antes de utilizarlas.
-- Mantén las dependencias actualizadas de forma controlada.
-- Revisa cualquier cambio que afecte reproducción, almacenamiento o conexiones externas.
+> [!CAUTION]
+> **Nunca publiques claves, tokens o credenciales en el frontend ni en archivos versionados.** Valida URLs externas y revisa cuidadosamente cambios relacionados con reproducción, almacenamiento o conexiones externas.
 
 ---
 
-## 🧭 Mantenimiento del README
+## 🐛 Solución rápida de problemas
 
-Este archivo debe mantenerse sincronizado con el comportamiento real de la aplicación.
+<details>
+<summary><b>📻 Una emisora no reproduce audio</b></summary>
+<br />
+Prueba otra emisora. El servidor de streaming original puede estar temporalmente desconectado, haber cambiado o aplicar restricciones externas.
+</details>
 
-Al introducir cambios importantes:
+<details>
+<summary><b>🔄 No aparece un cambio reciente</b></summary>
+<br />
+Recarga la página. En la PWA instalada puede ser necesario cerrar y volver a abrir la aplicación para permitir que el service worker actualice recursos.
+</details>
 
-- Actualiza las funciones descritas aquí si cambia la interfaz o el reproductor.
-- Actualiza los atajos cuando cambien los controles de la Cabina de Estudio.
-- Actualiza la sección de apariencia cuando se agreguen o eliminen modos/acentos.
-- No publiques métricas, certificaciones o compatibilidades que no hayan sido verificadas.
-- Mantén las versiones técnicas alineadas con `package.json`.
-- Conserva la autoría, licencia, atribuciones y enlaces oficiales del proyecto.
+<details>
+<summary><b>☀️ Una superficie sigue oscura en modo Exterior</b></summary>
+<br />
+El componente puede conservar un estilo específico del modo oscuro. Debe adaptarse en el propio componente o en las reglas globales de apariencia manteniendo contraste suficiente.
+</details>
 
----
-
-## 🐛 Solución de problemas
-
-**Una emisora no reproduce audio**
-
-Comprueba primero otra emisora. El stream original puede estar temporalmente desconectado o bloqueado por el proveedor.
-
-**La interfaz no refleja un cambio reciente**
-
-Recarga la página. Si utilizas la versión PWA instalada, puede ser necesario cerrar y volver a abrir la aplicación para que el service worker actualice los recursos.
-
-**El modo Claro / Exterior deja alguna superficie oscura**
-
-Esto normalmente indica que un componente conserva estilos específicos del modo oscuro. Debe corregirse en el componente o en las reglas globales de apariencia, procurando mantener contraste suficiente en ambos modos.
-
-**No aparece la opción de instalar**
-
-La disponibilidad depende del navegador, sistema operativo y criterios PWA que el navegador aplique en ese momento.
+<details>
+<summary><b>📲 No aparece la opción de instalar</b></summary>
+<br />
+La disponibilidad depende del navegador, sistema operativo y de los criterios PWA aplicados por el navegador.
+</details>
 
 ---
 
-## 🤝 Contribuciones
+## 🤝 Contribuir
 
-Las mejoras son bienvenidas. Para colaborar:
+```text
+1. Crea un fork o una rama de trabajo
+2. Realiza cambios pequeños y claramente identificables
+3. Ejecuta TypeScript, pruebas y build
+4. Documenta el comportamiento nuevo
+5. Envía un Pull Request explicando el cambio
+```
 
-1. Crea un fork o una rama de trabajo.
-2. Realiza cambios pequeños y claramente identificables.
-3. Comprueba TypeScript, pruebas y build.
-4. Documenta cualquier comportamiento nuevo.
-5. Envía un Pull Request explicando el cambio.
+También puedes utilizar **[GitHub Issues](https://github.com/latanvillegas/Radio_Satelital/issues)** para reportar errores o proponer mejoras.
 
-También puedes utilizar Issues para reportar errores o proponer mejoras.
+### 🧭 Mantener este README
 
----
-
-## 👤 Autor
-
-Desarrollado por **Latán Villegas Avelino**.
-
-**Estado del proyecto:** activo y en desarrollo continuo.
+Cuando cambie el proyecto, este documento también debe cambiar. Mantén actualizadas las funciones, atajos, modos de apariencia y versiones técnicas; evita publicar métricas o compatibilidades no verificadas y conserva siempre la autoría, licencia y atribuciones.
 
 ---
 
-## ☕ Apoyo al desarrollador
+<div align="center">
 
-Si Radio Satelital te resulta útil y deseas apoyar su desarrollo:
+## 👨‍💻 Autor
 
-[![Donar con PayPal](https://img.shields.io/badge/Hacer%20Donaci%C3%B3n-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=alv.oficial123@gmail.com&currency_code=USD&source=url)
+### Latán Villegas Avelino
+
+**Radio Satelital · Proyecto activo y en desarrollo continuo**
+
+[![GitHub](https://img.shields.io/badge/GitHub-latanvillegas-181717?style=for-the-badge&logo=github)](https://github.com/latanvillegas)
+[![Web](https://img.shields.io/badge/Web-latanvillegas.online-10b981?style=for-the-badge)](https://latanvillegas.online/)
+
+### ☕ Apoya el desarrollo
+
+Si Radio Satelital te resulta útil, puedes apoyar su mantenimiento y evolución.
+
+[![Donar con PayPal](https://img.shields.io/badge/HACER_DONACIÓN-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=alv.oficial123@gmail.com&currency_code=USD&source=url)
+
+</div>
 
 ---
 
 ## 📜 Licencia
 
-Este proyecto se distribuye bajo la licencia **MIT**. Consulta [`LICENSE`](LICENSE) para el texto completo.
+Distribuido bajo la licencia **MIT**. Consulta [`LICENSE`](LICENSE) para el texto completo.
 
-Copyright (c) 2026 **Latán Villegas Avelino**.
+**Copyright © 2026 Latán Villegas Avelino.** Los avisos de licencia y copyright deben conservarse conforme a los términos de MIT.
 
-La licencia y los avisos de copyright deben conservarse en las copias o partes sustanciales del software conforme a los términos de MIT.
+### 🙏 Atribuciones
 
----
-
-## 🙏 Atribuciones
-
-- [Next.js](https://github.com/vercel/next.js) — MIT.
-- [React](https://github.com/facebook/react) — MIT.
-- [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss) — MIT.
-- [Lucide](https://github.com/lucide-icons/lucide) — ISC.
-- [Framer Motion / Motion](https://github.com/motiondivision/motion) — MIT.
+[Next.js](https://github.com/vercel/next.js) · [React](https://github.com/facebook/react) · [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss) · [Lucide](https://github.com/lucide-icons/lucide) · [Framer Motion / Motion](https://github.com/motiondivision/motion)
 
 ---
 
-© 2026 **Radio Satelital** · Latán Villegas Avelino
+<div align="center">
+
+### 📻 Radio Satelital
+
+**Hecho para escuchar, explorar y disfrutar la radio en directo.**
+
+© 2026 **Latán Villegas Avelino**
+
+</div>
