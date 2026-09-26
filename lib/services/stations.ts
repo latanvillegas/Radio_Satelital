@@ -1,4 +1,5 @@
 import stationsData from "../../data/stations.json";
+import cajamarcaStationsData from "../../data/stations-cajamarca.json";
 import {
   applyFavoriteState,
   buildStationFilterOptions,
@@ -34,10 +35,24 @@ export interface Radio {
 }
 
 /**
- * Obtiene las emisoras locales del archivo JSON
+ * Obtiene las emisoras locales de los archivos JSON y elimina duplicados por URL.
  */
 export function getLocalStations(): Radio[] {
-  return normalizeStationList(stationsData as StationInput[], "local", "local");
+  const allStations = [
+    ...(stationsData as StationInput[]),
+    ...(cajamarcaStationsData as StationInput[]),
+  ];
+
+  const normalized = normalizeStationList(allStations, "local", "local");
+  const byStreamUrl = new Map<string, Radio>();
+
+  normalized.forEach((station) => {
+    if (!byStreamUrl.has(station.streamUrl)) {
+      byStreamUrl.set(station.streamUrl, station);
+    }
+  });
+
+  return Array.from(byStreamUrl.values());
 }
 
 /**
