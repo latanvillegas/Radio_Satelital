@@ -9,6 +9,7 @@ tsconfig.tsbuildinfo
 
 # Generated static-export files are deployed from out/ by GitHub Pages Actions.
 /index.html
+/index.txt
 /404.html
 /404/
 /docs/
