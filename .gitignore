@@ -4,6 +4,16 @@ src-tauri/target/
 src-tauri/gen/
 .next/
 out/
+_next/
+tsconfig.tsbuildinfo
+
+# Generated static-export files are deployed from out/ by GitHub Pages Actions.
+/index.html
+/index.txt
+/404.html
+/404/
+/docs/
+
 # Android Signing - NEVER COMMIT THESE FILES
 android-keystore.jks
 android-keystore.txt

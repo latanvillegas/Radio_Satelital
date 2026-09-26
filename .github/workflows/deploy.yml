@@ -3,9 +3,10 @@ name: Deploy Next.js to GitHub Pages
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -20,7 +21,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -30,35 +32,16 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build
+      - name: Build static site
         run: npm run build
 
-      - name: Deploy build artifacts to main
-        run: |
-          # Ensure static build files are in root for main branch
-          rm -rf _next docs
-          cp -r out/_next .
-          cp out/index.html .
-          cp -r out/docs .
-          cp out/404.html . 2>/dev/null || true
-          cp out/sitemap.xml . 2>/dev/null || true
-          cp out/robots.txt . 2>/dev/null || true
-          echo "latanvillegas.online" > CNAME
-          touch .nojekyll
-
-      - name: Commit build to main branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html _next/ docs/ CNAME .nojekyll 404.html sitemap.xml robots.txt
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update main branch with latest build and docs redirect [skip ci]" && git push origin main)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Preserve custom domain in artifact
+        run: echo "latanvillegas.online" > out/CNAME
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./out
