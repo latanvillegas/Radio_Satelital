@@ -1,12 +1,13 @@
 "use client"
 import React, { useState } from 'react'
+import Image from 'next/image'
 import ThemeInitializer from '@/components/common/ThemeInitializer'
 import Player from '@/components/layout/Player'
 import StationGrid from '@/components/features/StationGrid'
 import SideMenu from '@/components/layout/SideMenu'
 import Filters from '@/components/features/Filters'
 import { useStations } from '@/hooks/stations'
-import { Radio, Sliders, Shuffle, Heart, AlertCircle, MapPin, Music2, Newspaper, Globe2 } from 'lucide-react'
+import { Sliders, Shuffle, Heart, AlertCircle, MapPin, Music2, Newspaper, Globe2 } from 'lucide-react'
 
 export default function Page() {
   const { stations, recentStations, currentStation, playStation, nextStation, prevStation, playRandomStation, toggleFavorite, setQuery, searchQuery, filters, toggleOnlyFavs, onlyFavs, loading, error } = useStations()
@@ -21,7 +22,7 @@ export default function Page() {
 
   return <><ThemeInitializer/><div className="min-h-screen bg-black text-zinc-100 selection:bg-[var(--accent)] selection:text-black">
     <header className="sticky top-0 z-30 bg-black/90 backdrop-blur-xl border-b border-white/[0.08]"><div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-      <button type="button" onClick={() => window.scrollTo({top:0,behavior:'smooth'})} className="flex items-center gap-3 min-w-0 text-left"><div className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center" style={{backgroundColor:'var(--accent)'}}><Radio size={21} className="text-white"/></div><div className="min-w-0"><h1 className="font-extrabold tracking-tight text-white truncate">Radio Satelital</h1><p className="hidden sm:block text-[11px] text-zinc-500">Emisoras en vivo de Perú y el mundo</p></div></button>
+      <button type="button" onClick={() => window.scrollTo({top:0,behavior:'smooth'})} className="flex items-center gap-3 min-w-0 text-left"><div className="relative w-10 h-10 shrink-0 overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.04]"><Image src="/icon-192.png" alt="Radio Satelital" fill sizes="40px" className="object-cover" priority/></div><div className="min-w-0"><h1 className="font-extrabold tracking-tight text-white truncate">Radio Satelital</h1><p className="hidden sm:block text-[11px] text-zinc-500">Emisoras en vivo de Perú y el mundo</p></div></button>
       <div className="flex items-center gap-2"><button onClick={playRandomStation} className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08]"><Shuffle size={14}/> Aleatoria</button><button onClick={toggleFavorites} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border border-white/[0.08] bg-white/[0.05]" style={onlyFavs?{color:'var(--accent)',borderColor:'var(--accent-glow)',backgroundColor:'var(--accent-subtle)'}:undefined}><Heart size={15} fill={onlyFavs?'currentColor':'none'}/><span className="hidden sm:inline">Favoritas</span></button><button onClick={() => setMenuOpen(true)} className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08]" aria-label="Abrir herramientas y ajustes"><Sliders size={15}/></button></div>
     </div></header>
     <main className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-7 pb-56 sm:pb-48">
