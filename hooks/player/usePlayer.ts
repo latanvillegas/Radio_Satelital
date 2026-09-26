@@ -8,12 +8,13 @@ import {
   subscribeSleepTimer,
   setSleepTimer as libSetSleepTimer,
   getSleepTimerMinutesLeft,
+  getCurrentPlayingStation,
   type PlaybackStatus,
 } from '@/lib/services/player'
 import type { Station } from '@/types/station'
 
 export default function usePlayer() {
-  const [currentStation, setCurrentStation] = useState<Station | null>(null)
+  const [currentStation, setCurrentStation] = useState<Station | null>(() => getCurrentPlayingStation())
   const [isPlaying, setIsPlaying] = useState(false)
   const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus>('idle')
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
@@ -24,6 +25,9 @@ export default function usePlayer() {
     const audio = document.getElementById('radioPlayer') as HTMLAudioElement | null
     if (!audio) return
 
+    setCurrentStation(getCurrentPlayingStation())
+    setIsPlaying(!audio.paused && Boolean(audio.src))
+
     const onPlay = () => setIsPlaying(true)
     const onPause = () => setIsPlaying(false)
     const onTime = () => setSecondsElapsed(Math.floor(audio.currentTime))
@@ -33,6 +37,7 @@ export default function usePlayer() {
     audio.addEventListener('timeupdate', onTime)
 
     const unsubscribeStatus = subscribePlaybackStatus((status, meta) => {
+      setCurrentStation(getCurrentPlayingStation())
       setPlaybackStatus(status)
       if (status === 'playing') {
         setIsPlaying(true)
@@ -50,9 +55,7 @@ export default function usePlayer() {
       }
     })
 
-    const unsubscribeSleep = subscribeSleepTimer((mins) => {
-      setSleepTimerMinutes(mins)
-    })
+    const unsubscribeSleep = subscribeSleepTimer((mins) => setSleepTimerMinutes(mins))
 
     return () => {
       audio.removeEventListener('play', onPlay)
@@ -68,28 +71,9 @@ export default function usePlayer() {
     libPlay(s)
   }
 
-  function togglePlay() {
-    libToggle()
-  }
+  function togglePlay() { libToggle() }
+  function setPlaying(val: boolean) { setPlayingState(val) }
+  function setSleepTimer(minutes: number | null) { libSetSleepTimer(minutes) }
 
-  function setPlaying(val: boolean) {
-    setPlayingState(val)
-  }
-
-  function setSleepTimer(minutes: number | null) {
-    libSetSleepTimer(minutes)
-  }
-
-  return {
-    currentStation,
-    isPlaying,
-    playbackStatus,
-    statusMessage,
-    secondsElapsed,
-    sleepTimerMinutes,
-    playStation,
-    togglePlay,
-    setPlaying,
-    setSleepTimer,
-  }
+  return { currentStation, isPlaying, playbackStatus, statusMessage, secondsElapsed, sleepTimerMinutes, playStation, togglePlay, setPlaying, setSleepTimer }
 }
