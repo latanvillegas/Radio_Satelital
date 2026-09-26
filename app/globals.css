@@ -23,10 +23,16 @@ html[data-appearance='light'] [class*="fixed bottom-0"]{background:#fff!importan
 html[data-appearance='light'] button.bg-white\/\[0\.05\],html[data-appearance='light'] button.bg-white\/\[0\.04\]{background:#f4f4f5!important;color:#18181b!important}
 html[data-appearance='light'] .glass-panel{background:#fff!important;border-color:rgba(0,0,0,.14)!important;box-shadow:0 2px 10px rgba(0,0,0,.05)}
 
-/* Cabina Studio: el modal usa fondos zinc con opacidades propias. En exterior también deben aclararse. */
 html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air']{background:#fff!important;color:#09090b!important;border-color:#d4d4d8!important;box-shadow:0 24px 70px rgba(0,0,0,.18)!important}
 html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .bg-zinc-950\/80,html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .bg-zinc-950\/90{background:#f4f4f5!important}
 html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .bg-black\/80{background:#fafafa!important;border-color:#d4d4d8!important}
 html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .text-white,html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .text-zinc-100,html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .text-zinc-200,html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .text-zinc-300{color:#09090b!important}
 html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .text-zinc-400{color:#3f3f46!important}html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] .text-zinc-500{color:#52525b!important}
 html[data-appearance='light'] [role='dialog'][aria-label='Cabina de Estudio Broadcast On-Air'] [class*='border-white']{border-color:rgba(0,0,0,.14)!important}
+
+/* Ecualizador: en exterior las tarjetas oscuras quedaban grises con texto de poco contraste. */
+html[data-appearance='light'] [role='dialog'] .bg-zinc-900\/80,html[data-appearance='light'] [role='dialog'] .bg-zinc-900\/60,html[data-appearance='light'] [role='dialog'] .bg-zinc-900\/50,html[data-appearance='light'] [role='dialog'] .bg-zinc-800,html[data-appearance='light'] [role='dialog'] .bg-zinc-800\/80,html[data-appearance='light'] [role='dialog'] .bg-zinc-800\/60{background:#f4f4f5!important}
+html[data-appearance='light'] [role='dialog'] .text-zinc-700,html[data-appearance='light'] [role='dialog'] .text-zinc-800,html[data-appearance='light'] [role='dialog'] .text-black{color:#09090b!important}
+html[data-appearance='light'] [role='dialog'] button[class*='bg-zinc-']{background:#f4f4f5!important;color:#18181b!important;border-color:#d4d4d8!important}
+html[data-appearance='light'] [role='dialog'] button[class*='bg-zinc-']:hover{background:#e4e4e7!important}
+html[data-appearance='light'] [role='dialog'] [class*='bg-white/'][class*='border-white']{border-color:#d4d4d8!important}
