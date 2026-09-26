@@ -13,7 +13,7 @@ type Props={currentStation:Station|null;onNextStation:()=>void;onPrevStation:()=
 
 function Artwork({station,size='mini'}:{station:Station|null;size?:'mini'|'large'}){
  const [bad,setBad]=useState(false); const large=size==='large'; const name=station?.name||'Radio Satelital'; const parts=name.split(/\s+/).filter(Boolean); const initials=((parts[0]?.[0]||'R')+(parts[1]?.[0]||parts[0]?.[1]||'A')).toUpperCase()
- return <div className={`${large?'w-40 h-40 sm:w-48 sm:h-48 rounded-3xl':'w-11 h-11 rounded-xl'} shrink-0 overflow-hidden border border-white/10 bg-zinc-900 shadow-2xl`}>
+ return <div className={`${large?'w-40 h-40 sm:w-48 sm:h-48 rounded-3xl mx-auto':'w-11 h-11 rounded-xl'} shrink-0 overflow-hidden border border-white/10 bg-zinc-900 shadow-2xl`}>
   {station?.logoUrl&&!bad?<img src={station.logoUrl} alt={name} className="w-full h-full object-contain bg-white/[0.03]" onError={()=>setBad(true)}/>:<div className="w-full h-full grid place-items-center font-black text-zinc-300">{large?<div className="text-center"><Radio size={42} className="mx-auto mb-2"/><span className="text-2xl">{initials}</span></div>:initials}</div>}
  </div>
 }
