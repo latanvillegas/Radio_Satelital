@@ -23,15 +23,15 @@ function StationCard({ station, isActive, isPlaying, playbackStatus, onPlay, onP
   const loading = isActive && (playbackStatus === 'loading' || playbackStatus === 'reconnecting')
   const playOrPause = () => playing ? onPause() : onPlay(station)
   return (
-    <article className={['relative min-w-0 p-3.5 rounded-2xl border transition-colors',
-      isActive ? 'border-emerald-500/50 bg-emerald-500/[.08]' : 'border-white/10 bg-zinc-950/75 hover:bg-zinc-900/75'].join(' ')}>
+    <article className={['observatory-station-tile relative min-w-0 p-3.5 rounded-2xl border transition-colors',
+      isActive ? 'observatory-station-active border-emerald-500/50 bg-emerald-500/[.08]' : 'border-white/10 bg-zinc-950/75 hover:bg-zinc-900/75'].join(' ')}>
       <div className="flex min-w-0 gap-3 items-center">
         <button type="button" onClick={playOrPause} aria-label={(playing ? 'Pausar ' : 'Escuchar ') + station.name}
           className="flex min-w-0 flex-1 items-center gap-3 text-left rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
-          <span className="relative grid place-items-center h-14 w-14 shrink-0 rounded-xl overflow-hidden bg-white/[.05] border border-white/10">
+          <span className="observatory-station-art relative grid place-items-center h-14 w-14 shrink-0 rounded-xl overflow-hidden bg-white/[.05] border border-white/10">
             {station.logoUrl && !logoBroken ? <img src={station.logoUrl} alt="" loading="lazy" decoding="async"
               className="w-full h-full object-contain" onError={() => setLogoBroken(true)}/> :
-              <span className="font-black text-sm" style={{color:'var(--accent)'}}>{initials(station.name)}</span>}
+              <span className="observatory-station-lettermark font-black text-sm" style={{color:'var(--accent)'}}>{initials(station.name)}</span>}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm sm:text-[15px] font-bold text-white">{station.name}</span>
@@ -45,7 +45,7 @@ function StationCard({ station, isActive, isPlaying, playbackStatus, onPlay, onP
           <Heart size={18} fill={station.isFavorite ? 'currentColor':'none'} style={{color:station.isFavorite?'var(--accent)':'#a1a1aa'}}/>
         </button>
         <button type="button" onClick={playOrPause} aria-label={(playing ? 'Pausar: ' : 'Reproducir: ') + station.name}
-          className="grid place-items-center h-10 w-10 shrink-0 rounded-full text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          className="observatory-station-play grid place-items-center h-10 w-10 shrink-0 rounded-full text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
           style={{background:'var(--accent)'}}>
           {loading ? <LoaderCircle size={18} className="animate-spin"/> : playing ? <Pause size={18} fill="currentColor"/> : <Play size={18} fill="currentColor"/>}
         </button>
