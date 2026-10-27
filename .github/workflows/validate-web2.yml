@@ -1,0 +1,33 @@
+name: Validate Radio Satelital Web 2
+on:
+  push:
+    branches:
+      - feature/radio-satelital-web-2-20261027
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: TypeScript validation
+        run: npm run lint
+      - name: Unit tests
+        run: npm test
+      - name: Production static export
+        run: npm run build
+      - name: Verify built pages
+        run: |
+          test -f out/index.html
+          test -f out/sw.js
+          test -f out/manifest.json
+          test -f out/CNAME
+          test -f out/sitemap.xml

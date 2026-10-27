@@ -60,7 +60,7 @@ describe('station-normalizer', () => {
     )
 
     expect(merged).toHaveLength(2)
-    expect(merged[0].id).toBe('firebase-1')
+    expect(merged[0].id).toBe('custom-1')
     expect(merged[0].name).toBe('La Mega')
   })
 

@@ -9,6 +9,7 @@ import {
   setSleepTimer as libSetSleepTimer,
   getSleepTimerMinutesLeft,
   getCurrentPlayingStation,
+  getAudio,
   type PlaybackStatus,
 } from '@/lib/services/player'
 import type { Station } from '@/types/station'
@@ -22,7 +23,7 @@ export default function usePlayer() {
   const [sleepTimerMinutes, setSleepTimerMinutes] = useState<number | null>(getSleepTimerMinutesLeft())
 
   useEffect(() => {
-    const audio = document.getElementById('radioPlayer') as HTMLAudioElement | null
+    const audio = getAudio()
     if (!audio) return
 
     setCurrentStation(getCurrentPlayingStation())

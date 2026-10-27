@@ -2,6 +2,8 @@ import './globals.css'
 import React from 'react'
 
 export const metadata = {
+  metadataBase: new URL('https://latanvillegas.online'),
+  alternates: { canonical: '/' },
   title: 'Radio Satelital - Sintonizador Global en Vivo',
   description: 'Sintonizador web global en tiempo real con transmisión continua de alta fidelidad.',
   manifest: '/manifest.json',
