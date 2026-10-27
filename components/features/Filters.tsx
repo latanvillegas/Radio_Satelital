@@ -35,7 +35,7 @@ export default function Filters({ setQuery, searchQuery = '', filters }: Props) 
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
-          <input id="station-search" value={q} onChange={(e) => change(e.target.value)} placeholder="Buscar emisora, ciudad, país o género..." className="w-full h-12 rounded-2xl bg-zinc-950 border border-white/[0.1] pl-11 pr-10 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-white/25 focus:ring-1 focus:ring-white/10" />
+          <input id="station-search" value={q} onChange={(e) => change(e.target.value)} placeholder="¿Qué quieres escuchar hoy?" className="w-full h-12 rounded-2xl bg-zinc-950 border border-white/[0.1] pl-11 pr-10 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-white/25 focus:ring-1 focus:ring-white/10" />
           {q && <button type="button" onClick={() => change('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-full text-zinc-500 hover:text-white hover:bg-white/[0.07]" aria-label="Limpiar búsqueda"><X size={15}/></button>}
         </div>
         <button type="button" onClick={() => setOpen(v => !v)} className="h-12 shrink-0 inline-flex items-center gap-2 px-4 rounded-2xl bg-zinc-950 border border-white/[0.1] text-sm font-semibold text-zinc-300 hover:text-white hover:border-white/20">

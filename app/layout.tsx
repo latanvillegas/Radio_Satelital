@@ -1,5 +1,6 @@
 import './globals.css'
 import './observatory.css'
+import './live-universe.css'
 import React from 'react'
 
 export const metadata = {
