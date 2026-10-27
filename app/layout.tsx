@@ -1,15 +1,16 @@
 import './globals.css'
+import './observatory.css'
 import React from 'react'
 
 export const metadata = {
   metadataBase: new URL('https://latanvillegas.online'),
   alternates: { canonical: '/' },
-  title: 'Radio Satelital - Sintonizador Global en Vivo',
-  description: 'Sintonizador web global en tiempo real con transmisión continua de alta fidelidad.',
+  title: 'Radio Satelital — Observatorio de Señales | Radios en vivo',
+  description: 'Explora radios en vivo de Perú y del mundo. Sintoniza música, noticias y cultura desde el Observatorio de Señales de Radio Satelital.',
   manifest: '/manifest.json',
   openGraph: {
-    title: 'Radio Satelital - Sintonizador Global en Vivo',
-    description: 'Sintonizador web global en tiempo real con transmisión continua de alta fidelidad.',
+    title: 'Radio Satelital — Observatorio de Señales | Radios en vivo',
+    description: 'Explora radios en vivo de Perú y del mundo. Sintoniza música, noticias y cultura desde el Observatorio de Señales de Radio Satelital.',
   },
 }
 

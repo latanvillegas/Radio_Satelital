@@ -1,0 +1,40 @@
+name: Web quality — Observatorio
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-web:
+    name: TypeScript · Vitest · Static Export
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: TypeScript
+        run: npm run lint
+      - name: Pruebas unitarias
+        run: npm run test
+      - name: Construcción estática
+        run: npm run build
+      - name: Comprobar archivos de salida
+        run: |
+          test -f out/index.html
+          test -f out/manifest.json
+          test -f out/robots.txt
+          grep -q "Radio Satelital" out/index.html
+      - name: Guardar versión web para revisión
+        uses: actions/upload-artifact@v4
+        with:
+          name: observatorio-web-static
+          path: out/
+          retention-days: 7
