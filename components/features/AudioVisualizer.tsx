@@ -35,6 +35,12 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
       const hasRealAudio =
         realData && realData.some((val) => val > 5)
 
+      const style = getComputedStyle(document.documentElement)
+      const grad = ctx.createLinearGradient(0, height, 0, 0)
+      grad.addColorStop(0, style.getPropertyValue('--accent').trim() || '#ef4444')
+      grad.addColorStop(0.6, style.getPropertyValue('--accent-hover').trim() || '#f87171')
+      grad.addColorStop(1, '#ffffff')
+
       for (let i = 0; i < count; i++) {
         if (isPlaying) {
           let targetHeight: number
@@ -68,21 +74,6 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
         const x = i * (barWidth + gap)
         const y = height - barHeight
 
-        // Gradiente profesional de estudio adaptado al tema actual
-        const accent =
-          (typeof window !== 'undefined'
-            ? getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
-            : '') || '#ef4444'
-        const accentHover =
-          (typeof window !== 'undefined'
-            ? getComputedStyle(document.documentElement).getPropertyValue('--accent-hover').trim()
-            : '') || '#f87171'
-
-        const grad = ctx.createLinearGradient(0, height, 0, 0)
-        grad.addColorStop(0, accent)
-        grad.addColorStop(0.6, accentHover)
-        grad.addColorStop(1, '#ffffff')
-
         ctx.fillStyle = grad
         ctx.beginPath()
         if (ctx.roundRect) {
@@ -96,7 +87,8 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
       animFrame = requestAnimationFrame(render)
     }
 
-    render()
+    if (isPlaying) render()
+    else ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     return () => {
       cancelAnimationFrame(animFrame)

@@ -21,6 +21,10 @@ export type StationRecord = Omit<Station, 'id' | 'url' | 'streamUrl'> & {
   source?: StationSource
 }
 
+function normalizeSearch(value: string): string {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+}
+
 function cleanText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
 }
@@ -154,7 +158,7 @@ export function filterStations(
     favorites: Set<string>
   },
 ): StationRecord[] {
-  const normalizedQuery = options.query.normalize('NFD').toLowerCase().trim()
+  const normalizedQuery = normalizeSearch(options.query)
 
   return stations.filter((station) => {
     if (options.onlyFavs && !options.favorites.has(stationKey(station))) {
@@ -182,6 +186,7 @@ export function filterStations(
       ]
         .join(' ')
         .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
 
       if (!haystack.includes(normalizedQuery)) {

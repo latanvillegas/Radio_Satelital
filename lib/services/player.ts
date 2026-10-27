@@ -58,9 +58,14 @@ export function playStation(s: Station, isAutoRetry = false) {
   if (!s.url && !s.streamUrl) { notifyStatus('error', { error: 'URL de emisora no disponible' }); return }
   currentPlayingStation = s
   if (!isAutoRetry) { retryCount = 0; isReconnecting = false; addRecentStation(stationKey(s)) }
-  const { url, isProxied } = getOptimalUrl(s); currentStreamMeta = { url, isProxied }; notifyStatus(isAutoRetry ? 'reconnecting' : 'loading')
+  const primary = getOptimalUrl(s)
+  // Si falla un proxy externo, probar el stream original sin alterar el DSP ni el resto de radios.
+  const useDirectFallback = isAutoRetry && primary.isProxied
+  const url = useDirectFallback ? (s.streamUrl || s.url || primary.url) : primary.url
+  const isProxied = !useDirectFallback && primary.isProxied
+  currentStreamMeta = { url, isProxied }; notifyStatus(isAutoRetry ? 'reconnecting' : 'loading')
   audio.src = url; updateMediaSession(s)
-  audio.onerror = () => { if (retryCount < MAX_RETRIES && currentPlayingStation?.name === s.name) { retryCount++; isReconnecting = true; notifyStatus('reconnecting'); setTimeout(() => { if (currentPlayingStation?.name === s.name) playStation(s, true) }, 2000) } else { isReconnecting = false; notifyStatus('error', { error: 'Transmisión fuera de servicio o inaccesible temporalmente' }) } }
+  audio.onerror = () => { if (retryCount < MAX_RETRIES && Boolean(currentPlayingStation && stationKey(currentPlayingStation) === stationKey(s))) { retryCount++; isReconnecting = true; notifyStatus('reconnecting'); setTimeout(() => { if (currentPlayingStation && stationKey(currentPlayingStation) === stationKey(s)) playStation(s, true) }, 2000) } else { isReconnecting = false; notifyStatus('error', { error: 'Transmisión fuera de servicio o inaccesible temporalmente' }) } }
   audio.onwaiting = () => notifyStatus('loading')
   audio.onplaying = () => { retryCount = 0; isReconnecting = false; notifyStatus('playing'); try { initAudioDsp(audio) } catch {} }
   audio.onpause = () => { if (!isReconnecting) notifyStatus('paused') }
