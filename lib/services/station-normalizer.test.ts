@@ -3,6 +3,7 @@ import {
   mergeStationsByStreamUrl,
   normalizeStation,
   normalizeStationList,
+  normalizeRegion,
   stationKey,
 } from './station-normalizer'
 
@@ -66,5 +67,19 @@ describe('station-normalizer', () => {
 
   it('genera una key estable para favoritos', () => {
     expect(stationKey({ name: ' La Mega ', url: 'https://example.com/stream' })).toBe('La Mega|https://example.com/stream')
+  })
+
+  it('colapsa geografía con y sin tilde y preserva claves de favoritos', () => {
+    expect(normalizeRegion('JAEN, JAÉN, CAJAMARCA', 'Perú')).toBe('Jaén, Cajamarca')
+    expect(normalizeRegion('Cajamarca, Cajamarca, Cajamarca', 'Perú')).toBe('Cajamarca')
+    expect(normalizeRegion('Chile', 'Chile')).toBe('')
+    const station = normalizeStation({ name: 'Activa Jaén', region: 'jaén, jaén, Cajamarca', url: 'https://example.org/radio' }, 'local', 'x')!
+    expect(station.region).toBe('Jaén, Cajamarca')
+    expect(stationKey(station)).toBe('Activa Jaén|https://example.org/radio')
+  })
+
+  it('no etiqueta una emisora católica como urbana solo por Activa', () => {
+    const station = normalizeStation({ name: 'Activa 95.1 FM Católica', url: 'https://example.org/catolica' }, 'local', 'x')!
+    expect(station.tags).not.toContain('urbano')
   })
 })

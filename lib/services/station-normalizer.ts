@@ -25,6 +25,22 @@ function normalizeSearch(value: string): string {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
 }
 
+/** Elimina niveles geográficos repetidos sin alterar nombres ni URLs. */
+export function normalizeRegion(value: string, country = ''): string {
+  const seen = new Set<string>()
+  const parts = value.split(',').map(p => p.trim()).filter(Boolean)
+  const clean: string[] = []
+  for (const raw of parts) {
+    const key = normalizeSearch(raw)
+    if (!key || key === normalizeSearch(country) || seen.has(key)) continue
+    seen.add(key)
+    if (key === 'jaen') clean.push('Jaén')
+    else if (key === 'cajamarca') clean.push('Cajamarca')
+    else clean.push(raw)
+  }
+  return clean.join(', ')
+}
+
 function cleanText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
 }
@@ -48,7 +64,7 @@ export function inferGenres(name: string, explicitTags: string[] = []): string[]
   if (n.includes('rock') || n.includes('metal') || n.includes('clasic') || n.includes('classic')) {
     result.add('rock')
   }
-  if (n.includes('activa') || n.includes('urban') || n.includes('reggaeton') || n.includes('latina') || n.includes('flow') || n.includes('rumba')) {
+  if (n.includes('urban') || n.includes('reggaeton') || n.includes('latina') || n.includes('flow') || n.includes('rumba')) {
     result.add('urbano')
   }
   if (n.includes('noticia') || n.includes('news') || n.includes('inform') || n.includes('rpp') || n.includes('caracol') || n.includes('cadena') || n.includes('w radio')) {
@@ -93,7 +109,7 @@ export function normalizeStation(input: StationInput, source: StationSource, fal
     url: streamUrl,
     streamUrl,
     country: cleanText(input.country),
-    region: cleanText(input.region),
+    region: normalizeRegion(cleanText(input.region), cleanText(input.country)),
     logoUrl: cleanText(input.logoUrl),
     isFavorite: Boolean(input.isFavorite),
     tags,
@@ -169,8 +185,10 @@ export function filterStations(
       return false
     }
 
-    if (options.filters.region && station.region !== options.filters.region) {
-      return false
+    if (options.filters.region) {
+      const wanted = normalizeSearch(options.filters.region)
+      const levels = (station.region || '').split(',').map(level => normalizeSearch(level))
+      if (normalizeSearch(station.region || '') !== wanted && !levels.includes(wanted)) return false
     }
 
     if (options.filters.genre && !station.tags?.includes(options.filters.genre.toLowerCase())) {

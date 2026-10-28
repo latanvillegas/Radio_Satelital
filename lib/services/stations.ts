@@ -34,9 +34,21 @@ export interface Radio {
   source?: "local";
 }
 
-/**
- * Obtiene las emisoras locales de los archivos JSON y elimina duplicados por URL.
+/** Ranking editorial estable: insignia -> Jaén -> Cajamarca -> Perú -> mundo.
+ * La posición original se conserva dentro de cada grupo.
  */
+function stationWeight(station: Radio): number {
+  const name = station.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const region = (station.region || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const country = (station.country || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  if (name === 'activa jaen') return 0
+  if (country !== 'peru') return 4
+  if (region.includes('jaen')) return 1
+  if (region.includes('cajamarca')) return 2
+  return 3
+}
+
+/** Obtiene emisoras locales y elimina duplicados por URL exacta. */
 export function getLocalStations(): Radio[] {
   const allStations = [
     ...(stationsData as StationInput[]),
@@ -52,7 +64,7 @@ export function getLocalStations(): Radio[] {
     }
   });
 
-  return Array.from(byStreamUrl.values());
+  return Array.from(byStreamUrl.values()).sort((a, b) => stationWeight(a) - stationWeight(b));
 }
 
 /**

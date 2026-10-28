@@ -13,7 +13,7 @@ import {
 } from '@/lib/services/stations'
 import { toggleFavorite as toggleFavoriteStorage, getFavorites } from '@/lib/storage/favorites'
 import { getRecentStations } from '@/lib/storage/recents'
-import { playStation as libPlay } from '@/lib/services/player'
+import { playStation as libPlay, prepareStation, getCurrentPlayingStation, bindMediaNavigation, subscribePlaybackStatus } from '@/lib/services/player'
 
 type Filters = {
   countries: string[]
@@ -59,6 +59,25 @@ export default function useStations() {
     load()
   }, [])
 
+  // Prepara la última escuchada o la insignia, sin reproducir automáticamente.
+  useEffect(() => {
+    if (currentStation || stations.length === 0) return
+    const active = getCurrentPlayingStation()
+    if (active) { setCurrentStation(active); return }
+    const byKey = new Map(stations.map(station => [stationKey(station), station]))
+    const recent = getRecentStations().map(key => byKey.get(key)).find(Boolean)
+    const station = recent || stations.find(s => s.name === 'Activa Jaén') || stations[0]
+    if (station) { prepareStation(station); setCurrentStation(station) }
+  }, [stations, currentStation])
+
+  // El Play del dock también actualiza la sección de recientes.
+  useEffect(() => subscribePlaybackStatus(status => {
+    if (status !== 'loading' && status !== 'playing') return
+    const active = getCurrentPlayingStation()
+    if (active) setCurrentStation(active)
+    setRecentKeys(getRecentStations())
+  }), [])
+
   const playAtIndex = (index: number) => {
     if (stations.length === 0) return
     const normalizedIndex = ((index % stations.length) + stations.length) % stations.length
@@ -90,6 +109,11 @@ export default function useStations() {
     const randomStation = stations[randomIndex]
     playStation(randomStation)
   }
+
+  // MediaSession utiliza los controladores existentes de la aplicación.
+  useEffect(() => {
+    bindMediaNavigation(nextStation, prevStation)
+  }, [stations, currentStation])
 
   const toggleFavorite = (s: Station) => {
     const key = stationKey(s)
