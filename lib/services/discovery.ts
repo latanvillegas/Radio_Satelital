@@ -33,8 +33,10 @@ export function buildDiscovery(stations: Station[], recent: Station[], active: S
   const cajamarca = peru.filter(s => (s.region || '').toLocaleLowerCase('es').includes('cajamarca'))
   const featured = active || validRecent[0] || favorites[0] || cajamarca[0] || peru[0] || stations[0] || null
   const excluded = new Set(featured ? [key(featured)] : [])
-  const quickPicks = unique([...favorites, ...validRecent, ...cajamarca, ...peru, ...stations], 5, excluded)
   const localPicks = unique(cajamarca, 5)
+  // Evitar mostrar las mismas cinco emisoras en las dos secciones.
+  const quickExcluded = new Set([...excluded, ...localPicks.map(key)])
+  const quickPicks = unique([...favorites, ...validRecent, ...peru, ...stations], 5, quickExcluded)
   const countries = new Set<string>()
   const worldCandidates: Station[] = []
   for (const station of stations) {

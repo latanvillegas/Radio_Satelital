@@ -19,12 +19,12 @@ export default function StationGrid({ stations, recentStations = [], playStation
     station: null, status: 'idle', playing: false
   })
   useEffect(() => {
-    const audio = getAudio()
     const refresh = (status: PlaybackStatus) => setPlayback({
       station: getCurrentPlayingStation(),
       status,
-      playing: status === 'playing' || (status !== 'paused' && status !== 'error' && !!audio && !audio.paused)
+      playing: status === 'playing' || (status !== 'paused' && status !== 'error' && !!getAudio() && !getAudio()!.paused)
     })
+    const audio = getAudio()
     refresh(audio && !audio.paused ? 'playing' : 'idle')
     return subscribePlaybackStatus(refresh)
   }, [])

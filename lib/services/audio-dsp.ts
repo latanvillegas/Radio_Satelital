@@ -157,6 +157,8 @@ const FILTER_TYPES: BiquadFilterType[] = ['lowshelf', 'peaking', 'peaking', 'pea
  */
 export function initAudioDsp(audio: HTMLAudioElement): boolean {
   if (typeof window === 'undefined') return false
+  // Evita Web Audio en transmisiones que se reproducen en modo nativo sin CORS.
+  if (audio.crossOrigin !== 'anonymous') return false
 
   // Cargar preferencias guardadas la primera vez
   if (currentState === DEFAULT_STATE) {
@@ -184,6 +186,7 @@ export function initAudioDsp(audio: HTMLAudioElement): boolean {
 
     if (!sourceNode || connectedAudioElement !== audio) {
       try {
+        if (sourceNode && connectedAudioElement !== audio) sourceNode.disconnect()
         sourceNode = audioCtx.createMediaElementSource(audio)
         connectedAudioElement = audio
       } catch (err) {
@@ -358,4 +361,23 @@ export function getDspOutputStream(): MediaStream | null {
     return streamDestNode.stream
   }
   return null
+}
+
+
+/** Liberación explícita ANTES de sustituir el elemento CORS por audio nativo. */
+export function releaseAudioDsp(): void {
+  try { sourceNode?.disconnect() } catch {}
+  for (const node of filterNodes) { try { node.disconnect() } catch {} }
+  try { preAmpNode?.disconnect() } catch {}
+  try { compressorNode?.disconnect() } catch {}
+  try { analyserNode?.disconnect() } catch {}
+  sourceNode = null
+  connectedAudioElement = null
+  filterNodes = []
+  preAmpNode = null
+  compressorNode = null
+  analyserNode = null
+  streamDestNode = null
+  currentState = { ...currentState, isWebAudioActive: false }
+  notifyDspChange()
 }

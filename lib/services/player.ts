@@ -2,7 +2,7 @@ import type { Station } from '../../types/station'
 import { getOptimalUrl } from './proxy'
 import { addRecentStation } from '../storage/recents'
 import { stationKey } from './station-normalizer'
-import { initAudioDsp } from './audio-dsp'
+import { initAudioDsp, releaseAudioDsp } from './audio-dsp'
 
 const AUDIO_ID = 'radioPlayer'
 let sleepTimerId: ReturnType<typeof setTimeout> | null = null
@@ -10,20 +10,75 @@ let sleepTimerEndsAt: number | null = null
 let currentPlayingStation: Station | null = null
 let currentStreamMeta: { url: string; isProxied: boolean } | null = null
 let retryCount = 0
-const MAX_RETRIES = 2
+const MAX_RETRIES = 3
 let isReconnecting = false
+let playbackRequested = false
+let plainMode = false
+let runId = 0
+let retryTimer: ReturnType<typeof setTimeout> | null = null
+let stallTimer: ReturnType<typeof setTimeout> | null = null
+let networkListenersInstalled = false
+const STALL_MS = 6000
+const RETRY_DELAYS_MS = [2000, 4000, 8000]
 
-export type PlaybackStatus = 'idle' | 'loading' | 'playing' | 'paused' | 'error' | 'reconnecting'
+export type PlaybackStatus = 'idle' | 'loading' | 'playing' | 'paused' | 'error' | 'reconnecting' | 'offline'
 type StatusListener = (status: PlaybackStatus, meta?: { error?: string; reconnecting?: boolean }) => void
 const statusListeners = new Set<StatusListener>()
 
-function notifyStatus(status: PlaybackStatus, meta?: { error?: string; reconnecting?: boolean }) { statusListeners.forEach(listener => { try { listener(status, meta) } catch (e) { console.error('[Player] Error in status listener:', e) } }) }
+function notifyStatus(status: PlaybackStatus, meta?: { error?: string; reconnecting?: boolean }) {
+  if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+    try { navigator.mediaSession.playbackState = status === 'playing' ? 'playing' : status === 'paused' ? 'paused' : 'none' } catch {}
+  }
+  statusListeners.forEach(listener => { try { listener(status, meta) } catch (e) { console.error('[Player] Error in status listener:', e) } })
+}
 export function subscribePlaybackStatus(listener: StatusListener): () => void { statusListeners.add(listener); return () => { statusListeners.delete(listener) } }
 
+function clearTimers() {
+  if (retryTimer) { clearTimeout(retryTimer); retryTimer = null }
+  if (stallTimer) { clearTimeout(stallTimer); stallTimer = null }
+}
+function installNetworkListeners() {
+  if (networkListenersInstalled || typeof window === 'undefined') return
+  networkListenersInstalled = true
+  window.addEventListener('offline', () => {
+    if (!playbackRequested) return
+    clearTimers()
+    notifyStatus('offline')
+  })
+  window.addEventListener('online', () => {
+    if (!playbackRequested || !currentPlayingStation) return
+    retryCount = 0
+    startStream(currentPlayingStation, true)
+  })
+}
 export function getAudio(): HTMLAudioElement | null {
   if (typeof window === 'undefined') return null
   let audio = document.getElementById(AUDIO_ID) as HTMLAudioElement | null
   if (!audio) { audio = document.createElement('audio'); audio.id = AUDIO_ID; audio.crossOrigin = 'anonymous'; audio.preload = 'none'; document.body.appendChild(audio) }
+  installNetworkListeners()
+  return audio
+}
+
+// El elemento procesado por Web Audio no puede convertirse en audio nativo sin CORS.
+function replaceAudio(withCors: boolean): HTMLAudioElement | null {
+  const oldAudio = getAudio()
+  if (!oldAudio) return null
+  const volume = oldAudio.volume
+  oldAudio.onerror = null
+  oldAudio.onwaiting = null
+  oldAudio.onstalled = null
+  oldAudio.onplaying = null
+  oldAudio.onpause = null
+  oldAudio.pause()
+  oldAudio.removeAttribute('src')
+  oldAudio.load()
+  oldAudio.remove()
+  const audio = document.createElement('audio')
+  audio.id = AUDIO_ID
+  audio.preload = 'none'
+  audio.volume = volume
+  if (withCors) audio.crossOrigin = 'anonymous'
+  document.body.appendChild(audio)
   return audio
 }
 
@@ -53,32 +108,151 @@ function updateMediaSession(station: Station) {
   } catch (e) { console.warn('[Player] MediaSession error:', e) }
 }
 
-export function playStation(s: Station, isAutoRetry = false) {
-  const audio = getAudio(); if (!audio) return
-  if (!s.url && !s.streamUrl) { notifyStatus('error', { error: 'URL de emisora no disponible' }); return }
+export function prepareStation(s: Station): void {
+  if (playbackRequested || currentPlayingStation) return
   currentPlayingStation = s
-  if (!isAutoRetry) { retryCount = 0; isReconnecting = false; addRecentStation(stationKey(s)) }
-  const primary = getOptimalUrl(s)
-  // Si falla un proxy externo, probar el stream original sin alterar el DSP ni el resto de radios.
-  const useDirectFallback = isAutoRetry && primary.isProxied
-  const url = useDirectFallback ? (s.streamUrl || s.url || primary.url) : primary.url
-  const isProxied = !useDirectFallback && primary.isProxied
-  currentStreamMeta = { url, isProxied }; notifyStatus(isAutoRetry ? 'reconnecting' : 'loading')
-  audio.src = url; updateMediaSession(s)
-  audio.onerror = () => { if (retryCount < MAX_RETRIES && Boolean(currentPlayingStation && stationKey(currentPlayingStation) === stationKey(s))) { retryCount++; isReconnecting = true; notifyStatus('reconnecting'); setTimeout(() => { if (currentPlayingStation && stationKey(currentPlayingStation) === stationKey(s)) playStation(s, true) }, 2000) } else { isReconnecting = false; notifyStatus('error', { error: 'Transmisión fuera de servicio o inaccesible temporalmente' }) } }
-  audio.onwaiting = () => notifyStatus('loading')
-  audio.onplaying = () => { retryCount = 0; isReconnecting = false; notifyStatus('playing'); try { initAudioDsp(audio) } catch {} }
-  audio.onpause = () => { if (!isReconnecting) notifyStatus('paused') }
-  audio.play().catch(err => { if (err?.name === 'NotAllowedError') notifyStatus('paused'); else notifyStatus('error', { error: 'No se pudo reproducir la transmisión' }) })
+  updateMediaSession(s)
+  notifyStatus('paused')
 }
-
+export function bindMediaNavigation(next: () => void, previous: () => void): void {
+  if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return
+  const actions: Array<[MediaSessionAction, () => void]> = [
+    ['play', () => setPlayingState(true)],
+    ['pause', () => setPlayingState(false)],
+    ['nexttrack', next],
+    ['previoustrack', previous],
+  ]
+  for (const [action, handler] of actions) {
+    try { navigator.mediaSession.setActionHandler(action, handler) } catch {}
+  }
+}
+function scheduleReconnect(station: Station, token: number, error?: string) {
+  if (token !== runId || !playbackRequested) return
+  clearTimers()
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    notifyStatus('offline')
+    return
+  }
+  if (retryCount >= MAX_RETRIES) {
+    isReconnecting = false
+    notifyStatus('error', { error: error || 'Transmisión no disponible. Prueba otra emisora.' })
+    return
+  }
+  const delay = RETRY_DELAYS_MS[retryCount]
+  retryCount++
+  isReconnecting = true
+  notifyStatus('reconnecting')
+  retryTimer = setTimeout(() => {
+    retryTimer = null
+    if (token === runId && playbackRequested && currentPlayingStation && stationKey(currentPlayingStation) === stationKey(station)) {
+      startStream(station, true)
+    }
+  }, delay)
+}
+function startStream(station: Station, isRetry: boolean) {
+  if (!playbackRequested) return
+  clearTimers()
+  const token = ++runId
+  const optimal = getOptimalUrl(station)
+  currentStreamMeta = optimal
+  let audio = getAudio()
+  if (!audio) return
+  if (!plainMode && audio.crossOrigin !== 'anonymous') audio = replaceAudio(true)
+  if (!audio) return
+  isReconnecting = isRetry
+  notifyStatus(isRetry ? 'reconnecting' : 'loading')
+  const onError = () => {
+    if (token !== runId || !playbackRequested) return
+    if (!plainMode) {
+      plainMode = true
+      isReconnecting = true
+      releaseAudioDsp()
+      replaceAudio(false)
+      startStream(station, true)
+      return
+    }
+    scheduleReconnect(station, token)
+  }
+  audio.onerror = onError
+  audio.onwaiting = audio.onstalled = () => {
+    if (token !== runId || !playbackRequested || stallTimer) return
+    stallTimer = setTimeout(() => {
+      stallTimer = null
+      if (token === runId && playbackRequested) scheduleReconnect(station, token)
+    }, STALL_MS)
+  }
+  audio.onplaying = () => {
+    if (token !== runId) return
+    clearTimers()
+    retryCount = 0
+    isReconnecting = false
+    notifyStatus('playing')
+    if (!plainMode) { try { initAudioDsp(audio) } catch {} }
+  }
+  audio.onpause = () => { if (token === runId && !isReconnecting && !playbackRequested) notifyStatus('paused') }
+  audio.src = optimal.url
+  audio.load()
+  audio.play().catch(error => {
+    if (token !== runId || !playbackRequested || error?.name === 'AbortError') return
+    if (error?.name === 'NotAllowedError') {
+      playbackRequested = false
+      isReconnecting = false
+      clearTimers()
+      notifyStatus('paused')
+    } else onError()
+  })
+}
+export function playStation(s: Station, isAutoRetry = false) {
+  if (!s.streamUrl && !s.url) {
+    notifyStatus('error', { error: 'URL de emisora no disponible' })
+    return
+  }
+  if (!isAutoRetry) {
+    clearTimers()
+    retryCount = 0
+    plainMode = false
+    addRecentStation(stationKey(s))
+  }
+  currentPlayingStation = s
+  playbackRequested = true
+  updateMediaSession(s)
+  startStream(s, isAutoRetry)
+}
 export function togglePlay() {
-  const audio = getAudio(); if (!audio) return
-  if (audio.paused || !audio.src) { if (currentPlayingStation && !audio.src) playStation(currentPlayingStation); else audio.play().catch(() => notifyStatus('error', { error: 'Error al reanudar audio' })) }
-  else { audio.pause(); notifyStatus('paused') }
+  const audio = getAudio()
+  if (!audio) return
+  if (audio.paused || !audio.src) {
+    if (!currentPlayingStation) return
+    if (!audio.src) { playStation(currentPlayingStation); return }
+    playbackRequested = true
+    startStream(currentPlayingStation, false)
+  } else {
+    playbackRequested = false
+    isReconnecting = false
+    clearTimers()
+    ++runId
+    audio.pause()
+    notifyStatus('paused')
+  }
 }
 export function skipStation(nextUrl: string) { const audio = getAudio(); if (!audio) return; audio.src = nextUrl; audio.play().catch(() => {}) }
-export function setPlayingState(state: boolean) { const audio = getAudio(); if (!audio) return; if (state) audio.play().catch(() => {}); else audio.pause() }
+export function setPlayingState(state: boolean) {
+  const audio = getAudio()
+  if (!audio) return
+  if (state) {
+    if (!currentPlayingStation) return
+    if (!audio.src) { playStation(currentPlayingStation); return }
+    playbackRequested = true
+    startStream(currentPlayingStation, false)
+  } else {
+    playbackRequested = false
+    isReconnecting = false
+    clearTimers()
+    ++runId
+    audio.pause()
+    notifyStatus('paused')
+  }
+}
 
 export type SleepTimerListener = (remainingMinutes: number | null) => void
 const sleepTimerListeners = new Set<SleepTimerListener>()
