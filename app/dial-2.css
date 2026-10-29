@@ -255,3 +255,48 @@ html[data-appearance='light'] .dial-player-fullscreen { background: radial-gradi
 html[data-appearance='light'] .dial-player-title { color: #122821 !important; }
 html[data-appearance='light'] .dial-player-expanded-tools > button,html[data-appearance='light'] .dial-player-expanded-tools .sleep-timer-toggle-btn { background: #e9f3ed; color: #204737; border-color: #cde1d4; }
 @media (prefers-reduced-motion: reduce) { .dial-player-fullscreen * { transition: none !important; } }
+
+
+/* Metadatos ICY/álbumes: visibles solo cuando el servidor publica la canción. */
+.dial-now-playing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: min(100%, 540px);
+  margin-top: 15px;
+  padding: 13px 16px;
+  border: 1px solid rgba(169, 220, 196, .16);
+  border-radius: 14px;
+  background: rgba(17, 62, 49, .17);
+  text-align: center;
+}
+.dial-now-playing-label {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .13em;
+  margin-bottom: 4px;
+}
+.dial-now-playing strong {
+  color: #f2fbf6;
+  font-size: clamp(14px, 2.6vw, 19px);
+  font-weight: 800;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.dial-now-playing > span:not(.dial-now-playing-label) {
+  color: #b7cac4;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.dial-now-playing .dial-now-playing-album {
+  color: #8fb6aa !important;
+  font-size: 11px !important;
+}
+html[data-appearance='light'] .dial-now-playing {
+  background: #eaf7ef;
+  border-color: #b4d6c3;
+}
+html[data-appearance='light'] .dial-now-playing strong { color: #172a20; }
+html[data-appearance='light'] .dial-now-playing > span:not(.dial-now-playing-label) { color: #466757; }

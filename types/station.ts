@@ -11,6 +11,8 @@ export interface Station {
   isGlobal?: boolean
   icon?: string
   logoUrl?: string
+  /** Public HTTPS now-playing JSON URL, no passwords/tokens. */
+  metadataUrl?: string
   isFavorite?: boolean
   tags?: string[]
   bitrate?: number
