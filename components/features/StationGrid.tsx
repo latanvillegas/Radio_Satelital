@@ -1,19 +1,19 @@
 "use client"
 import React, { useEffect, useMemo, useState } from 'react'
 import type { Station } from '@/types/station'
-import { SearchX, Clock3, ArrowDown } from 'lucide-react'
+import { SearchX, ArrowDown } from 'lucide-react'
 import StationCard from './StationCard'
 import { getAudio, getCurrentPlayingStation, subscribePlaybackStatus, togglePlay, type PlaybackStatus } from '@/lib/services/player'
 import { stationKey } from '@/lib/services/station-normalizer'
 
 interface Props {
   stations: Station[]
-  recentStations?: Station[]
+  title?: string
   playStation: (s: Station) => void
   toggleFavorite: (s: Station) => void
 }
-const LIMIT = 28
-export default function StationGrid({ stations, recentStations = [], playStation, toggleFavorite }: Props) {
+const LIMIT = 24
+export default function StationGrid({ stations, title = 'Todas las emisoras', playStation, toggleFavorite }: Props) {
   const [limit, setLimit] = useState(LIMIT)
   const [playback, setPlayback] = useState<{station: Station | null; status: PlaybackStatus; playing: boolean}>({
     station: null, status: 'idle', playing: false
@@ -33,17 +33,8 @@ export default function StationGrid({ stations, recentStations = [], playStation
   const remaining = stations.length - page.length
   return (
     <section id="station-list" className="scroll-mt-28" aria-label="Catálogo de emisoras">
-      {recentStations.length > 0 && <div className="mb-7">
-        <h2 className="flex items-center gap-2 font-bold text-zinc-200 mb-3"><Clock3 size={17} style={{color:'var(--accent)'}}/>Escuchadas recientemente</h2>
-        <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]" aria-label="Emisoras recientes">
-          {recentStations.slice(0,8).map(s => <button key={'recent-' + stationKey(s)} type="button" onClick={() => playStation(s)}
-            className="shrink-0 max-w-[230px] truncate rounded-full px-4 py-2.5 border border-white/10 bg-white/[.05] text-xs font-semibold text-zinc-200 hover:bg-white/[.1]">
-            {s.name}
-          </button>)}
-        </div>
-      </div>}
       <div className="flex justify-between items-end gap-3 mb-4">
-        <div><h2 className="observatory-section-title text-xl sm:text-2xl font-extrabold text-white">El dial completo</h2>
+        <div><h2 className="observatory-section-title text-xl sm:text-2xl font-extrabold text-white">{title}</h2>
           <p className="mt-1 text-xs sm:text-sm text-zinc-400">Explora el catálogo, sintoniza y guarda tus favoritas.</p></div>
         <span className="shrink-0 text-xs text-zinc-400 font-semibold" aria-live="polite">{stations.length} emisoras</span>
       </div>

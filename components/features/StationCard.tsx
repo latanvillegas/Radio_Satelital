@@ -1,8 +1,9 @@
 "use client"
+
 import React, { memo } from 'react'
+import { Heart, LoaderCircle, Pause, Play } from 'lucide-react'
 import type { Station } from '@/types/station'
 import type { PlaybackStatus } from '@/lib/services/player'
-import { Heart, Play, Pause, LoaderCircle } from 'lucide-react'
 import StationArtwork from './StationArtwork'
 
 interface Props {
@@ -10,43 +11,45 @@ interface Props {
   isActive: boolean
   isPlaying: boolean
   playbackStatus: PlaybackStatus
-  onPlay: (s: Station) => void
+  onPlay: (station: Station) => void
   onPause: () => void
-  onToggleFav: (s: Station) => void
+  onToggleFav: (station: Station) => void
 }
+
 function StationCard({ station, isActive, isPlaying, playbackStatus, onPlay, onPause, onToggleFav }: Props) {
   const playing = isActive && isPlaying
   const loading = isActive && (playbackStatus === 'loading' || playbackStatus === 'reconnecting')
+  const error = isActive && (playbackStatus === 'error' || playbackStatus === 'offline')
   const playOrPause = () => playing ? onPause() : onPlay(station)
-  return (
-    <article className={['live-station-card observatory-station-tile relative min-w-0 p-3.5 rounded-2xl border transition-colors',
-      isActive ? 'live-station-selected observatory-station-active border-emerald-500/50 bg-emerald-500/[.08]' : 'border-white/10 bg-zinc-950/75 hover:bg-zinc-900/75'].join(' ')}>
-      <div className="flex min-w-0 gap-3 items-center">
-        <button type="button" onClick={playOrPause} aria-label={(playing ? 'Pausar ' : 'Escuchar ') + station.name}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
-          <StationArtwork station={station} variant="card"/>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm sm:text-[15px] font-bold text-white">{station.name}</span>
-            <span className="block truncate mt-1 text-xs text-zinc-300">{[station.region,station.country].filter(Boolean).join(' · ') || 'Radio en vivo'}</span>
-            <span className="block truncate mt-1 text-[11px] text-zinc-400">{station.tags?.[0] || 'En directo'}</span>
-          </span>
-        </button>
-        <button type="button" onClick={() => onToggleFav(station)} aria-pressed={Boolean(station.isFavorite)}
-          aria-label={(station.isFavorite ? 'Quitar de favoritas: ' : 'Añadir a favoritas: ') + station.name}
-          className="grid place-items-center h-10 w-10 shrink-0 rounded-xl hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400">
-          <Heart size={18} fill={station.isFavorite ? 'currentColor':'none'} style={{color:station.isFavorite?'var(--accent)':'#a1a1aa'}}/>
-        </button>
-        <button type="button" onClick={playOrPause} aria-label={(playing ? 'Pausar: ' : 'Reproducir: ') + station.name}
-          className="live-station-play observatory-station-play grid place-items-center h-10 w-10 shrink-0 rounded-full text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-          style={{background:'var(--accent)'}}>
-          {loading ? <LoaderCircle size={18} className="animate-spin"/> : playing ? <Pause size={18} fill="currentColor"/> : <Play size={18} fill="currentColor"/>}
-        </button>
-      </div>
-      {isActive && <p role="status" className="mt-2 pl-[68px] text-[11px] font-semibold"
-        style={{color: playbackStatus === 'error' ? '#fca5a5':'var(--accent)'}}>
-        {playbackStatus === 'error' ? 'Sin señal' : loading ? 'Conectando…' : playing ? 'Reproduciendo en vivo' : 'Pausada'}
-      </p>}
-    </article>
-  )
+  const place = [station.region, station.country].filter(Boolean).join(' · ') || 'Radio en directo'
+
+  return <article className={['dial-card', isActive ? 'is-active' : ''].join(' ')}>
+    <button type="button" onClick={playOrPause} className="dial-card-main"
+      aria-label={(playing ? 'Pausar ' : 'Escuchar ') + station.name}>
+      <StationArtwork station={station} variant="card" />
+      <span className="dial-card-content">
+        <strong className="dial-card-name">{station.name}</strong>
+        <span className="dial-card-place">{place}</span>
+        <span className={['dial-card-genre', error ? 'is-error' : ''].join(' ')}>
+          {error ? 'Sin señal' : loading ? 'Conectando…' : playing ? 'En vivo' : station.tags?.[0] || 'En directo'}
+        </span>
+      </span>
+    </button>
+    <div className="dial-card-controls">
+      <button type="button" onClick={() => onToggleFav(station)}
+        aria-label={(station.isFavorite ? 'Quitar de favoritas: ' : 'Añadir a favoritas: ') + station.name}
+        aria-pressed={Boolean(station.isFavorite)}
+        className="dial-card-fav">
+        <Heart size={18} fill={station.isFavorite ? 'currentColor' : 'none'} />
+      </button>
+      <button type="button" onClick={playOrPause}
+        aria-label={(playing ? 'Pausar: ' : 'Reproducir: ') + station.name}
+        className="dial-card-play">
+        {loading ? <LoaderCircle size={19} className="animate-spin" />
+          : playing ? <Pause size={19} fill="currentColor" />
+          : <Play size={19} fill="currentColor" />}
+      </button>
+    </div>
+  </article>
 }
 export default memo(StationCard)
