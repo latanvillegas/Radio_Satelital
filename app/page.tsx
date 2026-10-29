@@ -10,7 +10,6 @@ import SideMenu from '@/components/layout/SideMenu'
 import StationGrid from '@/components/features/StationGrid'
 import Filters from '@/components/features/Filters'
 import { useStations } from '@/hooks/stations'
-import { stationKey } from '@/lib/services/station-normalizer'
 
 export default function Page() {
   const {
@@ -21,6 +20,7 @@ export default function Page() {
   } = useStations()
   const [menuOpen, setMenuOpen] = useState(false)
   const [showRecentOnly, setShowRecentOnly] = useState(false)
+  const [showWorldOnly, setShowWorldOnly] = useState(false)
 
   const resetAllFilters = () => {
     setQuery('')
@@ -29,16 +29,19 @@ export default function Page() {
     filters.setGenre('')
     toggleOnlyFavs(false)
     setShowRecentOnly(false)
+    setShowWorldOnly(false)
   }
 
   const handleQuery = (value: string) => {
     setShowRecentOnly(false)
+    setShowWorldOnly(false)
     setQuery(value)
   }
 
   // La misma selección utiliza el filtro existente: no crea catálogos paralelos.
   const selectScope = (scope: 'jaen' | 'cajamarca' | 'peru' | 'world' | 'favorites' | 'recent') => {
     setShowRecentOnly(scope === 'recent')
+    setShowWorldOnly(scope === 'world')
     setQuery('')
     filters.setCountry(scope === 'world' || scope === 'favorites' || scope === 'recent' ? '' : 'Perú')
     filters.setRegion(scope === 'jaen' ? 'Jaén' : scope === 'cajamarca' ? 'Cajamarca' : '')
@@ -53,10 +56,20 @@ export default function Page() {
   )
   const recentView = showRecentOnly && !searchQuery && !onlyFavs
     && !filters.activeCountry && !filters.activeRegion && !filters.activeGenre
-  const visibleStations = recentView ? recentStations : stations
+  const worldView = showWorldOnly && !searchQuery && !onlyFavs
+    && !filters.activeCountry && !filters.activeRegion && !filters.activeGenre
+  const visibleStations = useMemo(() => {
+    if (recentView) return recentStations
+    if (worldView) return stations.filter(s => {
+      const country = s.country?.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
+      return Boolean(country) && country !== 'peru'
+    })
+    return stations
+  }, [recentView, recentStations, worldView, stations])
   const scopeActive = (scope: string) => {
     if (scope === 'recent') return recentView
-    if (recentView) return false
+    if (scope === 'world') return worldView
+    if (recentView || worldView) return false
     if (scope === 'favorites') return onlyFavs
     if (onlyFavs) return false
     if (scope === 'jaen') return filters.activeCountry === 'Perú' && filters.activeRegion === 'Jaén'
@@ -124,7 +137,7 @@ export default function Page() {
               <button type="button" onClick={() => selectScope('favorites')} aria-pressed={scopeActive('favorites')} className="dial-scope"><Heart size={15} /> Favoritas</button>
               {recentStations.length > 0 && <button type="button" onClick={() => selectScope('recent')} aria-pressed={scopeActive('recent')} className="dial-scope"><Clock3 size={15} /> Recientes</button>}
             </div>
-            {(searchQuery || onlyFavs || recentView || filters.activeCountry || filters.activeRegion || filters.activeGenre) && (
+            {(searchQuery || onlyFavs || recentView || worldView || filters.activeCountry || filters.activeRegion || filters.activeGenre) && (
               <button type="button" onClick={resetAllFilters} className="dial-clear">Limpiar filtros</button>
             )}
           </div>
@@ -136,7 +149,7 @@ export default function Page() {
         </div>}
 
         <StationGrid stations={visibleStations}
-          title={recentView ? 'Escuchadas recientemente' : 'Todas las emisoras'}
+          title={recentView ? 'Escuchadas recientemente' : worldView ? 'Radios del mundo' : 'Todas las emisoras'}
           playStation={playStation} toggleFavorite={toggleFavorite} />
       </main>
 
