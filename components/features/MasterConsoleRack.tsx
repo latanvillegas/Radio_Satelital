@@ -80,37 +80,61 @@ export default function MasterConsoleRack({
 
   // Actualizar telemetría de forma periódica
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTelemetry(getCurrentStreamTelemetry())
-    }, 2000)
-    return () => clearInterval(timer)
-  }, [currentStation, isPlaying])
-
-  // Simulación de vúmetros del rack en base al audio
-  useEffect(() => {
-    let animId: number
-    const update = () => {
-      if (isPlaying) {
-        const data = getAnalyserData()
-        let val = 0.5
-        if (data && data.length > 0) {
-          let sum = 0
-          for (let i = 0; i < Math.min(24, data.length); i++) sum += data[i]
-          val = (sum / 24) / 255
-        } else {
-          val = 0.45 + Math.sin(Date.now() / 190) * 0.25
-        }
-        setVuL((prev) => prev + (Math.min(1, Math.max(0.1, val * 1.1)) - prev) * 0.3)
-        setVuR((prev) => prev + (Math.min(1, Math.max(0.1, val * 0.95)) - prev) * 0.3)
-      } else {
-        setVuL((prev) => prev * 0.8)
-        setVuR((prev) => prev * 0.8)
+    if (isCollapsed) return
+    let timer: ReturnType<typeof setInterval> | null = null
+    const synchronize = () => {
+      if (timer) clearInterval(timer)
+      timer = null
+      if (!document.hidden) {
+        setTelemetry(getCurrentStreamTelemetry())
+        timer = setInterval(() => setTelemetry(getCurrentStreamTelemetry()), 2000)
       }
-      animId = requestAnimationFrame(update)
     }
-    animId = requestAnimationFrame(update)
-    return () => cancelAnimationFrame(animId)
-  }, [isPlaying])
+    document.addEventListener('visibilitychange', synchronize)
+    synchronize()
+    return () => {
+      document.removeEventListener('visibilitychange', synchronize)
+      if (timer) clearInterval(timer)
+    }
+  }, [currentStation, isPlaying, isCollapsed])
+
+  // Meter repaints are never required for audio playback. Limit React updates.
+  useEffect(() => {
+    if (isCollapsed || !isPlaying) return
+    let frame = 0
+    let last = 0
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const update = (time: number) => {
+      frame = 0
+      if (document.hidden || reduced.matches) return
+      if (time - last >= 50) {
+        last = time
+        const data = getAnalyserData()
+        let val = 0
+        if (data?.length) {
+          const count = Math.min(24, data.length)
+          for (let i = 0; i < count; i++) val += data[i]
+          val = val / count / 255
+        }
+        setVuL(prev => prev + (val * 1.1 - prev) * .3)
+        setVuR(prev => prev + (val * .95 - prev) * .3)
+      }
+      frame = requestAnimationFrame(update)
+    }
+    const synchronize = () => {
+      if (frame) cancelAnimationFrame(frame)
+      frame = 0
+      if (!document.hidden && !reduced.matches) frame = requestAnimationFrame(update)
+    }
+    document.addEventListener('visibilitychange', synchronize)
+    reduced.addEventListener?.('change', synchronize)
+    synchronize()
+    return () => {
+      if (frame) cancelAnimationFrame(frame)
+      document.removeEventListener('visibilitychange', synchronize)
+      reduced.removeEventListener?.('change', synchronize)
+    }
+  }, [isPlaying, isCollapsed])
 
   const handleResync = () => {
     setIsResyncing(true)

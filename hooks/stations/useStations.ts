@@ -7,7 +7,6 @@ import {
   filterStations,
   findStationIndex,
   getLocalStations,
-  getMergedStations,
   stationKey,
   type Radio,
 } from '@/lib/services/stations'
@@ -39,24 +38,6 @@ export default function useStations() {
 
   useEffect(() => {
     setRecentKeys(getRecentStations())
-  }, [currentStation])
-
-  useEffect(() => {
-    async function load() {
-      try {
-        setError(null)
-        const radios = await getMergedStations()
-        const favorites = getFavorites()
-
-        if (radios.length > 0) {
-          setStations(applyFavoriteState(radios, favorites))
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error cargando emisoras')
-        console.error('Error cargando emisoras:', err)
-      }
-    }
-    load()
   }, [])
 
   // Prepara la última escuchada o la insignia, sin reproducir automáticamente.
@@ -124,16 +105,18 @@ export default function useStations() {
     }))
   }
 
-  const favorites = getFavorites()
-  const filtered = filterStations(stations as Radio[], {
+  // Avoid localStorage reads and full catalog scans on each unrelated render.
+  const favorites = useMemo(() => getFavorites(), [stations])
+  const filtered = useMemo(() => filterStations(stations as Radio[], {
     query,
     onlyFavs,
     filters,
     favorites,
-  })
+  }), [stations, query, onlyFavs, filters, favorites])
+  const filterOptions = useMemo(() => buildStationFilterOptions(stations as Radio[]), [stations])
 
   const exposedFilters: Filters = {
-    ...buildStationFilterOptions(stations as Radio[]),
+    ...filterOptions,
     setCountry: (c: string) => setFilters(f => ({ ...f, country: c || undefined })),
     setRegion: (r: string) => setFilters(f => ({ ...f, region: r || undefined })),
     setGenre: (g: string) => setFilters(f => ({ ...f, genre: g || undefined })),

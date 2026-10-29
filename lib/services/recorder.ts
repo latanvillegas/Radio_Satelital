@@ -30,6 +30,9 @@ const DEFAULT_RECORDER_STATE: RecorderState = {
 
 let mediaRecorder: MediaRecorder | null = null
 let recordedChunks: Blob[] = []
+let recordedBytes = 0
+let isFinalizing = false
+const MAX_RECORDING_BYTES = 128 * 1024 * 1024
 let timerInterval: ReturnType<typeof setInterval> | null = null
 let currentState: RecorderState = DEFAULT_RECORDER_STATE
 const recorderListeners = new Set<(state: RecorderState) => void>()
@@ -72,9 +75,9 @@ export function startRecording(stationName = 'Radio Satelital'): boolean {
     return false
   }
 
-  if (currentState.isRecording) {
-    return true
-  }
+  if (currentState.isRecording) return true
+  // Prevent a second recorder from replacing callbacks before the previous onstop.
+  if (isFinalizing) return false
 
   // 1. Obtener stream de audio (priorizar DSP con EQ aplicado, o capturar desde el elemento audio)
   let stream = getDspOutputStream()
@@ -108,16 +111,36 @@ export function startRecording(stationName = 'Radio Satelital'): boolean {
     const mimeType = getSupportedMimeType()
     const options: MediaRecorderOptions = mimeType ? { mimeType } : {}
     mediaRecorder = new MediaRecorder(stream, options)
+    if (currentState.recordedUrl) URL.revokeObjectURL(currentState.recordedUrl)
     recordedChunks = []
+    recordedBytes = 0
 
     mediaRecorder.ondataavailable = (e) => {
       if (e.data && e.data.size > 0) {
         recordedChunks.push(e.data)
+        recordedBytes += e.data.size
+        if (recordedBytes >= MAX_RECORDING_BYTES) {
+          currentState = { ...currentState, error: 'Límite de memoria de grabación alcanzado (128 MB). Descarga el archivo.' }
+          stopRecording()
+        }
       }
     }
-
+    // The final dataavailable event occurs AFTER stop() is requested.
+    // Building the Blob before onstop can truncate the end of a recording.
+    mediaRecorder.onstop = () => {
+      const mime = mediaRecorder?.mimeType || mimeType || 'audio/webm'
+      const blob = new Blob(recordedChunks, { type: mime })
+      recordedChunks = []
+      recordedBytes = 0
+      mediaRecorder = null
+      isFinalizing = false
+      currentState = { ...currentState, isRecording: false, isPaused: false,
+        recordedBlob: blob, recordedUrl: null }
+      notifyRecorderChange()
+    }
     mediaRecorder.onerror = (err) => {
       console.error('[Recorder] Error en MediaRecorder:', err)
+      currentState = { ...currentState, error: 'La grabación se interrumpió; se conservará el audio disponible.' }
       stopRecording()
     }
 
@@ -161,36 +184,16 @@ export function startRecording(stationName = 'Radio Satelital'): boolean {
 }
 
 export function stopRecording(): Blob | null {
-  if (!currentState.isRecording || !mediaRecorder) {
-    return null
-  }
-
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
-
+  if (!currentState.isRecording || !mediaRecorder || isFinalizing) return null
+  isFinalizing = true
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null }
   try {
-    if (mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop()
-    }
-  } catch (e) {
-    console.warn('[Recorder] Error al detener:', e)
-  }
-
-  const mimeType = mediaRecorder.mimeType || 'audio/webm'
-  const blob = new Blob(recordedChunks, { type: mimeType })
-  const url = URL.createObjectURL(blob)
-
-  currentState = {
-    ...currentState,
-    isRecording: false,
-    isPaused: false,
-    recordedBlob: blob,
-    recordedUrl: url,
-  }
+    if (mediaRecorder.state !== 'inactive') mediaRecorder.stop()
+  } catch (e) { console.warn('[Recorder] Error al detener:', e); isFinalizing = false }
+  // Keep buttons disabled until the async onstop event finalizes the file.
+  currentState = { ...currentState, isRecording: false, isPaused: false }
   notifyRecorderChange()
-  return blob
+  return null
 }
 
 export function downloadRecording(blob?: Blob | null, fileName?: string | null) {

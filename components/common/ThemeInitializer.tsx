@@ -4,7 +4,7 @@ import { initializeThemeSettings } from '../../lib/utils/theme'
 
 export default function ThemeInitializer() {
   useEffect(() => {
-    initializeThemeSettings()
+    return initializeThemeSettings()
   }, [])
 
   return null

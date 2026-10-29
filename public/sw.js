@@ -1,6 +1,22 @@
 /* Radio Satelital — solo recursos estáticos de la propia web. Nunca cachear streams. */
-const CACHE = 'radio-satelital-shell-v2'
+const CACHE = 'radio-satelital-shell-v3'
+const MAX_ENTRIES = 96
 const SHELL = ['/', '/icon-192.png', '/icon-512.png', '/manifest.json']
+
+async function saveToCache(request, response) {
+  if (!response.ok || response.type === 'opaque') return
+  // Clone before the asynchronous cache opening, while the network response is unconsumed.
+  const copy = response.clone()
+  try {
+    const cache = await caches.open(CACHE)
+    await cache.put(request, copy)
+    const keys = await cache.keys()
+    // A bounded cache prevents obsolete hashed bundles from accumulating forever.
+    if (keys.length > MAX_ENTRIES) {
+      for (const key of keys.slice(0, keys.length - MAX_ENTRIES)) await cache.delete(key)
+    }
+  } catch { /* quota or storage blocked: network playback remains available */ }
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)))
@@ -23,7 +39,7 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(fetch(request).then(response => {
-      if (response.ok) { const copy = response.clone(); event.waitUntil(caches.open(CACHE).then(cache => cache.put('/', copy))) }
+      if (response.ok) event.waitUntil(saveToCache('/', response))
       return response
     }).catch(() => caches.match('/').then(cached => cached || Response.error())))
     return
@@ -33,7 +49,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(caches.match(request).then(cached => {
       if (cached) return cached
       return fetch(request).then(response => {
-        if (response.ok) { const copy = response.clone(); event.waitUntil(caches.open(CACHE).then(cache => cache.put(request, copy))) }
+        if (response.ok) event.waitUntil(saveToCache(request, response))
         return response
       })
     }))
