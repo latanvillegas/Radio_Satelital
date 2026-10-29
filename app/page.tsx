@@ -2,16 +2,15 @@
 
 import React, { useMemo, useState } from 'react'
 import Image from 'next/image'
-import { AlertCircle, Globe2, Heart, MapPin, RadioTower, Settings2, Shuffle } from 'lucide-react'
+import { AlertCircle, Clock3, Globe2, Heart, MapPin, RadioTower, Settings2, Shuffle } from 'lucide-react'
 import ThemeInitializer from '@/components/common/ThemeInitializer'
 import ServiceWorkerRegistration from '@/components/common/ServiceWorkerRegistration'
 import Player from '@/components/layout/Player'
 import SideMenu from '@/components/layout/SideMenu'
 import StationGrid from '@/components/features/StationGrid'
-import LiveStage from '@/components/features/LiveStage'
 import Filters from '@/components/features/Filters'
-import { buildDiscovery } from '@/lib/services/discovery'
 import { useStations } from '@/hooks/stations'
+import { stationKey } from '@/lib/services/station-normalizer'
 
 export default function Page() {
   const {
@@ -21,6 +20,7 @@ export default function Page() {
     toggleOnlyFavs, onlyFavs, loading, error,
   } = useStations()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showRecentOnly, setShowRecentOnly] = useState(false)
 
   const resetAllFilters = () => {
     setQuery('')
@@ -28,27 +28,35 @@ export default function Page() {
     filters.setRegion('')
     filters.setGenre('')
     toggleOnlyFavs(false)
+    setShowRecentOnly(false)
+  }
+
+  const handleQuery = (value: string) => {
+    setShowRecentOnly(false)
+    setQuery(value)
   }
 
   // La misma selección utiliza el filtro existente: no crea catálogos paralelos.
-  const selectScope = (scope: 'jaen' | 'cajamarca' | 'peru' | 'world' | 'favorites') => {
+  const selectScope = (scope: 'jaen' | 'cajamarca' | 'peru' | 'world' | 'favorites' | 'recent') => {
+    setShowRecentOnly(scope === 'recent')
     setQuery('')
-    filters.setCountry(scope === 'world' || scope === 'favorites' ? '' : 'Perú')
+    filters.setCountry(scope === 'world' || scope === 'favorites' || scope === 'recent' ? '' : 'Perú')
     filters.setRegion(scope === 'jaen' ? 'Jaén' : scope === 'cajamarca' ? 'Cajamarca' : '')
     filters.setGenre('')
     toggleOnlyFavs(scope === 'favorites')
     document.getElementById('station-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  const discovery = useMemo(
-    () => buildDiscovery(rawStations, recentStations, currentStation),
-    [rawStations, recentStations, currentStation],
-  )
   const countriesCount = useMemo(
     () => new Set(rawStations.map(s => s.country).filter(Boolean)).size,
     [rawStations],
   )
+  const recentView = showRecentOnly && !searchQuery && !onlyFavs
+    && !filters.activeCountry && !filters.activeRegion && !filters.activeGenre
+  const visibleStations = recentView ? recentStations : stations
   const scopeActive = (scope: string) => {
+    if (scope === 'recent') return recentView
+    if (recentView) return false
     if (scope === 'favorites') return onlyFavs
     if (onlyFavs) return false
     if (scope === 'jaen') return filters.activeCountry === 'Perú' && filters.activeRegion === 'Jaén'
@@ -73,17 +81,9 @@ export default function Page() {
               <span className="block text-[10px] sm:text-xs text-zinc-400 truncate">Jaén · Cajamarca · Mundo</span>
             </span>
           </a>
-          <nav className="hidden md:flex items-center gap-6 text-sm text-zinc-400" aria-label="Navegación principal">
-            <a href="#explorar" className="dial-nav-link">Explorar</a>
-            <a href="#station-list" className="dial-nav-link">Emisoras</a>
-          </nav>
           <div className="flex items-center gap-2">
             <button type="button" onClick={playRandomStation} className="dial-header-action hidden sm:inline-flex" aria-label="Escuchar una emisora aleatoria">
               <Shuffle size={17} /> <span>Aleatoria</span>
-            </button>
-            <button type="button" onClick={() => selectScope('favorites')} aria-label="Mostrar favoritas" aria-pressed={onlyFavs} className="dial-header-action">
-              <Heart size={17} fill={onlyFavs ? 'currentColor' : 'none'} />
-              <span className="hidden sm:inline">Favoritas</span>
             </button>
             <button type="button" onClick={() => setMenuOpen(true)} className="dial-header-action dial-settings" aria-label="Abrir ajustes">
               <Settings2 size={18} />
@@ -109,7 +109,7 @@ export default function Page() {
             </div>
           </div>
           <Filters
-            setQuery={setQuery}
+            setQuery={handleQuery}
             searchQuery={searchQuery}
             filters={filters}
             toggleOnlyFavs={toggleOnlyFavs}
@@ -122,24 +122,21 @@ export default function Page() {
               <button type="button" onClick={() => selectScope('peru')} aria-pressed={scopeActive('peru')} className="dial-scope">Perú</button>
               <button type="button" onClick={() => selectScope('world')} aria-pressed={scopeActive('world')} className="dial-scope"><Globe2 size={15} /> Mundo</button>
               <button type="button" onClick={() => selectScope('favorites')} aria-pressed={scopeActive('favorites')} className="dial-scope"><Heart size={15} /> Favoritas</button>
+              {recentStations.length > 0 && <button type="button" onClick={() => selectScope('recent')} aria-pressed={scopeActive('recent')} className="dial-scope"><Clock3 size={15} /> Recientes</button>}
             </div>
-            {(searchQuery || onlyFavs || filters.activeCountry || filters.activeRegion || filters.activeGenre) && (
+            {(searchQuery || onlyFavs || recentView || filters.activeCountry || filters.activeRegion || filters.activeGenre) && (
               <button type="button" onClick={resetAllFilters} className="dial-clear">Limpiar filtros</button>
             )}
           </div>
         </section>
-
-        {!searchQuery && !onlyFavs && !filters.activeCountry && !filters.activeGenre && !filters.activeRegion && (
-          <LiveStage featured={discovery.featured} stationCount={rawStations.length}
-            countryCount={countriesCount} onTune={playStation} />
-        )}
 
         {error && <div role="alert" className="my-5 p-4 rounded-2xl border border-red-900/60 bg-red-950/30 flex gap-3 text-red-200">
           <AlertCircle size={19} className="shrink-0 mt-0.5" />
           <span className="text-sm">No se pudo cargar el catálogo. Actualiza la página e inténtalo de nuevo.</span>
         </div>}
 
-        <StationGrid stations={stations} recentStations={recentStations}
+        <StationGrid stations={visibleStations}
+          title={recentView ? 'Escuchadas recientemente' : 'Todas las emisoras'}
           playStation={playStation} toggleFavorite={toggleFavorite} />
       </main>
 
@@ -148,7 +145,7 @@ export default function Page() {
         onPlayStation={playStation} visible />
       <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)}
         loading={loading} error={error} stationsCount={stations.length}
-        setQuery={setQuery} filters={filters} toggleOnlyFavs={toggleOnlyFavs}
+        setQuery={handleQuery} filters={filters} toggleOnlyFavs={toggleOnlyFavs}
         onResetFilters={resetAllFilters} />
     </div>
   </>
