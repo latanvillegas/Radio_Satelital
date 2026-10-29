@@ -171,3 +171,87 @@ html[data-appearance='light'] .dial-page .observatory-player-bar { background: r
   .dial-card, .dial-scope, .dial-header-action { transition: none; }
   .dial-card:hover { transform: none; }
 }
+
+/* Reproductor: barra inferior accesible y ventana realmente inmersiva. */
+.dial-page .observatory-player-bar { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.dial-player-overlay { isolation: isolate; }
+.dial-player-fullscreen {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  width: min(760px, calc(100vw - 40px));
+  height: min(780px, calc(100dvh - 40px));
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-color: rgba(185, 225, 212, .19);
+  border-radius: 28px;
+  background: radial-gradient(ellipse at 50% 5%, rgba(29, 116, 93, .18), transparent 56%), #0b131a;
+  box-shadow: 0 24px 90px rgba(0, 0, 0, .55);
+}
+.dial-player-fullscreen > div:first-child { flex: none; }
+.dial-page .dial-player-fullscreen .dial-expanded-art {
+  width: min(36vw, 290px);
+  height: min(36vw, 290px);
+  border-radius: 26px;
+  box-shadow: 0 22px 55px rgba(0,0,0,.34);
+}
+.dial-player-fullscreen .dial-expanded-art .dial-art-number { font-size: clamp(28px, 4vw, 43px); }
+.dial-player-fullscreen .dial-expanded-art .dial-art-icon { width: 42px; height: 42px; }
+.dial-player-fullscreen .dial-expanded-art .dial-art-label { font-size: 15px; }
+.dial-player-title { font-size: clamp(24px, 3.5vw, 34px); line-height: 1.2; overflow-wrap: anywhere; }
+.dial-player-spectrum { min-height: 76px; }
+.dial-player-transport > button:nth-child(2) { width: 82px; height: 82px; }
+.dial-player-transport > button:first-child, .dial-player-transport > button:last-child { width: 58px; height: 58px; }
+.dial-player-expanded-tools {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.dial-player-expanded-tools > button, .dial-player-expanded-tools .sleep-timer-toggle-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 9px 15px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 11px;
+  background: rgba(255,255,255,.055);
+  color: #e0ece7;
+  font-size: 12px;
+  font-weight: 700;
+}
+.dial-player-expanded-tools > button:hover, .dial-player-expanded-tools .sleep-timer-toggle-btn:hover { background: rgba(255,255,255,.12); }
+.dial-player-fullscreen button:focus-visible, .dial-player-fullscreen input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 767px) {
+  .dial-player-fullscreen {
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+  }
+  .dial-page .dial-player-fullscreen .dial-expanded-art { width: min(60vw, 248px); height: min(60vw, 248px); }
+  .dial-player-title { font-size: clamp(23px, 6vw, 31px); }
+  .dial-player-spectrum { min-height: 65px; }
+  .dial-player-volume { margin-top: 14px; }
+  .dial-player-transport > button:nth-child(2) { width: 80px; height: 80px; }
+}
+@media (max-width: 767px) and (max-height: 650px) {
+  .dial-player-fullscreen { justify-content: flex-start; gap: 7px; }
+  .dial-page .dial-player-fullscreen .dial-expanded-art { width: min(43vw, 160px); height: min(43vw, 160px); }
+  .dial-player-spectrum { min-height: 47px; margin-top: 8px; margin-bottom: 8px; }
+  .dial-player-transport > button:nth-child(2) { width: 67px; height: 67px; }
+  .dial-player-fullscreen .dial-player-title { margin-top: 10px; }
+}
+html[data-appearance='light'] .dial-player-fullscreen { background: radial-gradient(circle at 50% 0%, rgba(24,130,90,.08), transparent 50%), #f7faf8 !important; color: #122821; }
+html[data-appearance='light'] .dial-player-title { color: #122821 !important; }
+html[data-appearance='light'] .dial-player-expanded-tools > button,html[data-appearance='light'] .dial-player-expanded-tools .sleep-timer-toggle-btn { background: #e9f3ed; color: #204737; border-color: #cde1d4; }
+@media (prefers-reduced-motion: reduce) { .dial-player-fullscreen * { transition: none !important; } }
