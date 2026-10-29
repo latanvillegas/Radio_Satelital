@@ -12,7 +12,7 @@ interface Props {
   playStation: (s: Station) => void
   toggleFavorite: (s: Station) => void
 }
-const LIMIT = 28
+const LIMIT = 24
 export default function StationGrid({ stations, recentStations = [], playStation, toggleFavorite }: Props) {
   const [limit, setLimit] = useState(LIMIT)
   const [playback, setPlayback] = useState<{station: Station | null; status: PlaybackStatus; playing: boolean}>({
@@ -43,7 +43,7 @@ export default function StationGrid({ stations, recentStations = [], playStation
         </div>
       </div>}
       <div className="flex justify-between items-end gap-3 mb-4">
-        <div><h2 className="observatory-section-title text-xl sm:text-2xl font-extrabold text-white">El dial completo</h2>
+        <div><h2 className="observatory-section-title text-xl sm:text-2xl font-extrabold text-white">Todas las emisoras</h2>
           <p className="mt-1 text-xs sm:text-sm text-zinc-400">Explora el catálogo, sintoniza y guarda tus favoritas.</p></div>
         <span className="shrink-0 text-xs text-zinc-400 font-semibold" aria-live="polite">{stations.length} emisoras</span>
       </div>

@@ -1,6 +1,7 @@
 import './globals.css'
 import './observatory.css'
 import './live-universe.css'
+import './dial-2.css'
 import React from 'react'
 
 export const metadata = {
