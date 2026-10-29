@@ -10,6 +10,7 @@ export type StationInput = {
   streamUrl?: string
   url?: string
   logoUrl?: string
+  metadataUrl?: string
   isFavorite?: boolean
   tags?: unknown
 }
@@ -111,6 +112,7 @@ export function normalizeStation(input: StationInput, source: StationSource, fal
     country: cleanText(input.country),
     region: normalizeRegion(cleanText(input.region), cleanText(input.country)),
     logoUrl: cleanText(input.logoUrl),
+    metadataUrl: cleanText(input.metadataUrl),
     isFavorite: Boolean(input.isFavorite),
     tags,
     source,

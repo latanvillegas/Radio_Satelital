@@ -10,12 +10,15 @@ import {
   getSleepTimerMinutesLeft,
   getCurrentPlayingStation,
   getAudio,
+  getNowPlaying,
+  subscribeNowPlaying,
   type PlaybackStatus,
 } from '@/lib/services/player'
 import type { Station } from '@/types/station'
 
 export default function usePlayer() {
   const [currentStation, setCurrentStation] = useState<Station | null>(() => getCurrentPlayingStation())
+  const [nowPlaying, setNowPlaying] = useState(getNowPlaying)
   const [isPlaying, setIsPlaying] = useState(false)
   const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus>('idle')
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
@@ -57,6 +60,7 @@ export default function usePlayer() {
       else if (status === 'error') { setIsPlaying(false); setStatusMessage(meta?.error || 'Transmisión no disponible') }
     })
     const unsubscribeSleep = subscribeSleepTimer(setSleepTimerMinutes)
+    const unsubscribeMetadata = subscribeNowPlaying(setNowPlaying)
     return () => {
       if (boundAudio) {
         boundAudio.removeEventListener('play', onPlay)
@@ -65,6 +69,7 @@ export default function usePlayer() {
       }
       unsubscribeStatus()
       unsubscribeSleep()
+      unsubscribeMetadata()
     }
   }, [])
 
@@ -77,5 +82,5 @@ export default function usePlayer() {
   function setPlaying(val: boolean) { setPlayingState(val) }
   function setSleepTimer(minutes: number | null) { libSetSleepTimer(minutes) }
 
-  return { currentStation, isPlaying, playbackStatus, statusMessage, secondsElapsed, sleepTimerMinutes, playStation, togglePlay, setPlaying, setSleepTimer }
+  return { currentStation, nowPlaying, isPlaying, playbackStatus, statusMessage, secondsElapsed, sleepTimerMinutes, playStation, togglePlay, setPlaying, setSleepTimer }
 }

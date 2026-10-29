@@ -29,6 +29,7 @@ export interface Radio {
   url: string;
   streamUrl: string;
   logoUrl?: string;
+  metadataUrl?: string;
   isFavorite?: boolean;
   tags?: string[];
   source?: "local";

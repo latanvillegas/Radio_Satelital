@@ -3,6 +3,7 @@ import { getOptimalUrl } from './proxy'
 import { addRecentStation } from '../storage/recents'
 import { stationKey } from './station-normalizer'
 import { initAudioDsp, releaseAudioDsp } from './audio-dsp'
+import { lookupNowPlaying, type NowPlaying, type MetadataMode } from './now-playing'
 
 const AUDIO_ID = 'radioPlayer'
 let sleepTimerId: ReturnType<typeof setTimeout> | null = null
@@ -20,10 +21,66 @@ let stallTimer: ReturnType<typeof setTimeout> | null = null
 let networkListenersInstalled = false
 const STALL_MS = 6000
 const RETRY_DELAYS_MS = [2000, 4000, 8000]
+const METADATA_POLL_MS = 30000
+const METADATA_TIMEOUT_MS = 7000
 
 export type PlaybackStatus = 'idle' | 'loading' | 'playing' | 'paused' | 'error' | 'reconnecting' | 'offline'
 type StatusListener = (status: PlaybackStatus, meta?: { error?: string; reconnecting?: boolean }) => void
 const statusListeners = new Set<StatusListener>()
+
+// One cancelable metadata tracker for the active station, not another audio player.
+let nowPlaying: NowPlaying | null = null
+const nowPlayingListeners = new Set<(track: NowPlaying | null) => void>()
+let metadataController: AbortController | null = null
+let metadataTimeout: ReturnType<typeof setTimeout> | null = null
+let metadataTimer: ReturnType<typeof setTimeout> | null = null
+let metadataGeneration = 0
+let metadataKey = ''
+export function getNowPlaying(): NowPlaying | null { return nowPlaying }
+export function subscribeNowPlaying(listener: (track: NowPlaying | null) => void): () => void {
+  nowPlayingListeners.add(listener)
+  return () => { nowPlayingListeners.delete(listener) }
+}
+function publishNowPlaying(track: NowPlaying | null) {
+  if (nowPlaying?.title === track?.title && nowPlaying?.artist === track?.artist
+    && nowPlaying?.album === track?.album && nowPlaying?.artworkUrl === track?.artworkUrl) return
+  nowPlaying = track
+  nowPlayingListeners.forEach(listener => { try { listener(track) } catch {} })
+  if (currentPlayingStation) updateMediaSession(currentPlayingStation)
+}
+function cancelMetadataTracking(clearTrack = false) {
+  metadataGeneration++
+  metadataKey = ''
+  if (metadataTimer) { clearTimeout(metadataTimer); metadataTimer = null }
+  if (metadataTimeout) { clearTimeout(metadataTimeout); metadataTimeout = null }
+  if (metadataController) { metadataController.abort(); metadataController = null }
+  if (clearTrack) publishNowPlaying(null)
+}
+function startMetadataTracking(station: Station) {
+  const key = stationKey(station)
+  if (metadataKey === key) return
+  cancelMetadataTracking()
+  metadataKey = key
+  const generation = metadataGeneration
+  const poll = async (mode?: MetadataMode) => {
+    if (generation !== metadataGeneration || !playbackRequested || !currentPlayingStation
+      || stationKey(currentPlayingStation) !== key) return
+    const controller = new AbortController()
+    metadataController = controller
+    metadataTimeout = setTimeout(() => controller.abort(), METADATA_TIMEOUT_MS)
+    let result: Awaited<ReturnType<typeof lookupNowPlaying>> = null
+    try { result = await lookupNowPlaying(station, controller.signal, mode) } catch {}
+    if (metadataTimeout) { clearTimeout(metadataTimeout); metadataTimeout = null }
+    if (metadataController === controller) metadataController = null
+    if (controller.signal.aborted || generation !== metadataGeneration || !playbackRequested
+      || !currentPlayingStation || stationKey(currentPlayingStation) !== key) return
+    // Do not repeatedly probe unsupported or CORS-blocked streams.
+    if (!result) return
+    publishNowPlaying(result.track)
+    metadataTimer = setTimeout(() => { void poll(result.mode) }, METADATA_POLL_MS)
+  }
+  void poll()
+}
 
 function notifyStatus(status: PlaybackStatus, meta?: { error?: string; reconnecting?: boolean }) {
   if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
@@ -43,6 +100,7 @@ function installNetworkListeners() {
   window.addEventListener('offline', () => {
     if (!playbackRequested) return
     clearTimers()
+    cancelMetadataTracking()
     notifyStatus('offline')
   })
   window.addEventListener('online', () => {
@@ -99,11 +157,17 @@ export function resyncStream() { if (currentPlayingStation) playStation(currentP
 function updateMediaSession(station: Station) {
   if (typeof window === 'undefined' || !('mediaSession' in navigator)) return
   try {
+    const track = nowPlaying
+    const art = track?.artworkUrl || station.logoUrl
+    const place = [station.country, station.region].filter(Boolean).join(' · ')
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: station.name,
-      artist: station.country ? `${station.country}${station.region ? ` · ${station.region}` : ''}` : 'Radio Satelital En Vivo',
-      album: 'Radio Satelital',
-      artwork: station.logoUrl ? [{ src: station.logoUrl, sizes: '96x96', type: 'image/png' }, { src: station.logoUrl, sizes: '128x128', type: 'image/png' }, { src: station.logoUrl, sizes: '256x256', type: 'image/png' }] : [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }],
+      title: track?.title || station.name,
+      artist: track?.artist || (track ? station.name : place || 'Radio Satelital En Vivo'),
+      album: track?.album || 'Radio Satelital',
+      artwork: art ? [{ src: art }] : [
+        { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+      ],
     })
   } catch (e) { console.warn('[Player] MediaSession error:', e) }
 }
@@ -129,6 +193,7 @@ export function bindMediaNavigation(next: () => void, previous: () => void): voi
 function scheduleReconnect(station: Station, token: number, error?: string) {
   if (token !== runId || !playbackRequested) return
   clearTimers()
+  cancelMetadataTracking()
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     notifyStatus('offline')
     return
@@ -152,6 +217,7 @@ function scheduleReconnect(station: Station, token: number, error?: string) {
 function startStream(station: Station, isRetry: boolean) {
   if (!playbackRequested) return
   clearTimers()
+  cancelMetadataTracking()
   const token = ++runId
   const optimal = getOptimalUrl(station)
   currentStreamMeta = optimal
@@ -187,6 +253,7 @@ function startStream(station: Station, isRetry: boolean) {
     retryCount = 0
     isReconnecting = false
     notifyStatus('playing')
+    startMetadataTracking(station)
     if (!plainMode) { try { initAudioDsp(audio) } catch {} }
   }
   audio.onpause = () => { if (token === runId && !isReconnecting && !playbackRequested) notifyStatus('paused') }
@@ -213,6 +280,7 @@ export function playStation(s: Station, isAutoRetry = false) {
     plainMode = false
     addRecentStation(stationKey(s))
   }
+  if (!currentPlayingStation || stationKey(currentPlayingStation) !== stationKey(s)) cancelMetadataTracking(true)
   currentPlayingStation = s
   playbackRequested = true
   updateMediaSession(s)
@@ -230,6 +298,7 @@ export function togglePlay() {
     playbackRequested = false
     isReconnecting = false
     clearTimers()
+    cancelMetadataTracking()
     ++runId
     audio.pause()
     notifyStatus('paused')
@@ -248,6 +317,7 @@ export function setPlayingState(state: boolean) {
     playbackRequested = false
     isReconnecting = false
     clearTimers()
+    cancelMetadataTracking()
     ++runId
     audio.pause()
     notifyStatus('paused')
@@ -262,6 +332,6 @@ export function setSleepTimer(minutes: number | null) {
   if (sleepTimerId) { clearTimeout(sleepTimerId); sleepTimerId = null; sleepTimerEndsAt = null }
   if (minutes === null || minutes <= 0) { notifySleepTimer(null); return }
   sleepTimerEndsAt = Date.now() + minutes * 60 * 1000; notifySleepTimer(minutes)
-  sleepTimerId = setTimeout(() => { const audio = getAudio(); if (audio) { audio.pause(); notifyStatus('paused') }; sleepTimerId = null; sleepTimerEndsAt = null; notifySleepTimer(null) }, minutes * 60 * 1000)
+  sleepTimerId = setTimeout(() => { const audio = getAudio(); playbackRequested = false; cancelMetadataTracking(); if (audio) { audio.pause(); notifyStatus('paused') }; sleepTimerId = null; sleepTimerEndsAt = null; notifySleepTimer(null) }, minutes * 60 * 1000)
 }
 export function getSleepTimerMinutesLeft(): number | null { if (!sleepTimerEndsAt) return null; const msLeft = sleepTimerEndsAt - Date.now(); return msLeft <= 0 ? null : Math.ceil(msLeft / 60000) }

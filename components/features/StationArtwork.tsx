@@ -22,18 +22,20 @@ type Props = {
   station: Station | null
   variant?: 'hero' | 'card' | 'rail'
   className?: string
+  artworkUrl?: string
 }
-function StationArtwork({ station, variant = 'card', className = '' }: Props) {
+function StationArtwork({ station, variant = 'card', className = '', artworkUrl }: Props) {
   const [brokenLogo, setBrokenLogo] = useState(false)
-  useEffect(() => setBrokenLogo(false), [station?.logoUrl])
+  const imageUrl = artworkUrl || station?.logoUrl
+  useEffect(() => setBrokenLogo(false), [imageUrl])
   const name = station?.name || 'Radio Satelital'
   const [start, end, accent] = stationColors(name)
   const dial = getStationDial(name)
 
   return <span className={['dial-art', 'dial-art--' + variant, className].filter(Boolean).join(' ')}
     style={{ background: 'linear-gradient(145deg, ' + start + ', ' + end + ')', color: accent }}>
-    {station?.logoUrl && !brokenLogo
-      ? <img src={station.logoUrl} alt="" loading="lazy" decoding="async" className="dial-art-logo"
+    {imageUrl && !brokenLogo
+      ? <img src={imageUrl} alt="" loading="lazy" decoding="async" className="dial-art-logo"
           onError={() => setBrokenLogo(true)} />
       : <span className="dial-art-fallback">
           <RadioTower className="dial-art-icon" aria-hidden="true" />
