@@ -74,8 +74,12 @@ function startMetadataTracking(station: Station) {
     if (metadataController === controller) metadataController = null
     if (controller.signal.aborted || generation !== metadataGeneration || !playbackRequested
       || !currentPlayingStation || stationKey(currentPlayingStation) !== key) return
-    // Do not repeatedly probe unsupported or CORS-blocked streams.
-    if (!result) return
+    // Unsupported sources are probed only once. A source that already worked
+    // gets a slow retry on transient network/metadata outages.
+    if (!result) {
+      if (mode) metadataTimer = setTimeout(() => { void poll(mode) }, 90000)
+      return
+    }
     publishNowPlaying(result.track)
     metadataTimer = setTimeout(() => { void poll(result.mode) }, METADATA_POLL_MS)
   }
