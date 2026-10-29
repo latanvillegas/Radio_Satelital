@@ -42,53 +42,81 @@ export default function StudioDisplayModal({ isOpen, onClose, currentStation, is
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
 
+  // The clock is an overlay feature; no background 1-second wakeups when closed.
   useEffect(() => {
+    if (!isOpen) return
+    let timer: ReturnType<typeof setInterval> | null = null
     const updateClocks = () => {
       const now = new Date()
       setLocalTime(now.toLocaleTimeString('es-ES', { hour12: false }))
       setUtcTime(now.toLocaleTimeString('en-GB', { timeZone: 'UTC', hour12: false }) + ' UTC')
     }
-    updateClocks()
-    const timer = setInterval(updateClocks, 1000)
-    return () => clearInterval(timer)
-  }, [])
+    const synchronize = () => {
+      if (timer) { clearInterval(timer); timer = null }
+      if (!document.hidden) { updateClocks(); timer = setInterval(updateClocks, 1000) }
+    }
+    document.addEventListener('visibilitychange', synchronize)
+    synchronize()
+    return () => {
+      document.removeEventListener('visibilitychange', synchronize)
+      if (timer) clearInterval(timer)
+    }
+  }, [isOpen])
 
   useEffect(() => subscribeRecorder((state) => setRecorderState({ ...state })), [])
 
   useEffect(() => {
     if (!isOpen) return
-    const update = () => setTelemetry(getCurrentStreamTelemetry())
-    update()
-    const interval = setInterval(update, 2000)
-    return () => clearInterval(interval)
+    let interval: ReturnType<typeof setInterval> | null = null
+    const update = () => { if (!document.hidden) setTelemetry(getCurrentStreamTelemetry()) }
+    const synchronize = () => {
+      if (interval) clearInterval(interval)
+      interval = null
+      if (!document.hidden) { update(); interval = setInterval(update, 2000) }
+    }
+    document.addEventListener('visibilitychange', synchronize)
+    synchronize()
+    return () => {
+      document.removeEventListener('visibilitychange', synchronize)
+      if (interval) clearInterval(interval)
+    }
   }, [isOpen, currentStation, isPlaying])
 
   useEffect(() => {
-    if (!isOpen) return
-    let animId: number
-    const updateVu = () => {
-      if (isPlaying) {
-        const realData = getAnalyserData()
+    if (!isOpen || !isPlaying) { setVuL(0); setVuR(0); return }
+    let animId = 0
+    let last = 0
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const tick = (time: number) => {
+      animId = 0
+      if (document.hidden || reduced.matches) return
+      if (time - last >= 50) { // max ~20 updates/s rather than ~60 React updates/s
+        last = time
+        const data = getAnalyserData()
         let avg = 0
-        if (realData && realData.length > 0) {
-          let sum = 0
-          for (let i = 0; i < Math.min(32, realData.length); i++) sum += realData[i]
-          avg = (sum / 32) / 255
-        } else {
-          avg = 0.4 + Math.sin(Date.now() / 180) * 0.25 + Math.cos(Date.now() / 290) * 0.15
+        if (data?.length) {
+          const count = Math.min(32, data.length)
+          for (let i = 0; i < count; i++) avg += data[i]
+          avg = (avg / count) / 255
         }
-        const l = Math.min(1, Math.max(0.05, avg * (0.9 + Math.sin(Date.now() / 220) * 0.15)))
-        const r = Math.min(1, Math.max(0.05, avg * (0.9 + Math.cos(Date.now() / 250) * 0.15)))
-        setVuL((prev) => prev + (l - prev) * 0.3)
-        setVuR((prev) => prev + (r - prev) * 0.3)
-      } else {
-        setVuL((prev) => prev * 0.8)
-        setVuR((prev) => prev * 0.8)
+        setVuL(prev => prev + (Math.min(1, Math.max(0, avg * 1.05)) - prev) * .3)
+        setVuR(prev => prev + (Math.min(1, Math.max(0, avg * .95)) - prev) * .3)
       }
-      animId = requestAnimationFrame(updateVu)
+      animId = requestAnimationFrame(tick)
     }
-    animId = requestAnimationFrame(updateVu)
-    return () => cancelAnimationFrame(animId)
+    const synchronize = () => {
+      if (animId) cancelAnimationFrame(animId)
+      animId = 0
+      if (!document.hidden && !reduced.matches) animId = requestAnimationFrame(tick)
+    }
+    document.addEventListener('visibilitychange', synchronize)
+    reduced.addEventListener?.('change', synchronize)
+    synchronize()
+    return () => {
+      if (animId) cancelAnimationFrame(animId)
+      document.removeEventListener('visibilitychange', synchronize)
+      reduced.removeEventListener?.('change', synchronize)
+    }
   }, [isOpen, isPlaying])
 
   const handleStartRec = () => startRecording(currentStation?.name || 'Radio_Satelital')

@@ -26,4 +26,14 @@ export function setUiScaleMode(mode:UiScaleMode){try{if(typeof window==='undefin
 export function getUiScaleMode():UiScaleMode{try{if(typeof window==='undefined')return'auto';const s=localStorage.getItem(UI_SCALE_MODE_KEY) as UiScaleMode|null;return s==='auto'||(s&&SCALE_VALUE[s as UiScale])?s:'auto'}catch{return'auto'}}
 export function setActualUiScale(size:UiScale){try{const s=SCALE_VALUE[size]?size:'medium';document.documentElement.setAttribute('data-ui-scale',s);document.documentElement.style.setProperty('--ui-scale',SCALE_VALUE[s]);localStorage.setItem(UI_SCALE_KEY,s)}catch{}}
 export function getUiScale():UiScale{try{const s=localStorage.getItem(UI_SCALE_KEY) as UiScale|null;return s&&SCALE_VALUE[s]?s:'medium'}catch{return'medium'}}
-export function initializeThemeSettings(){setTheme(getTheme());applyAppearance(getAppearance());const m=getUiScaleMode();setUiScaleMode(m);if(typeof window!=='undefined'){window.matchMedia('(prefers-color-scheme: light)').addEventListener?.('change',()=>{if(getAppearance()==='system')applyAppearance('system')})}}
+/** React StrictMode-safe: the caller disposes the media listener on unmount. */
+export function initializeThemeSettings(): () => void {
+  setTheme(getTheme())
+  applyAppearance(getAppearance())
+  setUiScaleMode(getUiScaleMode())
+  if (typeof window === 'undefined') return () => {}
+  const media = window.matchMedia('(prefers-color-scheme: light)')
+  const onChange = () => { if (getAppearance() === 'system') applyAppearance('system') }
+  media.addEventListener?.('change', onChange)
+  return () => media.removeEventListener?.('change', onChange)
+}
