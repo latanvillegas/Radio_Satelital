@@ -112,7 +112,7 @@ export function normalizeStation(input: StationInput, source: StationSource, fal
     country: cleanText(input.country),
     region: normalizeRegion(cleanText(input.region), cleanText(input.country)),
     logoUrl: cleanText(input.logoUrl),
-    metadataUrl: cleanText(input.metadataUrl),
+    ...(cleanText(input.metadataUrl) ? { metadataUrl: cleanText(input.metadataUrl) } : {}),
     isFavorite: Boolean(input.isFavorite),
     tags,
     source,
