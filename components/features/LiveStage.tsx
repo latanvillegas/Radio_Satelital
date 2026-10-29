@@ -32,7 +32,7 @@ export default function LiveStage({ featured, onTune }: Props) {
     </div>
     <div className="dial-hero-info">
       <p className="dial-hero-kicker"><RadioTower size={14} /> EMISORA DESTACADA</p>
-      <h1 id="dial-hero-title">{featured.name}</h1>
+      <h2 id="dial-hero-title">{featured.name}</h2>
       <p className="dial-hero-place">{[featured.region, featured.country].filter(Boolean).join(' · ') || 'Radio en vivo'}</p>
       <p className="dial-hero-status" role="status">
         <span className={playing ? 'dial-status-dot is-playing' : 'dial-status-dot'} aria-hidden="true" />

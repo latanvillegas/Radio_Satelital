@@ -97,7 +97,7 @@ export default function Page() {
           <div className="dial-intro">
             <div>
               <p className="dial-eyebrow"><RadioTower size={15} /> EL OBSERVATORIO DEL DIAL</p>
-              <h2 id="dial-discover-title" className="dial-heading">Encuentra tu próxima <span>emisora.</span></h2>
+              <h1 id="dial-discover-title" className="dial-heading">Encuentra tu próxima <span>emisora.</span></h1>
               <p className="dial-subtitle">Radios de Jaén, Cajamarca, Perú y el mundo. Elige y escucha en directo.</p>
             </div>
             <div className="dial-catalog-meta hidden lg:flex">
