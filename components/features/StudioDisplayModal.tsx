@@ -1,14 +1,44 @@
 "use client"
-import React, { useEffect, useState } from 'react'
+
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Radio, Play, Pause, SkipBack, SkipForward, Circle, Square, Download, RotateCw, Activity, Sliders, Maximize2, Minimize2, Keyboard } from 'lucide-react'
+import {
+  X,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Circle,
+  Square,
+  Download,
+  RotateCw,
+  Activity,
+  Sliders,
+  Maximize2,
+  Minimize2,
+  Keyboard,
+} from 'lucide-react'
 import type { Station } from '@/types/station'
 import AudioVisualizer from '@/components/features/AudioVisualizer'
-import { startRecording, stopRecording, downloadRecording, subscribeRecorder, type RecorderState, getRecorderState } from '@/lib/services/recorder'
+import StationArtwork from '@/components/features/StationArtwork'
+import {
+  startRecording,
+  stopRecording,
+  downloadRecording,
+  subscribeRecorder,
+  type RecorderState,
+  getRecorderState,
+} from '@/lib/services/recorder'
 import { getCurrentStreamTelemetry, resyncStream } from '@/lib/services/player'
 import { getAnalyserData } from '@/lib/services/audio-dsp'
+import {
+  getTelemetrySummary,
+  subscribeTelemetry,
+  type TelemetrySummary,
+} from '@/lib/services/telemetry'
+import { useDialogFocusTrap } from '@/hooks/ui/useDialogFocusTrap'
 
-type Props = {
+interface Props {
   isOpen: boolean
   onClose: () => void
   currentStation: Station | null
@@ -19,39 +49,61 @@ type Props = {
   onOpenEq: () => void
 }
 
-const shortcuts = [
-  ['Espacio', 'Reproducir / pausar'],
+const SHORTCUTS: ReadonlyArray<readonly [string, string]> = [
+  ['Espacio', 'Reproducir o pausar'],
   ['←', 'Emisora anterior'],
   ['→', 'Siguiente emisora'],
   ['E', 'Abrir ecualizador'],
-  ['R', 'Iniciar / detener grabación'],
-  ['S', 'Re-sincronizar señal'],
+  ['R', 'Iniciar o detener grabación'],
+  ['S', 'Re-sincronizar stream'],
   ['F', 'Pantalla completa'],
-  ['?', 'Mostrar / ocultar estos atajos'],
-  ['Esc', 'Cerrar atajos / cabina'],
+  ['?', 'Mostrar u ocultar atajos'],
+  ['Esc', 'Cerrar ventana actual'],
 ]
 
-export default function StudioDisplayModal({ isOpen, onClose, currentStation, isPlaying, togglePlay, onNextStation, onPrevStation, onOpenEq }: Props) {
+export default function StudioDisplayModal({
+  isOpen,
+  onClose,
+  currentStation,
+  isPlaying,
+  togglePlay,
+  onNextStation,
+  onPrevStation,
+  onOpenEq,
+}: Props) {
   const [localTime, setLocalTime] = useState('')
   const [utcTime, setUtcTime] = useState('')
-  const [recorderState, setRecorderState] = useState<RecorderState>(getRecorderState())
+  const [recorderState, setRecorderState] = useState<RecorderState>(() => getRecorderState())
   const [vuL, setVuL] = useState(0)
   const [vuR, setVuR] = useState(0)
-  const [telemetry, setTelemetry] = useState(getCurrentStreamTelemetry())
+  const [telemetry, setTelemetry] = useState(() => getCurrentStreamTelemetry())
+  const [opsSummary, setOpsSummary] = useState<TelemetrySummary>(() => getTelemetrySummary())
   const [isResyncing, setIsResyncing] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
 
+  const dialogRef = useRef<HTMLDivElement | null>(null)
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null)
+
+  useDialogFocusTrap({
+    open: isOpen,
+    onClose,
+    containerRef: dialogRef,
+    initialFocusRef: closeBtnRef,
+    disableEscape: showShortcuts,
+  })
+
   useEffect(() => {
+    if (!isOpen) return
     const updateClocks = () => {
       const now = new Date()
-      setLocalTime(now.toLocaleTimeString('es-ES', { hour12: false }))
+      setLocalTime(now.toLocaleTimeString('es-PE', { hour12: false }))
       setUtcTime(now.toLocaleTimeString('en-GB', { timeZone: 'UTC', hour12: false }) + ' UTC')
     }
     updateClocks()
     const timer = setInterval(updateClocks, 1000)
     return () => clearInterval(timer)
-  }, [])
+  }, [isOpen])
 
   useEffect(() => subscribeRecorder((state) => setRecorderState({ ...state })), [])
 
@@ -59,26 +111,31 @@ export default function StudioDisplayModal({ isOpen, onClose, currentStation, is
     if (!isOpen) return
     const update = () => setTelemetry(getCurrentStreamTelemetry())
     update()
-    const interval = setInterval(update, 2000)
-    return () => clearInterval(interval)
+    const interval = setInterval(update, 1500)
+    const unsubscribeOps = subscribeTelemetry((summary) => setOpsSummary(summary))
+    return () => {
+      clearInterval(interval)
+      unsubscribeOps()
+    }
   }, [isOpen, currentStation, isPlaying])
 
   useEffect(() => {
     if (!isOpen) return
-    let animId: number
+    let animId = 0
     const updateVu = () => {
       if (isPlaying) {
         const realData = getAnalyserData()
         let avg = 0
-        if (realData && realData.length > 0) {
+        if (realData && realData.length > 0 && realData.some((v) => v > 4)) {
           let sum = 0
-          for (let i = 0; i < Math.min(32, realData.length); i++) sum += realData[i]
-          avg = (sum / 32) / 255
+          const count = Math.min(32, realData.length)
+          for (let i = 0; i < count; i++) sum += realData[i] ?? 0
+          avg = sum / count / 255
         } else {
-          avg = 0.4 + Math.sin(Date.now() / 180) * 0.25 + Math.cos(Date.now() / 290) * 0.15
+          avg = 0.4 + Math.sin(Date.now() / 180) * 0.22 + Math.cos(Date.now() / 290) * 0.14
         }
-        const l = Math.min(1, Math.max(0.05, avg * (0.9 + Math.sin(Date.now() / 220) * 0.15)))
-        const r = Math.min(1, Math.max(0.05, avg * (0.9 + Math.cos(Date.now() / 250) * 0.15)))
+        const l = Math.min(1, Math.max(0.05, avg * (0.92 + Math.sin(Date.now() / 220) * 0.12)))
+        const r = Math.min(1, Math.max(0.05, avg * (0.92 + Math.cos(Date.now() / 250) * 0.12)))
         setVuL((prev) => prev + (l - prev) * 0.3)
         setVuR((prev) => prev + (r - prev) * 0.3)
       } else {
@@ -91,14 +148,41 @@ export default function StudioDisplayModal({ isOpen, onClose, currentStation, is
     return () => cancelAnimationFrame(animId)
   }, [isOpen, isPlaying])
 
-  const handleStartRec = () => startRecording(currentStation?.name || 'Radio_Satelital')
-  const handleStopRec = () => stopRecording()
-  const handleResync = () => {
+  const handleStartRec = useCallback(() => {
+    startRecording(currentStation?.name || 'Radio_Satelital')
+  }, [currentStation?.name])
+
+  const handleStopRec = useCallback(() => {
+    stopRecording()
+  }, [])
+
+  const handleResync = useCallback(() => {
     setIsResyncing(true)
     resyncStream()
-    setTimeout(() => setIsResyncing(false), 1500)
-  }
-  const toggleFullscreenMode = () => {
+    setTimeout(() => setIsResyncing(false), 1200)
+  }, [])
+
+  const handleExportDiagnostics = useCallback(() => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      currentStation: currentStation
+        ? { id: currentStation.id, name: currentStation.name, country: currentStation.country }
+        : null,
+      liveStream: getCurrentStreamTelemetry(),
+      observability: getTelemetrySummary(),
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `radio-satelital-diagnostico-${Date.now()}.json`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }, [currentStation])
+
+  const toggleFullscreenMode = useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {})
       setIsFullscreen(true)
@@ -106,126 +190,484 @@ export default function StudioDisplayModal({ isOpen, onClose, currentStation, is
       document.exitFullscreen().catch(() => {})
       setIsFullscreen(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     if (!isOpen) return
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
-      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) return
+      if (
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.tagName === 'SELECT' ||
+        target?.isContentEditable
+      ) {
+        return
+      }
       const key = event.key.toLowerCase()
       if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
-        event.preventDefault(); setShowShortcuts((v) => !v); return
+        event.preventDefault()
+        setShowShortcuts((v) => !v)
+        return
       }
-      if (event.key === 'Escape') {
-        if (showShortcuts) setShowShortcuts(false)
-        else onClose()
+      if (event.key === 'Escape' && showShortcuts) {
+        event.preventDefault()
+        event.stopPropagation()
+        setShowShortcuts(false)
         return
       }
       if (showShortcuts) return
-      if (event.code === 'Space') { event.preventDefault(); togglePlay() }
-      else if (event.key === 'ArrowLeft') { event.preventDefault(); onPrevStation() }
-      else if (event.key === 'ArrowRight') { event.preventDefault(); onNextStation() }
-      else if (key === 'e') { event.preventDefault(); onOpenEq() }
-      else if (key === 'r') { event.preventDefault(); recorderState.isRecording ? handleStopRec() : isPlaying && handleStartRec() }
-      else if (key === 's') { event.preventDefault(); handleResync() }
-      else if (key === 'f') { event.preventDefault(); toggleFullscreenMode() }
+      if (event.code === 'Space') {
+        event.preventDefault()
+        togglePlay()
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        onPrevStation()
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        onNextStation()
+      } else if (key === 'e') {
+        event.preventDefault()
+        onOpenEq()
+      } else if (key === 'r') {
+        event.preventDefault()
+        if (recorderState.isRecording) handleStopRec()
+        else if (isPlaying) handleStartRec()
+      } else if (key === 's') {
+        event.preventDefault()
+        handleResync()
+      } else if (key === 'f') {
+        event.preventDefault()
+        toggleFullscreenMode()
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isOpen, showShortcuts, isPlaying, recorderState.isRecording, togglePlay, onPrevStation, onNextStation, onOpenEq, onClose])
-
-  if (!isOpen) return null
+  }, [
+    isOpen,
+    showShortcuts,
+    isPlaying,
+    recorderState.isRecording,
+    togglePlay,
+    onPrevStation,
+    onNextStation,
+    onOpenEq,
+    handleStartRec,
+    handleStopRec,
+    handleResync,
+    toggleFullscreenMode,
+  ])
 
   const stationTitle = currentStation?.name || 'Radio Satelital'
-  const stationLocation = currentStation?.country ? `${currentStation.country}${currentStation.region ? ` · ${currentStation.region}` : ''}` : 'Transmisión Global en Vivo'
-  const recMinutes = Math.floor(recorderState.durationSeconds / 60).toString().padStart(2, '0')
+  const stationLocation = currentStation?.country
+    ? `${currentStation.country}${currentStation.region ? ` · ${currentStation.region}` : ''}`
+    : 'Transmisión en directo'
+  const recMinutes = Math.floor(recorderState.durationSeconds / 60)
+    .toString()
+    .padStart(2, '0')
   const recSeconds = (recorderState.durationSeconds % 60).toString().padStart(2, '0')
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/90 backdrop-blur-xl cursor-pointer" onClick={onClose} aria-hidden="true" />
-        <motion.div initial={{ scale: 0.95, opacity: 0, y: 15 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0, y: 10 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="relative z-10 w-full max-w-5xl bg-black border border-white/10 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 flex flex-col text-zinc-100 max-h-[95vh] overflow-y-auto" role="dialog" aria-modal="true" aria-label="Cabina de Estudio Broadcast On-Air">
-          <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
-            <div className="flex items-center gap-3">
-              <div className={`px-4 py-1.5 rounded-xl border font-mono font-black text-sm tracking-widest flex items-center gap-2 shadow-lg transition-all ${isPlaying ? 'shadow-lg' : 'bg-zinc-900 text-zinc-600 border-zinc-800'}`} style={isPlaying ? { backgroundColor: 'var(--accent-subtle)', color: 'var(--accent)', borderColor: 'var(--accent-glow)' } : undefined}>
-                <span className="w-2.5 h-2.5 rounded-full" style={isPlaying ? { backgroundColor: 'var(--accent)', boxShadow: '0 0 8px var(--accent)' } : { backgroundColor: '#3f3f46' }} />
-                <span>ON AIR</span>
-              </div>
-              {recorderState.isRecording && <div className="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 font-mono text-xs font-bold flex items-center gap-1.5 animate-pulse"><span className="w-2 h-2 rounded-full bg-amber-400" /><span>REC {recMinutes}:{recSeconds}</span></div>}
-            </div>
-            <div className="flex items-center gap-4 bg-zinc-950/90 px-4 py-2 rounded-2xl border border-white/[0.06] font-mono">
-              <div className="text-right"><span className="text-[10px] uppercase text-zinc-500 block font-sans font-bold">Local</span><span className="text-sm sm:text-base font-bold text-white tracking-wide">{localTime}</span></div>
-              <div className="w-px h-6 bg-white/10" />
-              <div><span className="text-[10px] uppercase text-zinc-500 block font-sans font-bold">Universal</span><span className="text-sm sm:text-base font-bold text-amber-400 tracking-wide">{utcTime}</span></div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button type="button" onClick={() => setShowShortcuts(true)} className="w-9 h-9 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-colors" title="Atajos de teclado"><Keyboard size={18} /></button>
-              <button type="button" onClick={toggleFullscreenMode} className="w-9 h-9 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-colors" title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa de estudio'}>{isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}</button>
-              <button type="button" onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-colors" aria-label="Cerrar consola"><X size={20} /></button>
-            </div>
-          </div>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
+            className="fixed inset-0 backdrop-blur-xl cursor-pointer"
+            style={{ backgroundColor: 'var(--bg-scrim)' }}
+            onClick={onClose}
+            aria-hidden="true"
+          />
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 my-6">
-            <div className="lg:col-span-8 flex flex-col justify-between bg-zinc-950/80 border border-white/[0.06] rounded-2xl p-5 sm:p-6">
-              <div className="flex items-start gap-4">
-                {currentStation?.logoUrl ? <img src={currentStation.logoUrl} alt={stationTitle} className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border border-white/10 shadow-lg" /> : <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center" style={{ color: 'var(--accent)' }}><Radio size={32} /></div>}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2"><span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-md bg-white/[0.06] text-zinc-400 border border-white/[0.08]">Master Monitor</span><span className="text-[10px] font-mono text-zinc-500">ID: #{currentStation?.id || 'SAT-01'}</span></div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1 truncate">{stationTitle}</h2>
-                  <p className="text-xs sm:text-sm text-zinc-400 truncate mt-0.5">{stationLocation}</p>
+          <motion.div
+            ref={dialogRef}
+            tabIndex={-1}
+            initial={{ scale: 0.96, opacity: 0, y: 14 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.97, opacity: 0, y: 10 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="relative z-10 w-full max-w-5xl bg-elevated border border-line rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 flex flex-col text-ink max-h-[95vh] overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="studio-console-title"
+          >
+            {/* Cabecera de Cabina */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-line">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`px-3.5 py-1.5 rounded-xl border font-mono font-bold text-xs tracking-wider flex items-center gap-2 ${
+                    isPlaying
+                      ? 'bg-accent-subtle text-accent border-accent'
+                      : 'bg-surface text-ink-muted border-line'
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      isPlaying ? 'bg-accent' : 'bg-ink-muted'
+                    }`}
+                  />
+                  <span>{isPlaying ? 'ON AIR' : 'STANDBY'}</span>
+                </div>
+
+                {recorderState.isRecording && (
+                  <div className="px-3 py-1.5 rounded-xl bg-red-500/15 text-red-500 border border-red-500/35 font-mono text-xs font-bold tabular-nums flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <span>
+                      REC {recMinutes}:{recSeconds}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4 bg-surface px-4 py-2 rounded-xl border border-line font-mono tabular-nums">
+                <div className="text-right">
+                  <span className="text-[10px] text-ink-muted block font-sans font-semibold">
+                    Hora local
+                  </span>
+                  <span className="text-sm font-bold text-ink">{localTime}</span>
+                </div>
+                <div className="w-px h-6 bg-line" />
+                <div>
+                  <span className="text-[10px] text-ink-muted block font-sans font-semibold">
+                    Tiempo universal
+                  </span>
+                  <span className="text-sm font-bold text-accent">{utcTime}</span>
                 </div>
               </div>
-              <div className="mt-6 pt-4 border-t border-white/[0.06]">
-                <div className="flex items-center justify-between mb-2"><span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5"><Activity size={13} style={{ color: 'var(--accent)' }} /><span>Espectrograma de Frecuencias (20 Hz - 20 kHz)</span></span><span className="text-[10px] font-mono text-zinc-500">FFT 128 Bins</span></div>
-                <div className="w-full flex justify-center py-2 bg-black/80 rounded-xl border border-white/[0.04]"><AudioVisualizer isPlaying={isPlaying} variant="studio" /></div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2.5 mt-5">
-                {!recorderState.isRecording ? <button type="button" onClick={handleStartRec} disabled={!isPlaying} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border shadow-sm transition-all active:scale-95 disabled:opacity-40" style={{ backgroundColor: 'var(--accent-subtle)', color: 'var(--accent)', borderColor: 'var(--accent-glow)' }} title="Grabar emisión de audio en vivo"><Circle size={14} style={{ fill: 'var(--accent)', color: 'var(--accent)' }} className="animate-pulse" /><span>Grabar Emisión (REC)</span></button> : <button type="button" onClick={handleStopRec} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-black shadow-lg shadow-amber-500/30 transition-all active:scale-95 animate-pulse"><Square size={14} className="fill-black" /><span>Detener Grabación ({recMinutes}:{recSeconds})</span></button>}
-                {recorderState.recordedBlob && !recorderState.isRecording && <button type="button" onClick={() => downloadRecording()} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30 transition-all"><Download size={14} /><span>Descargar Audio</span></button>}
-                <button type="button" onClick={onOpenEq} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 border border-white/[0.08] transition-all"><Sliders size={14} className="text-amber-400" /><span>Calibrar Ecualizador (E)</span></button>
-                <button type="button" onClick={handleResync} disabled={isResyncing} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 border border-white/[0.08] transition-all"><RotateCw size={14} className={isResyncing ? 'animate-spin' : ''} style={isResyncing ? { color: 'var(--accent)' } : undefined} /><span>Re-sync Señal</span></button>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setShowShortcuts(true)}
+                  className="min-w-[44px] min-h-[44px] rounded-xl grid place-items-center text-ink-muted hover:text-ink hover:bg-subtle transition-colors"
+                  title="Atajos de teclado"
+                  aria-label="Mostrar atajos de teclado"
+                >
+                  <Keyboard size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleFullscreenMode}
+                  className="min-w-[44px] min-h-[44px] rounded-xl grid place-items-center text-ink-muted hover:text-ink hover:bg-subtle transition-colors"
+                  title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+                  aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Activar pantalla completa'}
+                >
+                  {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                </button>
+                <button
+                  ref={closeBtnRef}
+                  type="button"
+                  onClick={onClose}
+                  className="min-w-[44px] min-h-[44px] rounded-xl grid place-items-center text-ink-muted hover:text-ink hover:bg-subtle transition-colors"
+                  aria-label="Cerrar cabina de monitoreo"
+                >
+                  <X size={20} />
+                </button>
               </div>
             </div>
 
-            <div className="lg:col-span-4 flex flex-col justify-between bg-zinc-950/80 border border-white/[0.06] rounded-2xl p-5">
-              <div>
-                <div className="flex items-center justify-between mb-4"><span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-300">Vúmetros Estéreo L / R</span><span className="text-[10px] font-mono text-zinc-500">dBFS Peak</span></div>
-                {[['CH-L', vuL], ['CH-R', vuR]].map(([label, value]) => <div className="mb-4" key={label as string}><div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 mb-1"><span className="font-bold" style={{ color: 'var(--accent)' }}>{label as string}</span><span>{isPlaying ? `${Math.round(((value as number) - 1) * 30)} dB` : '-∞ dB'}</span></div><div className="h-4 bg-zinc-900 rounded-lg p-0.5 overflow-hidden flex items-center border border-white/[0.08]"><div className="h-full rounded-md transition-all duration-75 bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500" style={{ width: `${(value as number) * 100}%` }} /></div></div>)}
-                <div className="flex justify-between text-[9px] font-mono text-zinc-600 px-1 select-none"><span>-40</span><span>-20</span><span>-10</span><span>-3</span><span className="text-amber-500 font-bold">0</span><span className="text-red-500 font-bold">+3 Clip</span></div>
+            {/* Cuerpo de Cabina */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 my-5">
+              <div className="lg:col-span-8 flex flex-col justify-between bg-surface border border-line rounded-2xl p-5 sm:p-6">
+                <div className="flex items-center gap-4">
+                  <StationArtwork station={currentStation} variant="card" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-mono text-ink-muted">
+                      Monitor principal · {currentStation?.id || 'SAT-01'}
+                    </p>
+                    <h2
+                      id="studio-console-title"
+                      className="text-xl sm:text-2xl font-extrabold text-ink tracking-tight mt-0.5 truncate"
+                    >
+                      {stationTitle}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-ink-secondary truncate mt-0.5">
+                      {stationLocation}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-line">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-ink-secondary flex items-center gap-1.5">
+                      <Activity size={14} className="text-accent" />
+                      <span>Analizador de espectro acústico (20 Hz – 20 kHz)</span>
+                    </span>
+                    <span className="text-[11px] font-mono text-ink-muted">FFT 128</span>
+                  </div>
+                  <div className="w-full flex justify-center py-2.5 bg-canvas rounded-xl border border-line overflow-hidden">
+                    <AudioVisualizer isPlaying={isPlaying} variant="studio" />
+                  </div>
+                </div>
+
+                {recorderState.error && (
+                  <p className="mt-3 text-xs text-red-500 font-medium">{recorderState.error}</p>
+                )}
+
+                <div className="flex flex-wrap items-center gap-2.5 mt-5">
+                  {!recorderState.isRecording ? (
+                    <button
+                      type="button"
+                      onClick={handleStartRec}
+                      disabled={!isPlaying}
+                      className="inline-flex items-center gap-2 min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold border bg-accent-subtle text-accent border-accent transition-colors disabled:opacity-40"
+                    >
+                      <Circle size={13} fill="currentColor" />
+                      <span>Grabar emisión</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleStopRec}
+                      className="inline-flex items-center gap-2 min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold bg-red-500 text-white transition-colors tabular-nums"
+                    >
+                      <Square size={13} fill="currentColor" />
+                      <span>
+                        Detener ({recMinutes}:{recSeconds})
+                      </span>
+                    </button>
+                  )}
+
+                  {recorderState.recordedBlob && !recorderState.isRecording && (
+                    <button
+                      type="button"
+                      onClick={() => downloadRecording()}
+                      className="inline-flex items-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-bold bg-accent text-accent-fg hover:bg-accent-hover transition-colors"
+                    >
+                      <Download size={14} />
+                      <span>Descargar grabación</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={onOpenEq}
+                    className="inline-flex items-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-subtle hover:bg-canvas text-ink border border-line transition-colors"
+                  >
+                    <Sliders size={14} className="text-accent" />
+                    <span>Ecualizador (E)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleResync}
+                    disabled={isResyncing}
+                    className="inline-flex items-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-subtle hover:bg-canvas text-ink border border-line transition-colors disabled:opacity-50"
+                  >
+                    <RotateCw size={14} className={isResyncing ? 'animate-spin text-accent' : ''} />
+                    <span>Re-sincronizar</span>
+                  </button>
+                </div>
               </div>
-              <div className="mt-6 pt-4 border-t border-white/[0.06] space-y-2.5 text-xs font-mono">
-                <div className="flex items-center justify-between text-zinc-400"><span className="text-zinc-500">Códec:</span><span className="text-zinc-200 font-bold">{telemetry.codec}</span></div>
-                <div className="flex items-center justify-between text-zinc-400"><span className="text-zinc-500">Bitrate:</span><span className="text-zinc-200 font-bold">{telemetry.bitrate} kbps</span></div>
-                <div className="flex items-center justify-between text-zinc-400"><span className="text-zinc-500">Buffer Dinámico:</span><span className="text-emerald-400 font-bold">{telemetry.bufferedSeconds.toFixed(1)}s OK</span></div>
-                <div className="flex items-center justify-between text-zinc-400"><span className="text-zinc-500">Enrutamiento:</span><span className={telemetry.isProxied ? 'text-amber-400 font-bold' : 'text-zinc-300'}>{telemetry.isProxied ? 'Satelital Proxy SSL' : 'Direct Edge Stream'}</span></div>
+
+              {/* Telemetría y Vúmetros */}
+              <div className="lg:col-span-4 flex flex-col justify-between bg-surface border border-line rounded-2xl p-5">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-bold text-ink">Vúmetros estéreo L / R</span>
+                    <span className="text-[11px] font-mono text-ink-muted">dBFS</span>
+                  </div>
+
+                  {(
+                    [
+                      ['CH-L', vuL],
+                      ['CH-R', vuR],
+                    ] as const
+                  ).map(([label, value]) => (
+                    <div className="mb-4" key={label}>
+                      <div className="flex items-center justify-between text-xs font-mono tabular-nums text-ink-secondary mb-1">
+                        <span className="font-bold text-accent">{label}</span>
+                        <span>
+                          {isPlaying ? `${Math.round((value - 1) * 30)} dB` : '-∞ dB'}
+                        </span>
+                      </div>
+                      <div className="h-3.5 bg-input rounded-lg p-0.5 overflow-hidden flex items-center border border-line">
+                        <div
+                          className="h-full rounded-sm transition-all duration-75 bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500"
+                          style={{ width: `${value * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="flex justify-between text-[10px] font-mono tabular-nums text-ink-muted px-0.5 select-none">
+                    <span>-40</span>
+                    <span>-20</span>
+                    <span>-10</span>
+                    <span>-3</span>
+                    <span className="text-amber-500 font-bold">0</span>
+                    <span className="text-red-500 font-bold">+3</span>
+                  </div>
+                </div>
+
+                <dl className="mt-6 pt-4 border-t border-line space-y-2.5 text-xs font-mono tabular-nums">
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-ink-muted">Códec</dt>
+                    <dd className="text-ink font-bold truncate">{telemetry.codec}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-ink-muted">Bitrate est.</dt>
+                    <dd className="text-ink font-bold">{telemetry.bitrate} kbps</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-ink-muted">Buffer activo</dt>
+                    <dd className="text-accent font-bold">{telemetry.bufferedSeconds.toFixed(1)} s</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-ink-muted">Latencia (TTFA)</dt>
+                    <dd className="text-ink font-bold">
+                      {telemetry.ttfaMs !== null ? `${telemetry.ttfaMs} ms` : '—'}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-ink-muted">Transporte</dt>
+                    <dd className="text-ink-secondary font-semibold">
+                      {telemetry.isProxied
+                        ? 'Proxy HTTPS'
+                        : telemetry.isHls
+                        ? 'HLS Adaptativo'
+                        : 'Stream Directo'}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-ink-muted">Salud sesión</dt>
+                    <dd className="text-ink font-bold">
+                      {opsSummary.totalPlays} ok · {opsSummary.totalFailures} fallos
+                    </dd>
+                  </div>
+                  {opsSummary.webVitals.lcpMs !== null && (
+                    <div className="flex items-center justify-between gap-2">
+                      <dt className="text-ink-muted">Web Vitals (LCP)</dt>
+                      <dd className="text-ink-secondary font-semibold">
+                        {opsSummary.webVitals.lcpMs} ms
+                        {opsSummary.webVitals.clsScore !== null
+                          ? ` · CLS ${opsSummary.webVitals.clsScore}`
+                          : ''}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+
+                <button
+                  type="button"
+                  onClick={handleExportDiagnostics}
+                  className="mt-4 w-full min-h-[38px] px-3 rounded-xl border border-line bg-canvas hover:bg-subtle text-ink-secondary hover:text-ink text-xs font-semibold inline-flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Download size={13} className="text-accent" />
+                  <span>Exportar diagnóstico JSON</span>
+                </button>
               </div>
             </div>
-          </div>
 
-          <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={onPrevStation} className="w-10 h-10 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 flex items-center justify-center transition-colors" title="Emisora Anterior"><SkipBack size={18} /></button>
-              <button type="button" onClick={togglePlay} className="w-12 h-12 rounded-xl active:scale-95 text-white flex items-center justify-center shadow-lg transition-all" style={{ backgroundColor: 'var(--accent)', boxShadow: '0 4px 20px var(--accent-glow)' }} title={isPlaying ? 'Pausar transmisión' : 'Iniciar transmisión'}>{isPlaying ? <Pause size={22} className="fill-white" /> : <Play size={22} className="fill-white ml-0.5" />}</button>
-              <button type="button" onClick={onNextStation} className="w-10 h-10 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 flex items-center justify-center transition-colors" title="Siguiente Emisora"><SkipForward size={18} /></button>
+            {/* Transporte inferior */}
+            <div className="pt-4 border-t border-line flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onPrevStation}
+                  className="min-w-[44px] min-h-[44px] rounded-xl bg-surface hover:bg-subtle border border-line text-ink grid place-items-center transition-colors"
+                  aria-label="Emisora anterior"
+                >
+                  <SkipBack size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={togglePlay}
+                  className="w-12 h-12 rounded-xl bg-accent text-accent-fg hover:bg-accent-hover grid place-items-center shadow-md transition-colors"
+                  aria-label={isPlaying ? 'Pausar transmisión' : 'Iniciar transmisión'}
+                >
+                  {isPlaying ? (
+                    <Pause size={22} fill="currentColor" />
+                  ) : (
+                    <Play size={22} fill="currentColor" className="ml-0.5" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={onNextStation}
+                  className="min-w-[44px] min-h-[44px] rounded-xl bg-surface hover:bg-subtle border border-line text-ink grid place-items-center transition-colors"
+                  aria-label="Siguiente emisora"
+                >
+                  <SkipForward size={18} />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowShortcuts(true)}
+                className="text-xs font-mono text-ink-muted hidden sm:inline-flex items-center gap-2 hover:text-ink transition-colors"
+              >
+                <span>Pulsa</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-surface border border-line text-ink font-bold">
+                  ?
+                </kbd>
+                <span>para ver los atajos de cabina</span>
+              </button>
             </div>
-            <button type="button" onClick={() => setShowShortcuts(true)} className="text-xs font-mono text-zinc-500 hidden sm:flex items-center gap-2 hover:text-zinc-200 transition-colors" aria-label="Ver todos los atajos de teclado"><span>Presiona</span><kbd className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300">?</kbd><span>para ver todos los atajos de teclado de estudio</span></button>
-          </div>
 
-          <AnimatePresence>
-            {showShortcuts && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md rounded-3xl" onClick={() => setShowShortcuts(false)}>
-                <motion.div initial={{ scale: 0.94, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, y: 8 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl overflow-hidden" role="dialog" aria-modal="true" aria-label="Atajos de teclado del estudio">
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08]"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl flex items-center justify-center bg-white/[0.06]" style={{ color: 'var(--accent)' }}><Keyboard size={19} /></div><div><h3 className="font-bold text-white">Atajos de estudio</h3><p className="text-xs text-zinc-500">Control rápido desde el teclado</p></div></div><button type="button" onClick={() => setShowShortcuts(false)} className="w-9 h-9 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/[0.08]" aria-label="Cerrar atajos"><X size={18} /></button></div>
-                  <div className="p-3 sm:p-4 grid gap-1.5">{shortcuts.map(([key, action]) => <div key={key} className="flex items-center justify-between gap-4 rounded-xl px-3 py-2.5 hover:bg-white/[0.04]"><span className="text-sm text-zinc-300">{action}</span><kbd className="min-w-10 px-2 py-1 rounded-lg bg-zinc-900 border border-white/10 text-center text-xs font-mono font-bold text-white">{key}</kbd></div>)}</div>
-                  <div className="px-5 py-3 border-t border-white/[0.08] text-[11px] text-zinc-500">Los atajos funcionan mientras la cabina de estudio está abierta.</div>
+            {/* Sub-modal de atajos */}
+            <AnimatePresence>
+              {showShortcuts && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 z-30 flex items-center justify-center p-4 backdrop-blur-md rounded-3xl"
+                  style={{ backgroundColor: 'var(--bg-scrim)' }}
+                  onClick={() => setShowShortcuts(false)}
+                >
+                  <motion.div
+                    initial={{ scale: 0.95, y: 10 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0.96, y: 8 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full max-w-md rounded-2xl border border-line bg-elevated shadow-2xl overflow-hidden"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Atajos de teclado de la cabina"
+                  >
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl grid place-items-center bg-accent-subtle text-accent">
+                          <Keyboard size={18} />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-sm text-ink">Atajos de cabina</h3>
+                          <p className="text-xs text-ink-muted">Control rápido con teclado</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowShortcuts(false)}
+                        className="min-w-[40px] min-h-[40px] rounded-xl grid place-items-center text-ink-muted hover:text-ink hover:bg-subtle"
+                        aria-label="Cerrar atajos"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                    <div className="p-3.5 grid gap-1">
+                      {SHORTCUTS.map(([key, action]) => (
+                        <div
+                          key={key}
+                          className="flex items-center justify-between gap-4 rounded-xl px-3 py-2 hover:bg-subtle"
+                        >
+                          <span className="text-xs sm:text-sm text-ink-secondary">{action}</span>
+                          <kbd className="min-w-[40px] px-2 py-1 rounded-lg bg-surface border border-line text-center text-xs font-mono font-bold text-ink">
+                            {key}
+                          </kbd>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
                 </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </div>
+      )}
     </AnimatePresence>
   )
 }

@@ -1,6 +1,6 @@
-import type { Station } from '../../types/station'
+import type { Station, StationSource } from '../../types/station'
 
-export type StationSource = 'local'
+export type { StationSource }
 
 export type StationInput = {
   id?: string
@@ -11,6 +11,8 @@ export type StationInput = {
   url?: string
   logoUrl?: string
   isFavorite?: boolean
+  bitrate?: number
+  codec?: string
   tags?: unknown
 }
 
@@ -21,14 +23,43 @@ export type StationRecord = Omit<Station, 'id' | 'url' | 'streamUrl'> & {
   source?: StationSource
 }
 
-function normalizeSearch(value: string): string {
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+export function normalizeSearch(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+export function stationSlug(station: Pick<Station, 'id' | 'name'>): string {
+  const base = normalizeSearch(station.name || station.id || '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return base || (station.id ? normalizeSearch(station.id) : 'emisora')
+}
+
+export function findStationByParam<T extends Station>(stations: T[], param: string): T | null {
+  const target = normalizeSearch(param)
+  if (!target) return null
+
+  const targetSlug = target.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+
+  for (const station of stations) {
+    if (station.id && normalizeSearch(station.id) === target) return station
+    if (stationSlug(station) === targetSlug) return station
+    if (normalizeSearch(station.name) === target) return station
+  }
+
+  return null
 }
 
 /** Elimina niveles geográficos repetidos sin alterar nombres ni URLs. */
 export function normalizeRegion(value: string, country = ''): string {
   const seen = new Set<string>()
-  const parts = value.split(',').map(p => p.trim()).filter(Boolean)
+  const parts = value
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)
   const clean: string[] = []
   for (const raw of parts) {
     const key = normalizeSearch(raw)
@@ -49,13 +80,12 @@ function cleanTags(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return value
     .filter((item): item is string => typeof item === 'string')
-    .map(item => item.trim())
+    .map((item) => item.trim())
     .filter(Boolean)
 }
 
-// Inferencia inteligente de tags y géneros a partir del nombre
 export function inferGenres(name: string, explicitTags: string[] = []): string[] {
-  const result = new Set<string>(explicitTags.map(t => t.toLowerCase()))
+  const result = new Set<string>(explicitTags.map((t) => t.toLowerCase()))
   const n = name.toLowerCase()
 
   if (n.includes('mega') || n.includes('pop') || n.includes('disney') || n.includes('hit') || n.includes('top')) {
@@ -67,7 +97,15 @@ export function inferGenres(name: string, explicitTags: string[] = []): string[]
   if (n.includes('urban') || n.includes('reggaeton') || n.includes('latina') || n.includes('flow') || n.includes('rumba')) {
     result.add('urbano')
   }
-  if (n.includes('noticia') || n.includes('news') || n.includes('inform') || n.includes('rpp') || n.includes('caracol') || n.includes('cadena') || n.includes('w radio')) {
+  if (
+    n.includes('noticia') ||
+    n.includes('news') ||
+    n.includes('inform') ||
+    n.includes('rpp') ||
+    n.includes('caracol') ||
+    n.includes('cadena') ||
+    n.includes('w radio')
+  ) {
     result.add('noticias')
   }
   if (n.includes('deporte') || n.includes('sport') || n.includes('futbol') || n.includes('gol')) {
@@ -92,7 +130,11 @@ export function stationKey(station: Pick<Station, 'name' | 'url' | 'streamUrl'>)
   return `${cleanText(station.name)}|${streamUrl}`
 }
 
-export function normalizeStation(input: StationInput, source: StationSource, fallbackId: string): StationRecord | null {
+export function normalizeStation(
+  input: StationInput,
+  source: StationSource,
+  fallbackId: string
+): StationRecord | null {
   const name = cleanText(input.name)
   const streamUrl = cleanText(input.streamUrl ?? input.url)
 
@@ -103,7 +145,7 @@ export function normalizeStation(input: StationInput, source: StationSource, fal
   const baseTags = cleanTags(input.tags)
   const tags = inferGenres(name, baseTags)
 
-  return {
+  const record: StationRecord = {
     id: cleanText(input.id) || fallbackId,
     name,
     url: streamUrl,
@@ -115,15 +157,27 @@ export function normalizeStation(input: StationInput, source: StationSource, fal
     tags,
     source,
   }
+
+  if (typeof input.bitrate === 'number') record.bitrate = input.bitrate
+  if (typeof input.codec === 'string' && input.codec.trim()) record.codec = input.codec.trim()
+
+  return record
 }
 
-export function normalizeStationList(inputs: StationInput[], source: StationSource, prefix: string): StationRecord[] {
+export function normalizeStationList(
+  inputs: StationInput[],
+  source: StationSource,
+  prefix: string
+): StationRecord[] {
   return inputs
     .map((input, index) => normalizeStation(input, source, `${prefix}-${index}`))
     .filter((station): station is StationRecord => Boolean(station))
 }
 
-export function mergeStationsByStreamUrl(freshStations: StationRecord[], fallbackStations: StationRecord[]): StationRecord[] {
+export function mergeStationsByStreamUrl(
+  freshStations: StationRecord[],
+  fallbackStations: StationRecord[]
+): StationRecord[] {
   const byStreamUrl = new Map<string, StationRecord>()
 
   freshStations.forEach((station) => {
@@ -139,41 +193,49 @@ export function mergeStationsByStreamUrl(freshStations: StationRecord[], fallbac
   return Array.from(byStreamUrl.values())
 }
 
-type StationFilterState = {
+export type StationFilterState = {
   country?: string
   region?: string
   genre?: string
 }
 
-export function applyFavoriteState(stations: StationRecord[], favorites: Set<string>): StationRecord[] {
+export function applyFavoriteState<T extends Station>(stations: T[], favorites: Set<string>): T[] {
   return stations.map((station) => ({
     ...station,
     isFavorite: favorites.has(stationKey(station)),
   }))
 }
 
-export function buildStationFilterOptions(stations: StationRecord[]): { countries: string[]; regions: string[]; genres: string[] } {
+export function buildStationFilterOptions(stations: Station[]): {
+  countries: string[]
+  regions: string[]
+  genres: string[]
+} {
   const genreSet = new Set<string>()
   stations.forEach((s) => {
     s.tags?.forEach((t) => genreSet.add(t))
   })
 
   return {
-    countries: Array.from(new Set(stations.map(station => station.country).filter(Boolean))) as string[],
-    regions: Array.from(new Set(stations.map(station => station.region).filter(Boolean))) as string[],
+    countries: Array.from(
+      new Set(stations.map((station) => station.country).filter((c): c is string => Boolean(c)))
+    ),
+    regions: Array.from(
+      new Set(stations.map((station) => station.region).filter((r): r is string => Boolean(r)))
+    ),
     genres: Array.from(genreSet).sort(),
   }
 }
 
-export function filterStations(
-  stations: StationRecord[],
+export function filterStations<T extends Station>(
+  stations: T[],
   options: {
     query: string
     onlyFavs: boolean
     filters: StationFilterState
     favorites: Set<string>
-  },
-): StationRecord[] {
+  }
+): T[] {
   const normalizedQuery = normalizeSearch(options.query)
 
   return stations.filter((station) => {
@@ -187,8 +249,10 @@ export function filterStations(
 
     if (options.filters.region) {
       const wanted = normalizeSearch(options.filters.region)
-      const levels = (station.region || '').split(',').map(level => normalizeSearch(level))
-      if (normalizeSearch(station.region || '') !== wanted && !levels.includes(wanted)) return false
+      const levels = (station.region || '').split(',').map((level) => normalizeSearch(level))
+      if (normalizeSearch(station.region || '') !== wanted && !levels.includes(wanted)) {
+        return false
+      }
     }
 
     if (options.filters.genre && !station.tags?.includes(options.filters.genre.toLowerCase())) {
@@ -216,14 +280,18 @@ export function filterStations(
   })
 }
 
-export function findStationIndex(stations: StationRecord[], currentStation: Pick<StationRecord, 'id' | 'streamUrl' | 'url'> | null): number {
+export function findStationIndex(
+  stations: Station[],
+  currentStation: Pick<Station, 'id' | 'streamUrl' | 'url'> | null
+): number {
   if (!currentStation) {
     return -1
   }
 
-  return stations.findIndex(station => (
-    station.id === currentStation.id
-    || station.streamUrl === currentStation.streamUrl
-    || station.url === currentStation.url
-  ))
+  return stations.findIndex(
+    (station) =>
+      (Boolean(station.id) && station.id === currentStation.id) ||
+      (Boolean(station.streamUrl) && station.streamUrl === currentStation.streamUrl) ||
+      (Boolean(station.url) && station.url === currentStation.url)
+  )
 }

@@ -1,3 +1,5 @@
+export type StationSource = 'local'
+
 export interface Station {
   id?: string
   name: string
@@ -15,4 +17,7 @@ export interface Station {
   tags?: string[]
   bitrate?: number
   codec?: string
+  source?: StationSource
 }
+
+export type StationScope = 'all' | 'jaen' | 'cajamarca' | 'peru' | 'world' | 'favorites' | 'recent'

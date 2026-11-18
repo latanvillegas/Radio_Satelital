@@ -6,8 +6,9 @@
 echo "🔍 Verificando disponibilidad de streams de radio..."
 echo "=================================================="
 
-# Leer el archivo JSON de estaciones
-STATIONS_FILE="/workspaces/Radio_Satelital/data/stations.json"
+# Leer el archivo JSON de estaciones relativo a la raíz del repositorio
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STATIONS_FILE="${1:-$SCRIPT_DIR/../data/stations.json}"
 
 # Extraer URLs únicas
 URLS=$(cat "$STATIONS_FILE" | grep -o '"url": "[^"]*"' | cut -d'"' -f4 | sort -u)

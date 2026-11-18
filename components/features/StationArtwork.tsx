@@ -14,34 +14,67 @@ export function stationColors(name: string) {
     ['#25382b', '#131b19', '#c0e4b9'],
   ] as const
   let hash = 0
-  for (const char of name) hash = ((hash * 31) + char.charCodeAt(0)) >>> 0
+  for (const char of name) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
   return palettes[hash % palettes.length]
 }
 
-type Props = {
+interface Props {
   station: Station | null
-  variant?: 'hero' | 'card' | 'rail'
+  variant?: 'hero' | 'card' | 'dock'
   className?: string
 }
+
 function StationArtwork({ station, variant = 'card', className = '' }: Props) {
   const [brokenLogo, setBrokenLogo] = useState(false)
-  useEffect(() => setBrokenLogo(false), [station?.logoUrl])
+
+  useEffect(() => {
+    setBrokenLogo(false)
+  }, [station?.logoUrl])
+
   const name = station?.name || 'Radio Satelital'
   const [start, end, accent] = stationColors(name)
   const dial = getStationDial(name)
 
-  return <span className={['dial-art', 'dial-art--' + variant, className].filter(Boolean).join(' ')}
-    style={{ background: 'linear-gradient(145deg, ' + start + ', ' + end + ')', color: accent }}>
-    {station?.logoUrl && !brokenLogo
-      ? <img src={station.logoUrl} alt="" loading="lazy" decoding="async" className="dial-art-logo"
-          onError={() => setBrokenLogo(true)} />
-      : <span className="dial-art-fallback">
-          <RadioTower className="dial-art-icon" aria-hidden="true" />
-          {dial
-            ? <span className="dial-art-number">{dial.number}<small>{dial.band}</small></span>
-            : <span className="dial-art-label">RADIO</span>}
-        </span>}
-  </span>
+  const variantClass =
+    variant === 'hero'
+      ? 'dial-art--hero'
+      : variant === 'dock'
+      ? 'dial-art--dock'
+      : ''
+
+  return (
+    <span
+      className={['dial-art', variantClass, className].filter(Boolean).join(' ')}
+      style={{
+        background: `linear-gradient(145deg, ${start}, ${end})`,
+        color: accent,
+      }}
+    >
+      {station?.logoUrl && !brokenLogo ? (
+        <img
+          src={station.logoUrl}
+          alt={station.name}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          className="dial-art-logo"
+          onError={() => setBrokenLogo(true)}
+        />
+      ) : (
+        <span className="dial-art-fallback" aria-hidden="true">
+          <RadioTower className="dial-art-icon" />
+          {dial ? (
+            <span className="dial-art-number">
+              {dial.number}
+              <small>{dial.band}</small>
+            </span>
+          ) : (
+            <span className="dial-art-label">RADIO</span>
+          )}
+        </span>
+      )}
+    </span>
+  )
 }
 
 export default memo(StationArtwork)

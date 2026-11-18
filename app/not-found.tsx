@@ -1,49 +1,31 @@
 import React from 'react'
+import Link from 'next/link'
+import { RadioTower } from 'lucide-react'
 
 export default function NotFound() {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '80vh',
-        padding: 40,
-        textAlign: 'center',
-        color: '#ffffff',
-        fontFamily: 'Inter, system-ui, sans-serif',
-      }}
-    >
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-16 text-center bg-canvas text-ink">
       <script
         dangerouslySetInnerHTML={{
-          __html: "if (typeof window !== 'undefined' && window.location.pathname.toLowerCase().indexOf('docs') !== -1) { window.location.replace('/'); }",
+          __html:
+            "if (typeof window !== 'undefined' && window.location.pathname.toLowerCase().indexOf('docs') !== -1) { window.location.replace('/'); }",
         }}
       />
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Página no encontrada</h1>
-      <p style={{ color: '#9ca3af', marginBottom: 24, fontSize: 15 }}>
-        La dirección solicitada no existe o ha sido trasladada al inicio.
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 bg-accent-subtle text-accent border border-accent-glow">
+        <RadioTower size={26} />
+      </div>
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-ink">
+        Frecuencia no encontrada
+      </h1>
+      <p className="mt-2 max-w-md text-sm sm:text-base text-ink-secondary">
+        La dirección solicitada no existe o ha sido trasladada al catálogo principal de emisoras.
       </p>
-      <a
+      <Link
         href="/"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '10px 22px',
-          borderRadius: 8,
-          backgroundColor: '#dc2626',
-          color: '#ffffff',
-          textDecoration: 'none',
-          fontWeight: 600,
-          fontSize: 14,
-          boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
-        }}
+        className="mt-6 inline-flex items-center justify-center min-h-[44px] px-6 py-2.5 rounded-xl bg-accent text-accent-fg font-bold text-sm hover:bg-accent-hover transition-colors"
       >
-        Ir a Radio Satelital
-      </a>
-    </div>
+        Volver a Radio Satelital
+      </Link>
+    </main>
   )
 }
-
-

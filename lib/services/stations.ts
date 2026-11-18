@@ -1,46 +1,40 @@
-import stationsData from "../../data/stations.json";
-import cajamarcaStationsData from "../../data/stations-cajamarca.json";
+import stationsData from '../../data/stations.json'
+import cajamarcaStationsData from '../../data/stations-cajamarca.json'
 import {
   applyFavoriteState,
   buildStationFilterOptions,
   filterStations,
+  findStationByParam,
   findStationIndex,
+  normalizeSearch,
   normalizeStationList,
   stationKey,
+  stationSlug,
+  type StationFilterState,
   type StationInput,
-} from "./station-normalizer";
+  type StationRecord,
+} from './station-normalizer'
 
 export {
   applyFavoriteState,
   buildStationFilterOptions,
   filterStations,
+  findStationByParam,
   findStationIndex,
+  normalizeSearch,
   stationKey,
-} from "./station-normalizer";
-
-/**
- * Interfaz para representar una emisora de radio
- */
-export interface Radio {
-  id: string;
-  name: string;
-  country?: string;
-  region?: string;
-  url: string;
-  streamUrl: string;
-  logoUrl?: string;
-  isFavorite?: boolean;
-  tags?: string[];
-  source?: "local";
+  stationSlug,
+  type StationFilterState,
+  type StationRecord,
 }
 
-/** Ranking editorial estable: insignia -> Jaén -> Cajamarca -> Perú -> mundo.
- * La posición original se conserva dentro de cada grupo.
- */
-function stationWeight(station: Radio): number {
-  const name = station.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-  const region = (station.region || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-  const country = (station.country || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+export type Radio = StationRecord
+
+/** Ranking editorial estable: insignia -> Jaén -> Cajamarca -> Perú -> mundo. */
+function stationWeight(station: StationRecord): number {
+  const name = normalizeSearch(station.name)
+  const region = normalizeSearch(station.region || '')
+  const country = normalizeSearch(station.country || '')
   if (name === 'activa jaen') return 0
   if (country !== 'peru') return 4
   if (region.includes('jaen')) return 1
@@ -48,28 +42,32 @@ function stationWeight(station: Radio): number {
   return 3
 }
 
-/** Obtiene emisoras locales y elimina duplicados por URL exacta. */
-export function getLocalStations(): Radio[] {
-  const allStations = [
+let cachedLocalStations: StationRecord[] | null = null
+
+/** Obtiene emisoras locales y elimina duplicados por URL exacta con caché en memoria. */
+export function getLocalStations(): StationRecord[] {
+  if (cachedLocalStations) return cachedLocalStations
+
+  const allStations: StationInput[] = [
     ...(stationsData as StationInput[]),
     ...(cajamarcaStationsData as StationInput[]),
-  ];
+  ]
 
-  const normalized = normalizeStationList(allStations, "local", "local");
-  const byStreamUrl = new Map<string, Radio>();
+  const normalized = normalizeStationList(allStations, 'local', 'local')
+  const byStreamUrl = new Map<string, StationRecord>()
 
-  normalized.forEach((station) => {
+  for (const station of normalized) {
     if (!byStreamUrl.has(station.streamUrl)) {
-      byStreamUrl.set(station.streamUrl, station);
+      byStreamUrl.set(station.streamUrl, station)
     }
-  });
+  }
 
-  return Array.from(byStreamUrl.values()).sort((a, b) => stationWeight(a) - stationWeight(b));
+  cachedLocalStations = Array.from(byStreamUrl.values()).sort(
+    (a, b) => stationWeight(a) - stationWeight(b)
+  )
+  return cachedLocalStations
 }
 
-/**
- * Retorna las estaciones disponibles
- */
-export async function getMergedStations(): Promise<Radio[]> {
-  return getLocalStations();
+export async function getMergedStations(): Promise<StationRecord[]> {
+  return getLocalStations()
 }

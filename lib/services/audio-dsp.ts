@@ -1,6 +1,6 @@
 /**
  * Procesador de Señal Digital (DSP) y Ecualizador de Estudio Broadcast
- * Utiliza Web Audio API con degradación elegante para compatibilidad total de streams.
+ * Utiliza Web Audio API con reconexión dinámica de nodos sin fugas y degradación elegante ante CORS.
  */
 
 export interface EqBand {
@@ -8,7 +8,7 @@ export interface EqBand {
   label: string
   frequency: number
   type: BiquadFilterType
-  gain: number // -12dB a +12dB
+  gain: number
 }
 
 export interface DspPreset {
@@ -16,7 +16,7 @@ export interface DspPreset {
   name: string
   description: string
   gains: [number, number, number, number, number]
-  preAmp: number // dB
+  preAmp: number
   compressor: boolean
 }
 
@@ -74,8 +74,8 @@ export const DSP_PRESETS: DspPreset[] = [
 export interface DspState {
   enabled: boolean
   activePresetId: string
-  bands: [number, number, number, number, number] // Ganancia por banda en dB (-12 a +12)
-  preAmp: number // dB (0 a +12)
+  bands: [number, number, number, number, number]
+  preAmp: number
   compressor: boolean
   isWebAudioActive: boolean
 }
@@ -91,6 +91,15 @@ const DEFAULT_STATE: DspState = {
   isWebAudioActive: false,
 }
 
+const FREQUENCIES = [60, 250, 1000, 4000, 14000] as const
+const FILTER_TYPES: readonly BiquadFilterType[] = [
+  'lowshelf',
+  'peaking',
+  'peaking',
+  'peaking',
+  'highshelf',
+]
+
 let audioCtx: AudioContext | null = null
 let sourceNode: MediaElementAudioSourceNode | null = null
 let filterNodes: BiquadFilterNode[] = []
@@ -99,20 +108,52 @@ let compressorNode: DynamicsCompressorNode | null = null
 let analyserNode: AnalyserNode | null = null
 let streamDestNode: MediaStreamAudioDestinationNode | null = null
 let connectedAudioElement: HTMLAudioElement | null = null
+let stateHydrated = false
 
-let currentState: DspState = DEFAULT_STATE
+let currentState: DspState = { ...DEFAULT_STATE }
 const dspListeners = new Set<(state: DspState) => void>()
 
 function loadSavedState(): DspState {
-  if (typeof window === 'undefined') return DEFAULT_STATE
+  if (typeof window === 'undefined') return { ...DEFAULT_STATE }
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw)
-      return { ...DEFAULT_STATE, ...parsed, isWebAudioActive: false }
+      const parsed = JSON.parse(raw) as Partial<DspState>
+      const validBands =
+        Array.isArray(parsed.bands) && parsed.bands.length === 5
+          ? (parsed.bands.map((v) => Math.max(-12, Math.min(12, Number(v) || 0))) as [
+              number,
+              number,
+              number,
+              number,
+              number,
+            ])
+          : [...DEFAULT_STATE.bands]
+      return {
+        enabled: typeof parsed.enabled === 'boolean' ? parsed.enabled : DEFAULT_STATE.enabled,
+        activePresetId:
+          typeof parsed.activePresetId === 'string'
+            ? parsed.activePresetId
+            : DEFAULT_STATE.activePresetId,
+        bands: validBands as [number, number, number, number, number],
+        preAmp:
+          typeof parsed.preAmp === 'number'
+            ? Math.max(0, Math.min(12, parsed.preAmp))
+            : DEFAULT_STATE.preAmp,
+        compressor:
+          typeof parsed.compressor === 'boolean' ? parsed.compressor : DEFAULT_STATE.compressor,
+        isWebAudioActive: false,
+      }
     }
   } catch {}
-  return DEFAULT_STATE
+  return { ...DEFAULT_STATE }
+}
+
+function ensureHydratedState() {
+  if (stateHydrated || typeof window === 'undefined') return
+  stateHydrated = true
+  const loaded = loadSavedState()
+  currentState = { ...loaded, isWebAudioActive: currentState.isWebAudioActive }
 }
 
 function saveState(state: DspState) {
@@ -136,6 +177,7 @@ function notifyDspChange() {
 }
 
 export function subscribeDsp(listener: (state: DspState) => void): () => void {
+  ensureHydratedState()
   dspListeners.add(listener)
   listener(currentState)
   return () => {
@@ -144,36 +186,103 @@ export function subscribeDsp(listener: (state: DspState) => void): () => void {
 }
 
 export function getDspState(): DspState {
+  ensureHydratedState()
   return currentState
 }
 
-const FREQUENCIES = [60, 250, 1000, 4000, 14000]
-const FILTER_TYPES: BiquadFilterType[] = ['lowshelf', 'peaking', 'peaking', 'peaking', 'highshelf']
+function disconnectProcessingNodes() {
+  try {
+    sourceNode?.disconnect()
+  } catch {}
+  for (const node of filterNodes) {
+    try {
+      node.disconnect()
+    } catch {}
+  }
+  try {
+    preAmpNode?.disconnect()
+  } catch {}
+  try {
+    compressorNode?.disconnect()
+  } catch {}
+  try {
+    analyserNode?.disconnect()
+  } catch {}
+}
 
 /**
- * Inicializa el grafo Web Audio conectándolo al elemento <audio>.
- * Si falla debido a políticas de CORS de navegadores estrictos, la señal sigue
- * sonando a través de la salida normal del elemento de audio.
+ * Reconecta la cadena activa en caliente sin recrear el MediaElementAudioSourceNode,
+ * permitiendo activar/desactivar el compresor o el bypass instantáneamente.
  */
-export function initAudioDsp(audio: HTMLAudioElement): boolean {
-  if (typeof window === 'undefined') return false
-  // Evita Web Audio en transmisiones que se reproducen en modo nativo sin CORS.
-  if (audio.crossOrigin !== 'anonymous') return false
-
-  // Cargar preferencias guardadas la primera vez
-  if (currentState === DEFAULT_STATE) {
-    currentState = loadSavedState()
+function rewireGraph() {
+  if (!audioCtx || !sourceNode || filterNodes.length !== 5 || !preAmpNode || !compressorNode || !analyserNode) {
+    return
   }
 
-  if (connectedAudioElement === audio && audioCtx && audioCtx.state !== 'closed') {
+  disconnectProcessingNodes()
+
+  let lastNode: AudioNode = sourceNode
+  if (currentState.enabled) {
+    for (const filter of filterNodes) {
+      lastNode.connect(filter)
+      lastNode = filter
+    }
+    lastNode.connect(preAmpNode)
+    lastNode = preAmpNode
+
+    if (currentState.compressor) {
+      lastNode.connect(compressorNode)
+      lastNode = compressorNode
+    }
+  }
+
+  lastNode.connect(analyserNode)
+  analyserNode.connect(audioCtx.destination)
+  if (streamDestNode) {
+    analyserNode.connect(streamDestNode)
+  }
+}
+
+function syncNodeParameters() {
+  if (!audioCtx) return
+  const now = audioCtx.currentTime || 0
+
+  if (filterNodes.length === 5) {
+    filterNodes.forEach((filter, idx) => {
+      const targetGain = currentState.enabled ? currentState.bands[idx] : 0
+      filter.gain.setTargetAtTime(targetGain, now, 0.04)
+    })
+  }
+
+  if (preAmpNode) {
+    const mult = currentState.enabled ? Math.pow(10, currentState.preAmp / 20) : 1
+    preAmpNode.gain.setTargetAtTime(mult, now, 0.04)
+  }
+}
+
+export function initAudioDsp(audio: HTMLAudioElement): boolean {
+  if (typeof window === 'undefined') return false
+  if (audio.crossOrigin !== 'anonymous') return false
+
+  ensureHydratedState()
+
+  if (connectedAudioElement === audio && audioCtx && audioCtx.state !== 'closed' && filterNodes.length === 5) {
     if (audioCtx.state === 'suspended') {
       audioCtx.resume().catch(() => {})
+    }
+    syncNodeParameters()
+    rewireGraph()
+    if (!currentState.isWebAudioActive) {
+      currentState = { ...currentState, isWebAudioActive: true }
+      notifyDspChange()
     }
     return true
   }
 
   try {
-    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
     if (!AudioContextClass) return false
 
     if (!audioCtx || audioCtx.state === 'closed') {
@@ -184,22 +293,16 @@ export function initAudioDsp(audio: HTMLAudioElement): boolean {
       audioCtx.resume().catch(() => {})
     }
 
+    disconnectProcessingNodes()
+
     if (!sourceNode || connectedAudioElement !== audio) {
-      try {
-        if (sourceNode && connectedAudioElement !== audio) sourceNode.disconnect()
-        sourceNode = audioCtx.createMediaElementSource(audio)
-        connectedAudioElement = audio
-      } catch (err) {
-        // En caso de que el elemento ya estuviera conectado previamente
-        console.warn('[DSP] Reutilizando conexión previa o captura:', err)
-      }
+      sourceNode = audioCtx.createMediaElementSource(audio)
+      connectedAudioElement = audio
     }
 
-    if (!sourceNode) return false
-
-    // Crear filtros de ecualización de 5 bandas
+    const ctx = audioCtx
     filterNodes = FREQUENCIES.map((freq, i) => {
-      const filter = audioCtx!.createBiquadFilter()
+      const filter = ctx.createBiquadFilter()
       filter.type = FILTER_TYPES[i]
       filter.frequency.value = freq
       filter.gain.value = currentState.enabled ? currentState.bands[i] : 0
@@ -209,52 +312,29 @@ export function initAudioDsp(audio: HTMLAudioElement): boolean {
       return filter
     })
 
-    // Pre-amplificador (GainNode)
-    preAmpNode = audioCtx.createGain()
-    const preAmpGainMultiplier = Math.pow(10, (currentState.enabled ? currentState.preAmp : 0) / 20)
-    preAmpNode.gain.value = preAmpGainMultiplier
+    preAmpNode = ctx.createGain()
+    preAmpNode.gain.value = currentState.enabled ? Math.pow(10, currentState.preAmp / 20) : 1
 
-    // Compresor de estudio broadcast (evita distorsión/clipping)
-    compressorNode = audioCtx.createDynamicsCompressor()
+    compressorNode = ctx.createDynamicsCompressor()
     compressorNode.threshold.value = -24
     compressorNode.knee.value = 30
     compressorNode.ratio.value = 4
     compressorNode.attack.value = 0.003
     compressorNode.release.value = 0.25
 
-    // Analizador de espectro y vúmetros
-    analyserNode = audioCtx.createAnalyser()
+    analyserNode = ctx.createAnalyser()
     analyserNode.fftSize = 128
     analyserNode.smoothingTimeConstant = 0.8
 
-    // Destino de grabación en vivo (StreamDestination)
-    streamDestNode = audioCtx.createMediaStreamDestination()
+    streamDestNode = ctx.createMediaStreamDestination()
 
-    // Conectar el grafo de audio:
-    // source -> band0 -> band1 -> band2 -> band3 -> band4 -> preAmp -> compressor/bypass -> analyser -> destination & record
-    let lastNode: AudioNode = sourceNode
-    for (const filter of filterNodes) {
-      lastNode.connect(filter)
-      lastNode = filter
-    }
-
-    lastNode.connect(preAmpNode)
-    lastNode = preAmpNode
-
-    if (currentState.compressor && currentState.enabled) {
-      lastNode.connect(compressorNode)
-      lastNode = compressorNode
-    }
-
-    lastNode.connect(analyserNode)
-    analyserNode.connect(audioCtx.destination)
-    analyserNode.connect(streamDestNode)
+    rewireGraph()
 
     currentState = { ...currentState, isWebAudioActive: true }
     notifyDspChange()
     return true
   } catch (e) {
-    console.warn('[DSP] No se pudo inicializar Web Audio graph (posible CORS o política):', e)
+    console.warn('[DSP] No se pudo inicializar Web Audio graph:', e)
     currentState = { ...currentState, isWebAudioActive: false }
     notifyDspChange()
     return false
@@ -262,24 +342,16 @@ export function initAudioDsp(audio: HTMLAudioElement): boolean {
 }
 
 export function setDspEnabled(enabled: boolean) {
+  ensureHydratedState()
   currentState = { ...currentState, enabled }
   saveState(currentState)
-
-  if (filterNodes.length === 5) {
-    filterNodes.forEach((filter, i) => {
-      filter.gain.value = enabled ? currentState.bands[i] : 0
-    })
-  }
-
-  if (preAmpNode) {
-    const mult = enabled ? Math.pow(10, currentState.preAmp / 20) : 1
-    preAmpNode.gain.value = mult
-  }
-
+  syncNodeParameters()
+  rewireGraph()
   notifyDspChange()
 }
 
 export function setBandGain(bandIndex: number, gainDb: number) {
+  ensureHydratedState()
   if (bandIndex < 0 || bandIndex >= 5) return
   const clamped = Math.max(-12, Math.min(12, gainDb))
   const newBands = [...currentState.bands] as [number, number, number, number, number]
@@ -291,35 +363,29 @@ export function setBandGain(bandIndex: number, gainDb: number) {
     activePresetId: 'custom',
   }
   saveState(currentState)
-
-  if (filterNodes[bandIndex] && currentState.enabled) {
-    filterNodes[bandIndex].gain.setTargetAtTime(clamped, audioCtx?.currentTime || 0, 0.05)
-  }
-
+  syncNodeParameters()
   notifyDspChange()
 }
 
 export function setPreAmpGain(gainDb: number) {
+  ensureHydratedState()
   const clamped = Math.max(0, Math.min(12, gainDb))
   currentState = { ...currentState, preAmp: clamped }
   saveState(currentState)
-
-  if (preAmpNode && currentState.enabled) {
-    const mult = Math.pow(10, clamped / 20)
-    preAmpNode.gain.setTargetAtTime(mult, audioCtx?.currentTime || 0, 0.05)
-  }
-
+  syncNodeParameters()
   notifyDspChange()
 }
 
 export function setCompressorEnabled(enabled: boolean) {
+  ensureHydratedState()
   currentState = { ...currentState, compressor: enabled }
   saveState(currentState)
-  // Re-enlazar si se desea o dejar configurado
+  rewireGraph()
   notifyDspChange()
 }
 
 export function applyPreset(presetId: string) {
+  ensureHydratedState()
   const preset = DSP_PRESETS.find((p) => p.id === presetId)
   if (!preset) return
 
@@ -331,46 +397,28 @@ export function applyPreset(presetId: string) {
     compressor: preset.compressor,
   }
   saveState(currentState)
-
-  if (filterNodes.length === 5 && currentState.enabled) {
-    filterNodes.forEach((node, idx) => {
-      node.gain.setTargetAtTime(preset.gains[idx], audioCtx?.currentTime || 0, 0.05)
-    })
-  }
-
-  if (preAmpNode && currentState.enabled) {
-    const mult = Math.pow(10, preset.preAmp / 20)
-    preAmpNode.gain.setTargetAtTime(mult, audioCtx?.currentTime || 0, 0.05)
-  }
-
+  syncNodeParameters()
+  rewireGraph()
   notifyDspChange()
 }
 
+let analyserBuffer: Uint8Array | null = null
+
 export function getAnalyserData(): Uint8Array | null {
   if (!analyserNode) return null
-  const data = new Uint8Array(analyserNode.frequencyBinCount)
-  analyserNode.getByteFrequencyData(data)
-  return data
-}
-
-/**
- * Retorna el stream procesado para la grabadora
- */
-export function getDspOutputStream(): MediaStream | null {
-  if (streamDestNode) {
-    return streamDestNode.stream
+  if (!analyserBuffer || analyserBuffer.length !== analyserNode.frequencyBinCount) {
+    analyserBuffer = new Uint8Array(analyserNode.frequencyBinCount)
   }
-  return null
+  analyserNode.getByteFrequencyData(analyserBuffer)
+  return analyserBuffer
 }
 
+export function getDspOutputStream(): MediaStream | null {
+  return streamDestNode ? streamDestNode.stream : null
+}
 
-/** Liberación explícita ANTES de sustituir el elemento CORS por audio nativo. */
 export function releaseAudioDsp(): void {
-  try { sourceNode?.disconnect() } catch {}
-  for (const node of filterNodes) { try { node.disconnect() } catch {} }
-  try { preAmpNode?.disconnect() } catch {}
-  try { compressorNode?.disconnect() } catch {}
-  try { analyserNode?.disconnect() } catch {}
+  disconnectProcessingNodes()
   sourceNode = null
   connectedAudioElement = null
   filterNodes = []
@@ -378,6 +426,7 @@ export function releaseAudioDsp(): void {
   compressorNode = null
   analyserNode = null
   streamDestNode = null
+  analyserBuffer = null
   currentState = { ...currentState, isWebAudioActive: false }
   notifyDspChange()
 }

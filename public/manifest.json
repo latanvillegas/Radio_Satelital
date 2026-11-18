@@ -1,17 +1,17 @@
 {
-  "name": "Radio Satelital",
+  "name": "Radio Satelital — Observatorio de Señales",
   "short_name": "Satelital",
-  "description": "Escucha emisoras de radio en vivo de Perú y el mundo.",
+  "description": "Escucha emisoras de radio en vivo de Jaén, Cajamarca, Perú y el mundo con ecualizador de 5 bandas.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#060a0e",
+  "theme_color": "#060a0e",
   "orientation": "portrait-primary",
   "lang": "es",
   "dir": "ltr",
-  "categories": ["music", "entertainment"],
+  "categories": ["music", "entertainment", "news"],
   "icons": [
     {
       "src": "/icon-192.png",

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Radio Satelital',
@@ -6,39 +7,16 @@ export const metadata: Metadata = {
 
 export default function DocsPage() {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        background: '#05070a',
-        color: '#ffffff',
-        fontFamily: 'Inter, system-ui, sans-serif',
-        textAlign: 'center',
-        padding: 24,
-      }}
-    >
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-canvas text-ink">
       <script
         dangerouslySetInnerHTML={{
           __html: "window.location.replace('/');",
         }}
       />
-      <p style={{ fontSize: 18, marginBottom: 12, fontWeight: 500 }}>
-        Redirigiendo a Radio Satelital...
-      </p>
-      <a
-        href="/"
-        style={{
-          color: '#38bdf8',
-          textDecoration: 'underline',
-          fontSize: 14,
-        }}
-      >
+      <p className="text-lg font-semibold mb-3 text-ink">Redirigiendo a Radio Satelital…</p>
+      <Link href="/" className="text-sm font-medium text-accent underline underline-offset-4">
         Haz clic aquí si no eres redirigido automáticamente
-      </a>
-    </div>
+      </Link>
+    </main>
   )
 }
-

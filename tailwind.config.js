@@ -9,23 +9,27 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'bg-dark': 'var(--bg-dark)',
-        'bg-glass': 'var(--bg-glass)',
-        'accent': 'var(--accent)',
+        canvas: 'var(--bg-canvas)',
+        surface: 'var(--bg-surface)',
+        elevated: 'var(--bg-elevated)',
+        subtle: 'var(--bg-subtle)',
+        input: 'var(--bg-input)',
+        line: 'var(--border-subtle)',
+        'line-strong': 'var(--border-strong)',
+        ink: 'var(--text-primary)',
+        'ink-secondary': 'var(--text-secondary)',
+        'ink-muted': 'var(--text-muted)',
+        accent: 'var(--accent)',
         'accent-hover': 'var(--accent-hover)',
+        'accent-fg': 'var(--accent-fg)',
         'accent-glow': 'var(--accent-glow)',
         'accent-subtle': 'var(--accent-subtle)',
-        'text-main': 'var(--text-main)',
-        'text-muted': 'var(--text-muted)',
-        'border-glass': 'var(--border-glass)'
-      },
-      borderRadius: {
-        'lg-radius': '16px'
       },
       fontFamily: {
-        'main': ['Inter', 'system-ui', 'sans-serif']
-      }
-    }
+        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 }

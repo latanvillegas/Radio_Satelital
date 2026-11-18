@@ -37,9 +37,9 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
 
       const style = getComputedStyle(document.documentElement)
       const grad = ctx.createLinearGradient(0, height, 0, 0)
-      grad.addColorStop(0, style.getPropertyValue('--accent').trim() || '#ef4444')
-      grad.addColorStop(0.6, style.getPropertyValue('--accent-hover').trim() || '#f87171')
-      grad.addColorStop(1, '#ffffff')
+      grad.addColorStop(0, style.getPropertyValue('--accent').trim() || '#10b981')
+      grad.addColorStop(0.6, style.getPropertyValue('--accent-hover').trim() || '#34d399')
+      grad.addColorStop(1, style.getPropertyValue('--text-primary').trim() || '#f4f7f9')
 
       for (let i = 0; i < count; i++) {
         if (isPlaying) {
