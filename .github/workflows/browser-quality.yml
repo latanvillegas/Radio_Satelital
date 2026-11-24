@@ -33,6 +33,10 @@ jobs:
         if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) }}
         continue-on-error: true
         run: node scripts/check-browser-streams.mjs
+      - name: Live Radio Browser API and CORS diagnostic
+        if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        continue-on-error: true
+        run: node scripts/check-radio-browser.mjs
       - name: Upload browser results
         if: always()
         uses: actions/upload-artifact@v4

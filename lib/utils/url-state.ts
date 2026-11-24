@@ -18,6 +18,7 @@ const VALID_SCOPES = new Set<StationScope>([
   'world',
   'favorites',
   'recent',
+  'browser',
 ])
 
 export function parseExplorerUrlState(search: string): ExplorerUrlState {
@@ -47,7 +48,7 @@ export function serializeExplorerUrlState(state: ExplorerUrlState): string {
   if (state.station?.trim()) params.set('station', state.station.trim())
   if (state.scope && state.scope !== 'all') params.set('scope', state.scope)
   if (state.q?.trim()) params.set('q', state.q.trim())
-  if (!state.scope) {
+  if (!state.scope || state.scope === 'browser') {
     if (state.country?.trim()) params.set('country', state.country.trim())
     if (state.region?.trim()) params.set('region', state.region.trim())
   }
@@ -62,11 +63,11 @@ export function buildStationShareUrl(originOrHref: string, station: Station | nu
     const parsed = new URL(originOrHref)
     if (!station) return `${parsed.origin}/`
     const slug = stationSlug(station)
-    return `${parsed.origin}/emisora/${encodeURIComponent(slug)}/`
+    return station.source === 'radio-browser' ? `${parsed.origin}/?station=${encodeURIComponent(slug)}&scope=browser` : `${parsed.origin}/emisora/${encodeURIComponent(slug)}/`
   } catch {
     const base = originOrHref.split('?')[0].split('#')[0].replace(/\/$/, '')
     if (!station) return `${base}/`
     const slug = stationSlug(station)
-    return `${base}/emisora/${encodeURIComponent(slug)}/`
+    return station.source === 'radio-browser' ? `${base}/?station=${encodeURIComponent(slug)}&scope=browser` : `${base}/emisora/${encodeURIComponent(slug)}/`
   }
 }

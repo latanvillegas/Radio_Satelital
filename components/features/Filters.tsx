@@ -3,12 +3,19 @@
 import React, { useEffect, useState } from 'react'
 import { Search, X, SlidersHorizontal, ChevronDown, Shuffle } from 'lucide-react'
 import type { ExposedFilters } from '@/hooks/stations/useStations'
+import { countryName } from '@/lib/services/radio-browser'
+
+let countryOptions: { code: string; name: string }[] | undefined
+function remoteCountries() {
+  return countryOptions ??= 'AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' ').map(code => ({ code, name: countryName(code) })).sort((a,b) => a.name.localeCompare(b.name, 'es'))
+}
 
 interface Props {
   setQuery: (value: string) => void
   searchQuery?: string
   filters: ExposedFilters
   onPlayRandom?: () => void
+  remote?: boolean
 }
 
 export default function Filters({
@@ -16,6 +23,7 @@ export default function Filters({
   searchQuery = '',
   filters,
   onPlayRandom,
+  remote = false,
 }: Props) {
   const [localQuery, setLocalQuery] = useState(searchQuery)
   const [open, setOpen] = useState(false)
@@ -64,7 +72,7 @@ export default function Filters({
             type="search"
             value={localQuery}
             onChange={(e) => handleChange(e.target.value)}
-            placeholder="Busca una emisora, ciudad o género…"
+            placeholder={remote ? 'Buscar por nombre en Radio Browser…' : 'Busca una emisora, ciudad o género…'}
             aria-label="Buscar emisoras por nombre, ciudad, país o género"
             className="w-full h-12 rounded-xl bg-input border border-line pl-11 pr-11 text-base text-ink placeholder:text-ink-muted outline-none focus:border-accent transition-colors"
           />
@@ -115,7 +123,19 @@ export default function Filters({
         </div>
       </div>
 
-      {open && (
+      {open && remote ? (
+        <div id="advanced-filters-drawer" className="mt-2.5 p-3.5 rounded-xl bg-surface border border-line grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <label className="flex flex-col gap-1 text-xs text-ink-secondary">País (Radio Browser)
+            <select aria-label="País Radio Browser" value={filters.activeCountry || ''} onChange={e => filters.setCountry(e.target.value)} className="h-11 rounded-lg bg-input border border-line px-3 text-sm text-ink">
+              <option value="">Todos los países</option>
+              {remoteCountries().map(({ code, name }) => <option key={code} value={code}>{name}</option>)}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-ink-secondary">Género o etiqueta
+            <input aria-label="Género Radio Browser" type="search" value={filters.activeGenre || ''} onChange={e => filters.setGenre(e.target.value)} placeholder="rock, jazz, cumbia…" maxLength={80} className="h-11 rounded-lg bg-input border border-line px-3 text-sm text-ink" />
+          </label>
+        </div>
+      ) : open && (
         <div
           id="advanced-filters-drawer"
           className="mt-2.5 p-3.5 rounded-xl bg-surface border border-line grid grid-cols-1 sm:grid-cols-3 gap-2.5"

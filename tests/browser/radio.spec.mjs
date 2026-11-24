@@ -3,7 +3,7 @@ import AxeBuilder from '@axe-core/playwright'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import { origin, isolateNetwork } from './fixtures.mjs'
+import { origin, isolateNetwork, makeWav } from './fixtures.mjs'
 const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
 
 async function audit(page, info, label) {
@@ -253,4 +253,34 @@ test('station artwork preserves a clean fallback while remote logos are unavaila
     return Number(style.opacity) === 0 && fallback && getComputedStyle(fallback).display !== 'none'
   }))).toBe(true)
   await info.attach('artwork-offline-fallback.png', { body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png' })
+})
+
+test('Radio Browser discovery, favorite persistence and shared UUID without replacing local catalog', async ({ page }) => {
+  await isolateNetwork(page, true)
+  const uuid = '01234567-89ab-cdef-0123-456789abcdef'
+  const entry = { stationuuid: uuid, name: 'Radio Browser Fixture', url_resolved: 'https://radio.example.com/live', countrycode: 'ES', tags: 'rock', lastcheckok: 1 }
+  const requests = []
+  await page.route('https://*.api.radio-browser.info/json/**', async route => {
+    requests.push(route.request().url())
+    return route.fulfill({ json: route.request().url().includes('/json/url/') ? { ok: true } : [entry], headers: { 'access-control-allow-origin': '*' } })
+  })
+  await page.route(entry.url_resolved, route => route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'content-type': 'audio/wav' }, body: makeWav() }))
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Reproducir: Activa Jaén', exact: true })).toBeVisible()
+  expect(requests).toHaveLength(0)
+  await page.getByRole('button', { name: 'Radio Browser', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Reproducir: Radio Browser Fixture', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Reproducir: Radio Browser Fixture', exact: true }).click()
+  await expect.poll(() => page.locator('#radioPlayer').evaluate(a => !a.paused && a.currentTime > 0.1)).toBe(true)
+  await expect.poll(() => requests.some(url => url.includes('/json/url/' + uuid))).toBe(true)
+  await page.getByRole('button', { name: 'Guardar en favoritas: Radio Browser Fixture', exact: true }).click()
+  await page.reload()
+  await page.getByRole('group', { name: 'Filtrar catálogo por alcance' }).getByRole('button', { name: 'Favoritas', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Quitar de favoritas: Radio Browser Fixture', exact: true })).toBeVisible()
+  await page.evaluate(() => localStorage.removeItem('radio_browser_saved_v1'))
+  await page.goto('/?station=rb-' + uuid + '&scope=browser')
+  await expect(page.locator('.broadcast-now-title')).toHaveText('Radio Browser Fixture')
+  expect(requests.some(url => url.includes('/json/stations/byuuid'))).toBe(true)
+  await page.getByRole('group', { name: 'Filtrar catálogo por alcance' }).getByRole('button', { name: 'Todas', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Reproducir: Activa Jaén', exact: true })).toBeVisible()
 })

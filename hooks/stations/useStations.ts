@@ -17,6 +17,8 @@ import {
 } from '@/lib/services/stations'
 import { toggleFavorite as toggleFavoriteStorage, getFavorites } from '@/lib/storage/favorites'
 import { getRecentStations } from '@/lib/storage/recents'
+import { readSavedRadioBrowserStations, rememberRadioBrowserStation, resolveRadioBrowserStation, radioBrowserUuid } from '@/lib/services/radio-browser'
+import { useRadioBrowser } from './useRadioBrowser'
 import {
   playStation as libPlay,
   prepareStation,
@@ -57,14 +59,26 @@ export default function useStations(
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const urlInitializedRef = useRef(false)
+  const remoteLink = useRef<AbortController | null>(null)
+  const [savedRemote, setSavedRemote] = useState<Station[]>([])
+  const [linkError, setLinkError] = useState<string | null>(null)
+  const browser = useRadioBrowser(scope === 'browser', query, filters.country || '', filters.genre || '')
+  const rememberRemote = useCallback((s: Station) => {
+    if (s.source === 'radio-browser') setSavedRemote(rememberRadioBrowserStation(s, getFavorites(), getRecentStations()))
+  }, [])
 
   // Hidratación cliente: favoritos, recientes y estado inicial desde URL (?station=..., ?scope=..., ?q=...)
   useEffect(() => {
     setFavoritesSet(getFavorites())
     setRecentKeys(getRecentStations())
+    const saved = readSavedRadioBrowserStations()
+    setSavedRemote(saved)
 
     const applyUrlParams = () => {
       if (typeof window === 'undefined') return
+      remoteLink.current?.abort()
+      remoteLink.current = null
+      setLinkError(null)
       const parsed = parseExplorerUrlState(window.location.search)
 
       if (parsed.q !== undefined) setQueryState(parsed.q)
@@ -76,7 +90,7 @@ export default function useStations(
           country:
             parsed.scope === 'jaen' || parsed.scope === 'cajamarca' || parsed.scope === 'peru'
               ? 'Perú'
-              : undefined,
+              : parsed.scope === 'browser' ? parsed.country : undefined,
           region:
             parsed.scope === 'jaen'
               ? 'Jaén'
@@ -95,10 +109,27 @@ export default function useStations(
       }
 
       if (parsed.station) {
-        const matched = findStationByParam(baseStations, parsed.station)
+        const matched = findStationByParam([...baseStations, ...readSavedRadioBrowserStations()], parsed.station)
         if (matched) {
           prepareStation(matched)
           setCurrentStation(matched)
+        } else if (parsed.station.startsWith('rb-') && radioBrowserUuid(parsed.station)) {
+          const controller = new AbortController()
+          remoteLink.current = controller
+          void resolveRadioBrowserStation(parsed.station, controller.signal).then(station => {
+            if (controller.signal.aborted) return
+            remoteLink.current = null
+            if (!station) throw new Error('Station unavailable')
+            rememberRemote(station)
+            prepareStation(station)
+            setCurrentStation(station)
+          }).catch(() => {
+            if (controller.signal.aborted) return
+            remoteLink.current = null
+            setLinkError('No se pudo recuperar la emisora compartida de Radio Browser.')
+            const fallback = getCurrentPlayingStation() || baseStations[0]
+            if (fallback) { prepareStation(fallback); setCurrentStation(fallback) }
+          })
         }
       } else if (initialSelectedStation && !getCurrentPlayingStation()) {
         prepareStation(initialSelectedStation)
@@ -110,8 +141,12 @@ export default function useStations(
     urlInitializedRef.current = true
 
     window.addEventListener('popstate', applyUrlParams)
-    return () => window.removeEventListener('popstate', applyUrlParams)
-  }, [baseStations, initialSelectedStation])
+    return () => {
+      remoteLink.current?.abort()
+      remoteLink.current = null
+      window.removeEventListener('popstate', applyUrlParams)
+    }
+  }, [baseStations, initialSelectedStation, rememberRemote])
 
   // Carga asíncrona segura en caso de fusión futura de catálogos
   useEffect(() => {
@@ -139,13 +174,13 @@ export default function useStations(
   }, [])
 
   const stationsWithFavs = useMemo(
-    () => applyFavoriteState(baseStations, favoritesSet),
-    [baseStations, favoritesSet]
+    () => applyFavoriteState([...baseStations, ...savedRemote], favoritesSet),
+    [baseStations, savedRemote, favoritesSet]
   )
 
   // Prepara la emisora inicial (URL -> en reproducción -> reciente -> Activa Jaén -> primera) sin autoplay intrusivo
   useEffect(() => {
-    if (currentStation || stationsWithFavs.length === 0) return
+    if (remoteLink.current || currentStation || stationsWithFavs.length === 0) return
 
     if (typeof window !== 'undefined') {
       const parsed = parseExplorerUrlState(window.location.search)
@@ -192,7 +227,7 @@ export default function useStations(
 
   // Sincronización limpia hacia la barra de direcciones sin recargar la página
   useEffect(() => {
-    if (!urlInitializedRef.current || typeof window === 'undefined') return
+    if (remoteLink.current || !urlInitializedRef.current || typeof window === 'undefined') return
     const currentSlug = currentStation ? stationSlug(currentStation) : undefined
     const cleanPath = window.location.pathname.replace(/\/+$/, '')
     const isCanonicalStationPath =
@@ -202,7 +237,7 @@ export default function useStations(
       station: isCanonicalStationPath ? undefined : currentSlug,
       scope: scope !== 'all' ? scope : undefined,
       q: deferredQuery || undefined,
-      country: scope === 'all' ? filters.country : undefined,
+      country: scope === 'all' || scope === 'browser' ? filters.country : undefined,
       region: scope === 'all' ? filters.region : undefined,
       genre: filters.genre,
     })
@@ -223,7 +258,13 @@ export default function useStations(
 
   const onlyFavs = scope === 'favorites'
 
+  const browserStations = useMemo(() => {
+    const local = new Map(baseStations.map(s => [s.streamUrl || s.url, s]))
+    return applyFavoriteState(browser.stations.map(s => local.get(s.streamUrl || s.url) || s), favoritesSet)
+  }, [browser.stations, baseStations, favoritesSet])
+
   const filteredStations = useMemo(() => {
+    if (scope === 'browser') return browserStations
     if (scope === 'recent' && !deferredQuery && !filters.genre) {
       return recentStations
     }
@@ -243,7 +284,7 @@ export default function useStations(
     }
 
     return baseFiltered
-  }, [scope, deferredQuery, filters, onlyFavs, favoritesSet, stationsWithFavs, recentStations])
+  }, [scope, deferredQuery, filters, onlyFavs, favoritesSet, stationsWithFavs, recentStations, browserStations])
 
   const filterOptions = useMemo(
     () => buildStationFilterOptions(stationsWithFavs),
@@ -251,10 +292,13 @@ export default function useStations(
   )
 
   const playStation = useCallback((s: Station) => {
+    remoteLink.current?.abort()
+    remoteLink.current = null
     setCurrentStation(s)
     libPlay(s)
+    rememberRemote(s)
     setRecentKeys(getRecentStations())
-  }, [])
+  }, [rememberRemote])
 
   const playAtIndex = useCallback(
     (list: Station[], index: number) => {
@@ -266,7 +310,7 @@ export default function useStations(
     [playStation]
   )
 
-  const navigationPool = filteredStations.length > 0 ? filteredStations : stationsWithFavs
+  const navigationPool = scope === 'browser' ? filteredStations : filteredStations.length > 0 ? filteredStations : stationsWithFavs
 
   const nextStation = useCallback(() => {
     if (navigationPool.length === 0) return
@@ -284,12 +328,12 @@ export default function useStations(
   }, [navigationPool, currentStation, playAtIndex])
 
   const playRandomStation = useCallback(() => {
-    const pool = filteredStations.length > 0 ? filteredStations : stationsWithFavs
+    const pool = navigationPool
     if (pool.length === 0) return
     const randomIndex = Math.floor(Math.random() * pool.length)
     const chosen = pool[randomIndex]
     if (chosen) playStation(chosen)
-  }, [filteredStations, stationsWithFavs, playStation])
+  }, [navigationPool, playStation])
 
   useEffect(() => {
     bindMediaNavigation(nextStation, prevStation)
@@ -299,7 +343,8 @@ export default function useStations(
     const key = stationKey(s)
     const updated = toggleFavoriteStorage(key)
     setFavoritesSet(new Set(updated))
-  }, [])
+    rememberRemote(s)
+  }, [rememberRemote])
 
   const setQuery = useCallback((value: string) => {
     setQueryState(value)
@@ -321,7 +366,7 @@ export default function useStations(
             : resolved === 'cajamarca'
             ? 'Cajamarca'
             : undefined,
-        genre: f.genre,
+        genre: (prev === 'browser') !== (resolved === 'browser') ? undefined : f.genre,
       }))
       return resolved
     })
@@ -337,7 +382,7 @@ export default function useStations(
     () => ({
       ...filterOptions,
       setCountry: (c: string) => {
-        setScopeState('all')
+        setScopeState(prev => prev === 'browser' ? prev : 'all')
         setFilters((f) => ({ ...f, country: c || undefined, region: undefined }))
       },
       setRegion: (r: string) => {
@@ -360,7 +405,9 @@ export default function useStations(
 
   return {
     stations: filteredStations,
-    rawStations: stationsWithFavs,
+    rawStations: baseStations,
+    browser,
+    linkError,
     recentStations,
     currentStation,
     scope,

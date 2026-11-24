@@ -50,6 +50,8 @@ export default function RadioExplorer({
     searchQuery,
     filters,
     error,
+    browser,
+    linkError,
   } = useStations(initialStations, featuredStation)
 
   const [menuOpen, setMenuOpen] = useState(false)
@@ -69,7 +71,9 @@ export default function RadioExplorer({
   )
 
   const sectionTitle =
-    scope === 'recent'
+    scope === 'browser'
+      ? 'Radio Browser · Catálogo internacional'
+      : scope === 'recent'
       ? 'Escuchadas recientemente'
       : scope === 'favorites'
       ? 'Tus emisoras favoritas'
@@ -213,7 +217,7 @@ export default function RadioExplorer({
                 <h1 id="discover-heading" className="broadcast-explorer-title">Explorar emisoras</h1>
               )}
               <p className="broadcast-catalog-meta">
-                <span><strong>{rawStations.length}</strong> emisoras en el catálogo</span>
+                <span><strong>{rawStations.length}</strong> emisoras locales</span>
                 <span className="broadcast-meta-divider" aria-hidden="true" />
                 <span><strong>{countriesCount}</strong> países</span>
               </p>
@@ -224,6 +228,7 @@ export default function RadioExplorer({
               searchQuery={searchQuery}
               filters={filters}
               onPlayRandom={playRandomStation}
+              remote={scope === 'browser'}
             />
 
             {/* Controles segmentados rápidos */}
@@ -244,6 +249,15 @@ export default function RadioExplorer({
                   }`}
                 >
                   Todas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleScopeSelect('browser')}
+                  aria-pressed={scope === 'browser'}
+                  className={`min-h-[44px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${scope === 'browser' ? 'bg-accent text-accent-fg border-accent' : 'bg-surface hover:bg-subtle text-ink-secondary hover:text-ink border-line'}`}
+                >
+                  <RadioTower size={14} aria-hidden="true" />
+                  Radio Browser
                 </button>
                 <button
                   type="button"
@@ -350,6 +364,21 @@ export default function RadioExplorer({
             </div>
           )}
 
+          {linkError && <p role="alert" className="mb-3 text-sm text-ink-secondary">{linkError}</p>}
+          {scope === 'browser' && (
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-ink-secondary">
+              <span>Directorio externo · fuentes HTTPS · disponibilidad variable</span>
+              <a className="underline text-ink" href="https://www.radio-browser.info/" target="_blank" rel="noopener noreferrer">Radio Browser</a>
+            </div>
+          )}
+          {scope === 'browser' && browser.loading ? (
+            <p role="status" className="py-5 text-sm text-ink-secondary">Buscando emisoras en Radio Browser…</p>
+          ) : scope === 'browser' && browser.error ? (
+            <div role="alert" className="py-4 text-sm text-ink-secondary">
+              <p>{browser.error}</p>
+              <button type="button" className="min-h-[44px] mt-2 px-4 rounded-lg border border-line text-ink" onClick={browser.retry}>Reintentar Radio Browser</button>
+            </div>
+          ) : (
           <StationGrid
             stations={stations}
             title={sectionTitle}
@@ -358,6 +387,14 @@ export default function RadioExplorer({
             toggleFavorite={toggleFavorite}
             onResetFilters={hasActiveFilters ? resetAllFilters : undefined}
           />
+          )}
+          {scope === 'browser' && !browser.loading && !browser.error && (
+            <nav aria-label="Paginación Radio Browser" className="flex flex-wrap items-center justify-center gap-3 mt-5">
+              <button type="button" disabled={browser.page === 0} onClick={browser.previous} className="min-h-[44px] px-4 rounded-lg border border-line text-ink disabled:opacity-50">Anterior</button>
+              <span className="text-xs text-ink-secondary" aria-live="polite">Página {browser.page + 1}</span>
+              <button type="button" disabled={!browser.hasMore} onClick={browser.next} className="min-h-[44px] px-4 rounded-lg border border-line text-ink disabled:opacity-50">Siguiente</button>
+            </nav>
+          )}
         </main>
 
         <Player

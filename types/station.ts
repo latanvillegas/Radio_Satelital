@@ -1,4 +1,4 @@
-export type StationSource = 'local'
+export type StationSource = 'local' | 'radio-browser'
 
 export interface Station {
   id?: string
@@ -17,7 +17,8 @@ export interface Station {
   tags?: string[]
   bitrate?: number
   codec?: string
+  hls?: boolean
   source?: StationSource
 }
 
-export type StationScope = 'all' | 'jaen' | 'cajamarca' | 'peru' | 'world' | 'favorites' | 'recent'
+export type StationScope = 'all' | 'jaen' | 'cajamarca' | 'peru' | 'world' | 'favorites' | 'recent' | 'browser'

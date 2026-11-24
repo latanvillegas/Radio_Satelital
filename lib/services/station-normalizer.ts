@@ -32,6 +32,7 @@ export function normalizeSearch(value: string): string {
 }
 
 export function stationSlug(station: Pick<Station, 'id' | 'name'>): string {
+  if (station.id && /^rb-[0-9a-f-]{36}$/i.test(station.id)) return station.id.toLowerCase()
   const base = normalizeSearch(station.name || station.id || '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
@@ -125,7 +126,8 @@ export function inferGenres(name: string, explicitTags: string[] = []): string[]
   return Array.from(result)
 }
 
-export function stationKey(station: Pick<Station, 'name' | 'url' | 'streamUrl'>): string {
+export function stationKey(station: Pick<Station, 'id' | 'name' | 'url' | 'streamUrl' | 'source'>): string {
+  if (station.source === 'radio-browser' && station.id) return station.id
   const streamUrl = cleanText(station.streamUrl ?? station.url)
   return `${cleanText(station.name)}|${streamUrl}`
 }
