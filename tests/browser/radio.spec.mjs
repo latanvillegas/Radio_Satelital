@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 
 const origin = 'http://127.0.0.1:4173'
 const stationUrl = 'https://sp.onliveperu.com/8108/stream'
@@ -142,4 +144,64 @@ test('capture Chromium task duration and JS heap in idle and playback', async ({
   console.log('PERFORMANCE ' + JSON.stringify(report))
   await info.attach('performance.json', { body: JSON.stringify(report, null, 2), contentType: 'application/json' })
   await cdp.detach()
+})
+
+test('stereo peak meter separates PCM channels and recorder produces a downloadable file', async ({ page }, info) => {
+  await isolateNetwork(page, true)
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Escuchar Activa Jaén', exact: true }).click()
+  await expect.poll(() => page.locator('#radioPlayer').evaluate(a => !a.paused && a.currentTime > 0.1)).toBe(true)
+  await page.getByRole('button', { name: 'Abrir reproductor expandido' }).click()
+  await page.getByRole('button', { name: 'Cabina', exact: true }).click()
+  await expect(page.getByText('Picos por canal L / R', { exact: true })).toBeVisible()
+  const readPeak = async channel => {
+    const text = await page.getByText(channel, { exact: true }).locator('..').innerText()
+    const match = /(-?\d+(?:\.\d+)?)\s*dBFS/.exec(text)
+    return match ? Number(match[1]) : null
+  }
+  await expect.poll(async () => {
+    const left = await readPeak('CH-L'), right = await readPeak('CH-R')
+    return left !== null && right !== null ? left - right : 0
+  }).toBeGreaterThan(8)
+  const peaks = { leftDbfs: await readPeak('CH-L'), rightDbfs: await readPeak('CH-R') }
+  console.log('STEREO ' + JSON.stringify(peaks))
+  await info.attach('stereo-peaks.json', { body: JSON.stringify(peaks), contentType: 'application/json' })
+  await page.getByRole('button', { name: 'Grabar emisión' }).click()
+  await expect(page.getByRole('button', { name: /Detener \(/ })).toBeVisible()
+  await page.waitForTimeout(1200)
+  await page.getByRole('button', { name: /Detener \(/ }).click()
+  const downloadButton = page.getByRole('button', { name: 'Descargar grabación' })
+  await expect(downloadButton).toBeEnabled()
+  const [download] = await Promise.all([page.waitForEvent('download'), downloadButton.click()])
+  expect(download.suggestedFilename()).toMatch(/\.(webm|ogg|m4a)$/)
+  const file = await download.path()
+  expect((await fs.stat(file)).size).toBeGreaterThan(0)
+})
+
+test('HLS.js plays a local AAC transport stream in the real browser', async ({ page }) => {
+  const hlsBase = 'https://rnelivestream.rtve.es/rnerc/main/'
+  const fixture = path.resolve('out/hls-fixture')
+  let segmentRequests = 0
+  await page.route('**/*', async route => {
+    const url = route.request().url()
+    if (url.startsWith(origin + '/')) return route.continue()
+    if (url.startsWith(hlsBase)) {
+      const name = url.slice(hlsBase.length).split('?')[0]
+      if (!/^(master\.m3u8|segment-\d+\.ts)$/.test(name)) return route.abort()
+      if (name.endsWith('.ts')) segmentRequests++
+      return route.fulfill({
+        status: 200,
+        headers: { 'access-control-allow-origin': '*', 'content-type': name.endsWith('.m3u8') ? 'application/vnd.apple.mpegurl' : 'video/mp2t' },
+        body: await fs.readFile(path.join(fixture, name)),
+      })
+    }
+    return route.abort()
+  })
+  await page.goto('/')
+  await page.getByRole('searchbox', { name: /Buscar emisoras/ }).fill('RNE Radio Clásica')
+  await page.getByRole('button', { name: 'Escuchar RNE Radio Clásica', exact: true }).click()
+  await expect.poll(() => page.locator('#radioPlayer').evaluate(a => !a.paused && a.currentTime > 0.1), { timeout: 25000 }).toBe(true)
+  expect(segmentRequests).toBeGreaterThan(0)
+  await page.getByRole('button', { name: 'Pausar radio', exact: true }).click()
+  await expect.poll(() => page.locator('#radioPlayer').getAttribute('src')).toBe(null)
 })

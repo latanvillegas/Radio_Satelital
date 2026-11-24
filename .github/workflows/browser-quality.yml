@@ -22,6 +22,11 @@ jobs:
         run: npm run build
       - name: Install Chromium and system dependencies
         run: npx playwright install --with-deps chromium
+      - name: Generate deterministic HLS fixture
+        run: |
+          if ! command -v ffmpeg >/dev/null; then sudo apt-get update && sudo apt-get install -y ffmpeg; fi
+          mkdir -p out/hls-fixture
+          ffmpeg -hide_banner -loglevel error -f lavfi -i sine=frequency=440:sample_rate=44100 -t 24 -c:a aac -b:a 96k -f hls -hls_time 4 -hls_playlist_type vod -hls_segment_filename 'out/hls-fixture/segment-%03d.ts' out/hls-fixture/master.m3u8
       - name: Browser integration, WCAG and performance
         run: npm run test:browser
       - name: Upload browser results

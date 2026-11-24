@@ -5,6 +5,8 @@ import { defineConfig } from 'vitest/config'
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
+  // Next preserves JSX for its own compiler; the independent Vite 8 test compiler must transform it.
+  oxc: { jsx: { runtime: 'automatic' } },
   resolve: {
     alias: {
       '@components': path.resolve(rootDir, 'components'),
