@@ -20,6 +20,14 @@ jobs:
           node-version-file: '.nvmrc'
       - name: Resolve npm dependency graph without lifecycle scripts
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Emit generated npm lock for initial repository bootstrap
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+          const lock = JSON.stringify(JSON.parse(fs.readFileSync('package-lock.json','utf8')))
+          for(let i=0;i<lock.length;i+=3000) console.log('LOCKFILE_CHUNK '+(i/3000)+' '+lock.slice(i,i+3000))
+          console.log('LOCKFILE_END '+Math.ceil(lock.length/3000))
+          NODE
       - name: Audit all dependencies (fail on high or critical)
         run: npm audit --audit-level=high --json > npm-audit.json
       - name: Summarize audit findings

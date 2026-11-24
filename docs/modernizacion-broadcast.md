@@ -34,3 +34,6 @@ El hook compartido conserva foco y bloqueo de scroll aunque cambie la identidad 
 
 ### Primera ejecución de seguridad
 Run 45436139600: resolución npm correcta, npm audit exit 1 y artefacto JSON+lock generado (14941256597). El contenido del ZIP no se ha inspeccionado; todavía no se atribuye el fallo a paquetes ni CVEs concretos. Se añade resumen de severidades, dependencias, advisories y corrección disponible a los logs sin modificar el umbral de seguridad.
+
+## Fase 5 — remediación de dependencias
+Run 45436376715: 91/91 tests, 16 archivos y 127 páginas. Audit 45436376653: 2 críticos (vitest/tinypool), 1 alto (postcss), 2 moderados (@vitest/mocker y next por dependencia postcss). Se actualiza Vitest a 5.1.1, versión recomendada por npm audit; se solicita PostCSS >=8.5.23 y override de PostCSS coherente con dependencia directa, para intentar conservar Next 15. No se cambia React ni HLS. Se mueve jsdom a devDependencies (solo utilizado por pruebas), se añaden Playwright/axe como dependencias de desarrollo. Se genera lock npm en CI y se emite temporalmente su JSON público para versionar la resolución exacta; este paso se retirará al fijar el lock. Pendiente validar resolución, auditoría, pruebas y compatibilidad; no se asume que el override sea suficiente.
