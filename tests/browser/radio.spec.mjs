@@ -3,46 +3,8 @@ import AxeBuilder from '@axe-core/playwright'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-const origin = 'http://127.0.0.1:4173'
-const stationUrl = 'https://sp.onliveperu.com/8108/stream'
+import { origin, isolateNetwork } from './fixtures.mjs'
 const wcagTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
-
-// Deterministic 30-second stereo PCM fixture, different amplitudes per channel.
-function makeWav() {
-  const rate = 16000, frames = rate * 30, dataBytes = frames * 4
-  const bytes = Buffer.alloc(44 + dataBytes)
-  bytes.write('RIFF', 0); bytes.writeUInt32LE(36 + dataBytes, 4)
-  bytes.write('WAVEfmt ', 8); bytes.writeUInt32LE(16, 16)
-  bytes.writeUInt16LE(1, 20); bytes.writeUInt16LE(2, 22)
-  bytes.writeUInt32LE(rate, 24); bytes.writeUInt32LE(rate * 4, 28)
-  bytes.writeUInt16LE(4, 32); bytes.writeUInt16LE(16, 34)
-  bytes.write('data', 36); bytes.writeUInt32LE(dataBytes, 40)
-  for (let i = 0; i < frames; i++) {
-    const wave = Math.sin(2 * Math.PI * 440 * i / rate)
-    bytes.writeInt16LE(Math.round(wave * 12000), 44 + i * 4)
-    bytes.writeInt16LE(Math.round(wave * 3000), 46 + i * 4)
-  }
-  return bytes
-}
-
-async function isolateNetwork(page, audio = false) {
-  const wav = audio ? makeWav() : null
-  await page.route('**/*', async route => {
-    const request = route.request()
-    if (request.url().startsWith(origin + '/')) return route.continue()
-    if (wav && request.url() === stationUrl) {
-      const headers = { 'access-control-allow-origin': '*', 'accept-ranges': 'bytes', 'content-type': 'audio/wav' }
-      const match = /^bytes=(\d+)-(\d*)$/.exec(request.headers().range ?? '')
-      if (match) {
-        const start = Number(match[1]), end = Math.min(wav.length - 1, match[2] ? Number(match[2]) : wav.length - 1)
-        if (start >= wav.length || end < start) return route.fulfill({ status: 416, headers: { ...headers, 'content-range': 'bytes */' + wav.length } })
-        return route.fulfill({ status: 206, headers: { ...headers, 'content-range': `bytes ${start}-${end}/${wav.length}` }, body: wav.subarray(start, end + 1) })
-      }
-      return route.fulfill({ status: 200, headers, body: wav })
-    }
-    return route.abort()
-  })
-}
 
 async function audit(page, info, label) {
   const result = await new AxeBuilder({ page }).withTags(wcagTags).analyze()
@@ -211,4 +173,30 @@ test('HLS.js plays a local AAC transport stream in the real browser', async ({ p
   expect(segmentRequests).toBeGreaterThan(0)
   await page.getByRole('button', { name: 'Pausar radio', exact: true }).click()
   await expect.poll(() => page.locator('#radioPlayer').getAttribute('src')).toBe(null)
+})
+
+test('all nine accent palettes retain WCAG contrast in settings in dark and exterior modes', async ({ page }, info) => {
+  test.setTimeout(120000)
+  await isolateNetwork(page)
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Abrir ajustes de apariencia y audio' }).click()
+  const dialog = page.getByRole('dialog', { name: /ajustes/i })
+  await expect(dialog).toBeVisible()
+  const results = []
+  for (const mode of ['Oscuro Broadcast', 'Claro Exterior']) {
+    await dialog.getByRole('button', { name: new RegExp(mode) }).click()
+    const swatches = dialog.getByRole('button', { name: /^Acento / })
+    expect(await swatches.count()).toBe(9)
+    for (let i = 0; i < 9; i++) {
+      const swatch = swatches.nth(i)
+      const palette = await swatch.getAttribute('aria-label')
+      await swatch.click()
+      const result = await new AxeBuilder({ page }).include('[aria-labelledby="settings-drawer-title"]').withTags(wcagTags).analyze()
+      results.push({ mode, palette, violations: result.violations.map(v => ({ id: v.id, nodes: v.nodes.map(n => ({ target: n.target, summary: n.failureSummary })) })) })
+    }
+  }
+  await info.attach('settings-palettes.json', { body: JSON.stringify(results, null, 2), contentType: 'application/json' })
+  const failures = results.filter(x => x.violations.length)
+  console.log('PALETTE_AUDIT ' + JSON.stringify({ combinations: results.length, failures }))
+  expect(failures).toEqual([])
 })

@@ -43,6 +43,7 @@ interface Props {
   onClose: () => void
   currentStation: Station | null
   isPlaying: boolean
+  canCancel: boolean
   togglePlay: () => void
   onNextStation: () => void
   onPrevStation: () => void
@@ -66,6 +67,7 @@ export default function StudioDisplayModal({
   onClose,
   currentStation,
   isPlaying,
+  canCancel,
   togglePlay,
   onNextStation,
   onPrevStation,
@@ -579,7 +581,7 @@ export default function StudioDisplayModal({
                 <button
                   type="button"
                   onClick={handleExportDiagnostics}
-                  className="mt-4 w-full min-h-[38px] px-3 rounded-xl border border-line bg-canvas hover:bg-subtle text-ink-secondary hover:text-ink text-xs font-semibold inline-flex items-center justify-center gap-2 transition-colors"
+                  className="mt-4 w-full min-h-[44px] px-3 rounded-xl border border-line bg-canvas hover:bg-subtle text-ink-secondary hover:text-ink text-xs font-semibold inline-flex items-center justify-center gap-2 transition-colors"
                 >
                   <Download size={13} className="text-accent" />
                   <span>Exportar diagnóstico JSON</span>
@@ -602,9 +604,9 @@ export default function StudioDisplayModal({
                   type="button"
                   onClick={togglePlay}
                   className="w-12 h-12 rounded-xl bg-accent text-accent-fg hover:bg-accent-hover grid place-items-center shadow-md transition-colors"
-                  aria-label={isPlaying ? 'Pausar transmisión' : 'Iniciar transmisión'}
+                  aria-label={canCancel ? 'Pausar transmisión' : 'Iniciar transmisión'}
                 >
-                  {isPlaying ? (
+                  {canCancel ? (
                     <Pause size={22} fill="currentColor" />
                   ) : (
                     <Play size={22} fill="currentColor" className="ml-0.5" />

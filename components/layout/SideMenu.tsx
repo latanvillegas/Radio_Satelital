@@ -169,7 +169,7 @@ export default function SideMenu({ open, onClose, onResetFilters }: Props) {
                         />
                         <span className="flex-1 min-w-0">
                           <strong className="block text-sm font-semibold">{option.label}</strong>
-                          <small className="block text-xs text-ink-muted">{option.desc}</small>
+                          <small className="block text-xs text-ink-secondary">{option.desc}</small>
                         </span>
                         {selected && <Check size={16} className="text-accent shrink-0" />}
                       </button>
@@ -250,7 +250,7 @@ export default function SideMenu({ open, onClose, onResetFilters }: Props) {
                           setScale(item.key)
                         }}
                         aria-pressed={active}
-                        className={`min-h-[42px] rounded-lg text-xs font-semibold transition-colors ${
+                        className={`min-h-[44px] rounded-lg text-xs font-semibold transition-colors ${
                           active
                             ? 'bg-accent text-accent-fg shadow-sm'
                             : 'text-ink-secondary hover:text-ink hover:bg-subtle'

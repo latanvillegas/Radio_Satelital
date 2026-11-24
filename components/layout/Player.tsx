@@ -421,6 +421,7 @@ export default function Player({
         onClose={() => setStudioOpen(false)}
         currentStation={currentStation}
         isPlaying={isPlaying}
+        canCancel={canCancel}
         togglePlay={togglePlay}
         onNextStation={onNextStation}
         onPrevStation={onPrevStation}
