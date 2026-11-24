@@ -2,10 +2,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { startRecording, stopRecording, getRecorderState } from './recorder'
 
+const sources = vi.hoisted(() => ({ tracks: [{}] as object[], captureTracks: null as object[] | null }))
 vi.mock('./audio-dsp', () => ({
-  getDspOutputStream: () => ({ getAudioTracks: () => [{}] }),
+  getDspOutputStream: () => ({ getAudioTracks: () => sources.tracks }),
 }))
-vi.mock('./player', () => ({ getAudio: () => null }))
+vi.mock('./player', () => ({
+  getAudio: () => sources.captureTracks === null ? null : { captureStream: () => ({ getAudioTracks: () => sources.captureTracks }) },
+}))
 
 class FakeRecorder {
   static last: FakeRecorder
@@ -29,6 +32,8 @@ const OriginalURL = URL
 describe('Recording lifecycle', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    sources.tracks = [{}]
+    sources.captureTracks = null
     vi.stubGlobal('MediaRecorder', FakeRecorder)
     vi.stubGlobal('URL', class extends OriginalURL {
       static createObjectURL = createUrl
@@ -66,11 +71,40 @@ describe('Recording lifecycle', () => {
   })
 
   it('finalizes a recorder stopped by its source and revokes the previous object URL', () => {
+    expect(startRecording('Previous')).toBe(true)
+    FakeRecorder.last.emitChunk('old')
+    FakeRecorder.last.emitStop()
     expect(startRecording('Second')).toBe(true)
     expect(revokeUrl).toHaveBeenCalledWith('blob:recording')
     FakeRecorder.last.emitChunk('audio')
     FakeRecorder.last.emitStop()
     expect(getRecorderState().isRecording).toBe(false)
     expect(getRecorderState().recordedBlob?.size).toBe(5)
+  })
+
+  it('preserves received data and releases the finalizing lock if stop is never emitted', async () => {
+    expect(startRecording('Interrupted')).toBe(true)
+    const recorder = FakeRecorder.last
+    recorder.emitChunk('partial')
+    const pending = stopRecording()
+    await vi.advanceTimersByTimeAsync(5000)
+    expect((await pending)?.size).toBe(7)
+    expect(getRecorderState().isFinalizing).toBe(false)
+    expect(getRecorderState().error).toMatch(/incompleta/)
+    recorder.emitStop()
+    expect(startRecording('Next')).toBe(true)
+    FakeRecorder.last.emitChunk('next')
+    FakeRecorder.last.emitStop()
+    expect(getRecorderState().recordedBlob?.size).toBe(4)
+  })
+
+  it('rejects both empty DSP output and empty native capture before creating a recorder', () => {
+    sources.tracks = []
+    sources.captureTracks = []
+    const previous = FakeRecorder.last
+    expect(startRecording('No audio tracks')).toBe(false)
+    expect(FakeRecorder.last).toBe(previous)
+    expect(getRecorderState().isRecording).toBe(false)
+    expect(getRecorderState().error).not.toBeNull()
   })
 })

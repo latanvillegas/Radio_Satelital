@@ -16,7 +16,7 @@ const builds = {
 }
 const children = []
 const results = []
-const duration = 3000
+const duration = 10000
 
 async function startServer(build) {
   const child = spawn('python3', ['-m', 'http.server', new URL(build.url).port, '--bind', '127.0.0.1', '--directory', build.dir], { stdio: 'ignore' })
@@ -58,12 +58,19 @@ async function trial(label, run) {
     const system = await browser.newBrowserCDPSession()
     await session.send('Performance.enable')
     const metrics = async () => Object.fromEntries((await session.send('Performance.getMetrics')).metrics.map(m => [m.name, m.value]))
+    const mediaClock = () => page.locator('#radioPlayer').evaluate(audio => ({ time: audio.currentTime, paused: audio.paused, ended: audio.ended }))
     const collect = async state => {
+      const beforeAudio = state === 'idle' ? null : await mediaClock()
       const beforeProcesses = await processSnapshot(system)
       const before = await metrics()
       await delay(duration)
       const after = await metrics()
       const afterProcesses = await processSnapshot(system)
+      const afterAudio = state === 'idle' ? null : await mediaClock()
+      if (beforeAudio && afterAudio && (afterAudio.paused || afterAudio.ended ||
+          afterAudio.time - beforeAudio.time < duration / 1000 * 0.8)) {
+        throw new Error('Playback did not advance sufficiently during ' + state + ' for ' + label)
+      }
       const prior = new Map(beforeProcesses.map(p => [p.id, p.cpuTime]))
       const stable = afterProcesses.filter(p => prior.has(p.id))
       const elapsed = after.Timestamp - before.Timestamp
@@ -71,6 +78,7 @@ async function trial(label, run) {
       return {
         state,
         elapsedSeconds: elapsed,
+        mediaAdvancedSeconds: afterAudio && beforeAudio ? afterAudio.time - beforeAudio.time : null,
         matchedProcessCpuSeconds: cpuSeconds,
         cpuPercentOneCore: 100 * cpuSeconds / elapsed,
         matchedProcesses: stable.length,
@@ -137,7 +145,7 @@ try {
 } finally {
   for (const child of children) child.kill()
   const report = {
-    environment: 'same hosted Linux runner; Chromium headless; 3 paired trials; 3-second windows; PCM fixture; original baseline lacks committed npm lock; PSS may be unavailable; excludes device battery',
+    environment: 'same hosted Linux runner; Chromium headless; 3 paired trials; 10-second windows; playback clock verified during each active window; PCM fixture; original baseline lacks committed npm lock; PSS may be unavailable; excludes device battery',
     baselineCommit: '8a58fbc4591827a5f6257e96e6086cfafb251479',
     candidateCommit: process.env.GITHUB_SHA ?? null,
     results,

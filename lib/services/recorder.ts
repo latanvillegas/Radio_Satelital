@@ -34,6 +34,8 @@ let recordedChunks: Blob[] = []
 let stopPromise: Promise<Blob | null> | null = null
 let resolveStop: ((blob: Blob | null) => void) | null = null
 let timerInterval: ReturnType<typeof setInterval> | null = null
+let finalizationTimer: ReturnType<typeof setTimeout> | null = null
+const FINALIZATION_TIMEOUT_MS = 5000
 let currentState: RecorderState = DEFAULT_RECORDER_STATE
 const recorderListeners = new Set<(state: RecorderState) => void>()
 
@@ -99,7 +101,7 @@ export function startRecording(stationName = 'Radio Satelital'): boolean {
     }
   }
 
-  if (!stream) {
+  if (!stream || stream.getAudioTracks().length === 0) {
     currentState = {
       ...currentState,
       error: 'Inicia la reproducción de una emisora antes de grabar',
@@ -186,6 +188,8 @@ function clearRecordingTimer() {
 function finishRecording(recorder: MediaRecorder) {
   if (mediaRecorder !== recorder) return
   clearRecordingTimer()
+  if (finalizationTimer !== null) clearTimeout(finalizationTimer)
+  finalizationTimer = null
   const mimeType = recorder.mimeType || recordedChunks[0]?.type || 'audio/webm'
   const blob = recordedChunks.length ? new Blob(recordedChunks, { type: mimeType }) : null
   let url: string | null = null
@@ -214,7 +218,7 @@ function finishRecording(recorder: MediaRecorder) {
   notifyRecorderChange()
 }
 
-/** Resolves only after the final dataavailable event and stop event. */
+/** Wait for the final data and stop event; preserve received chunks if the browser never completes. */
 export function stopRecording(): Promise<Blob | null> {
   if (stopPromise) return stopPromise
   const recorder = mediaRecorder
@@ -223,6 +227,11 @@ export function stopRecording(): Promise<Blob | null> {
   const pending = new Promise<Blob | null>(resolve => { resolveStop = resolve })
   stopPromise = pending
   currentState = { ...currentState, isRecording: false, isFinalizing: true }
+  finalizationTimer = setTimeout(() => {
+    if (mediaRecorder !== recorder) return
+    currentState = { ...currentState, error: 'El navegador no confirmó el cierre; la grabación puede estar incompleta.' }
+    finishRecording(recorder)
+  }, FINALIZATION_TIMEOUT_MS)
   notifyRecorderChange()
   try {
     if (recorder.state !== 'inactive') recorder.stop()
