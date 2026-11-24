@@ -75,7 +75,7 @@ export default function StationGrid({
           <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-ink">
             {title}
           </h2>
-          <p className="mt-1 text-xs sm:text-sm text-ink-secondary">{subtitle}</p>
+          {subtitle && <p className="mt-1 text-xs sm:text-sm text-ink-secondary">{subtitle}</p>}
         </div>
         <span
           className="shrink-0 text-xs font-mono font-medium tabular-nums text-ink-muted"

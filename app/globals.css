@@ -314,22 +314,17 @@ html { scroll-padding-block: 5rem 8rem; }
   :where(button, a, input, select, textarea, [tabindex]):focus-visible { outline-color: Highlight; }
 }
 
-/* Premium Broadcast: typography, restrained surfaces and a static tuning motif.
+/* Premium Broadcast: typography and compact functional surfaces.
    All colors inherit the existing theme and accent contract. */
 .broadcast-brand { display: inline-flex; align-items: center; gap: 9px; flex: none; min-height: 44px; color: var(--text-primary); text-decoration: none; }
 .broadcast-brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: var(--accent-fg); background: var(--accent); flex: none; }
 .broadcast-wordmark { font-size: 1rem; font-weight: 800; letter-spacing: -.035em; white-space: nowrap; }
 .broadcast-wordmark span { font-weight: 600; }
-.broadcast-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 300px); align-items: center; gap: 1.75rem; padding: 2rem 2.25rem; margin-bottom: 1.25rem; border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--bg-surface); overflow: hidden; }
-.broadcast-hero-copy { min-width: 0; }
-.broadcast-display { font-size: clamp(2.125rem, 4.4vw, 3.5rem); font-weight: 800; line-height: 1.09; letter-spacing: -.038em; color: var(--text-primary); text-wrap: balance; max-width: 19ch; }
-.broadcast-display span { color: var(--accent); }
-.broadcast-intro { margin-top: .85rem; font-size: 1rem; line-height: 1.65; color: var(--text-secondary); max-width: 58ch; text-wrap: pretty; }
-.broadcast-catalog-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; margin-top: 1.25rem; font-size: .8125rem; color: var(--text-secondary); }
+.broadcast-explorer-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .375rem 1rem; margin-bottom: .875rem; }
+.broadcast-explorer-title { font-size: clamp(1.125rem, 2vw, 1.5rem); line-height: 1.25; font-weight: 800; letter-spacing: -.025em; color: var(--text-primary); }
+.broadcast-catalog-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; margin: 0; font-size: .8125rem; color: var(--text-secondary); }
 .broadcast-catalog-meta strong { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .broadcast-meta-divider { width: 1px; height: 14px; background: var(--border-strong); }
-.broadcast-dial { width: 100%; max-width: 300px; justify-self: end; color: var(--text-secondary); pointer-events: none; }
-.broadcast-dial svg { display: block; width: 100%; height: auto; }
 .broadcast-search input { caret-color: var(--accent); }
 .broadcast-search input:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
 .broadcast-scope-row { border-bottom: 1px solid var(--border-subtle); padding-bottom: .75rem; }
@@ -345,11 +340,7 @@ html { scroll-padding-block: 5rem 8rem; }
 .broadcast-player-dialog .dial-art--hero { border-radius: 18px; box-shadow: none; }
 .broadcast-player-dialog .broadcast-primary-play { box-shadow: none; }
 @media (max-width: 767px) {
-  .broadcast-hero { grid-template-columns: minmax(0, 1fr); padding: 1.25rem; gap: 0; margin-bottom: 1rem; }
-  .broadcast-dial { display: none; }
-  .broadcast-display { font-size: clamp(1.9rem, 6vw, 2.5rem); }
-  .broadcast-intro { font-size: .9375rem; line-height: 1.55; margin-top: .65rem; }
-  .broadcast-catalog-meta { margin-top: .8rem; gap: 7px; font-size: .75rem; }
+  .broadcast-catalog-meta { gap: 6px; font-size: .75rem; }
   .broadcast-scope-row { padding-bottom: .5rem; }
   .broadcast-dock { min-height: 68px; }
 }
@@ -358,7 +349,6 @@ html { scroll-padding-block: 5rem 8rem; }
   .broadcast-brand-mark { width: 28px; height: 28px; border-radius: 8px; }
   .broadcast-brand-mark svg { width: 17px; height: 17px; }
   .broadcast-wordmark { font-size: .875rem; }
-  .broadcast-hero { padding: 1rem; }
   .station-tile { padding: 8px; gap: 4px; min-height: 76px; }
   .station-tile > button { gap: 8px; }
   .station-name { font-size: .875rem; }
@@ -366,7 +356,6 @@ html { scroll-padding-block: 5rem 8rem; }
 }
 @media (forced-colors: active) {
   .broadcast-brand-mark, .station-play { border: 1px solid ButtonText; }
-  .broadcast-display span { color: CanvasText; }
 }
 
 /* Artwork is never shown before a successful load. The local dial remains
