@@ -204,18 +204,24 @@ test('all nine accent palettes retain WCAG contrast in settings in dark and exte
 test('premium visual contract: responsive home, modes and expanded player evidence', async ({ page }, info) => {
   await isolateNetwork(page, true)
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'Radio en vivo, sin fronteras.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Explorar emisoras', exact: true })).toBeVisible()
+  await expect(page.locator('.broadcast-hero, .broadcast-dial')).toHaveCount(0)
   for (const width of [1440, 768, 390, 320]) {
-    await page.setViewportSize({ width, height: 900 })
+    await page.setViewportSize({ width, height: 720 })
     await page.evaluate(() => document.fonts.ready)
     const dimensions = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       scroll: document.documentElement.scrollWidth,
       brand: document.querySelector('.broadcast-brand').getBoundingClientRect().right,
       settings: document.querySelector('[aria-label="Abrir ajustes de apariencia y audio"]').getBoundingClientRect().left,
+      searchTop: document.querySelector('#station-search').getBoundingClientRect().top,
+      firstStationBottom: document.querySelector('#station-list .station-tile').getBoundingClientRect().bottom,
+      dockTop: document.querySelector('.surface-player-bar').getBoundingClientRect().top,
     }))
     expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.viewport + 1)
     expect(dimensions.brand).toBeLessThanOrEqual(dimensions.settings)
+    expect(dimensions.searchTop).toBeLessThanOrEqual(200)
+    expect(dimensions.firstStationBottom).toBeLessThanOrEqual(dimensions.dockTop)
     await expect(page.getByRole('searchbox')).toBeVisible()
     await info.attach('premium-dark-' + width + '.png', { body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png' })
   }

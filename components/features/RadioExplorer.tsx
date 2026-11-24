@@ -151,7 +151,7 @@ export default function RadioExplorer({
 
         <main
           id="inicio"
-          className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-5 sm:pt-9 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:pb-32"
+          className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:pb-32"
         >
           {featuredStation && (
             <section
@@ -203,47 +203,20 @@ export default function RadioExplorer({
 
           <section
             id="explorar"
-            className="scroll-mt-24 mb-8 sm:mb-10"
+            className="scroll-mt-24 mb-4 sm:mb-5"
             aria-labelledby="discover-heading"
           >
-            <div className="broadcast-hero">
-              <div className="broadcast-hero-copy">
-                {featuredStation ? (
-                  <h2 id="discover-heading" className="broadcast-display">
-                    Más emisoras en Radio Satelital
-                  </h2>
-                ) : (
-                  <h1 id="discover-heading" className="broadcast-display">
-                    Radio en vivo, <span>sin fronteras.</span>
-                  </h1>
-                )}
-                <p className="broadcast-intro">
-                  De Jaén y Cajamarca al mundo. Descubre tus emisoras favoritas con ecualizador de cinco bandas y reconexión automática.
-                </p>
-                <p className="broadcast-catalog-meta">
-                  <Globe2 size={17} aria-hidden="true" />
-                  <span><strong>{rawStations.length}</strong> emisoras en el catálogo</span>
-                  <span className="broadcast-meta-divider" aria-hidden="true" />
-                  <span><strong>{countriesCount}</strong> países</span>
-                </p>
-              </div>
-              <div className="broadcast-dial" aria-hidden="true">
-                <svg viewBox="0 0 320 240" fill="none" focusable="false">
-                  <circle cx="183" cy="120" r="108" stroke="currentColor" opacity=".18" />
-                  <circle cx="183" cy="120" r="86" stroke="currentColor" opacity=".26" />
-                  <circle cx="183" cy="120" r="64" stroke="currentColor" opacity=".16" />
-                  {Array.from({ length: 48 }, (_, i) => (
-                    <line key={i} x1="183" y1={i % 4 === 0 ? 15 : 20} x2="183" y2={i % 4 === 0 ? 29 : 25}
-                      transform={`rotate(${i * 7.5} 183 120)`} stroke="currentColor" opacity={i % 4 === 0 ? '.62' : '.28'} strokeWidth={i % 4 === 0 ? 1.5 : 1} />
-                  ))}
-                  <path d="M107 80 A86 86 0 0 1 242 57" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" />
-                  <path d="M183 120 L242 57" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
-                  <circle cx="242" cy="57" r="5" fill="var(--accent)" />
-                  <circle cx="183" cy="120" r="35" fill="var(--bg-surface)" stroke="currentColor" opacity=".85" />
-                  <circle cx="183" cy="120" r="7" fill="var(--accent)" />
-                  <path d="M40 120H69 M297 120H314 M183 3V10 M183 231V238" stroke="currentColor" opacity=".35" />
-                </svg>
-              </div>
+            <div className="broadcast-explorer-heading">
+              {featuredStation ? (
+                <h2 id="discover-heading" className="broadcast-explorer-title">Explorar más emisoras</h2>
+              ) : (
+                <h1 id="discover-heading" className="broadcast-explorer-title">Explorar emisoras</h1>
+              )}
+              <p className="broadcast-catalog-meta">
+                <span><strong>{rawStations.length}</strong> emisoras en el catálogo</span>
+                <span className="broadcast-meta-divider" aria-hidden="true" />
+                <span><strong>{countriesCount}</strong> países</span>
+              </p>
             </div>
 
             <Filters
@@ -380,6 +353,7 @@ export default function RadioExplorer({
           <StationGrid
             stations={stations}
             title={sectionTitle}
+            subtitle=""
             playStation={playStation}
             toggleFavorite={toggleFavorite}
             onResetFilters={hasActiveFilters ? resetAllFilters : undefined}
