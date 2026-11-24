@@ -140,7 +140,14 @@ test('capture Chromium task duration and JS heap in idle and playback', async ({
   await page.getByRole('button', { name: 'Reproducir: Activa Jaén', exact: true }).click()
   await expect.poll(() => page.locator('#radioPlayer').evaluate(a => !a.paused && a.currentTime > 0.1)).toBe(true)
   const playback = await collect('playback')
-  const report = { environment: 'Headless Chromium CI; synthetic PCM; CPU task time proxy; not battery, device RAM or baseline comparison', idle, playback }
+  await page.getByRole('button', { name: /Abrir reproductor expandido/ }).click()
+  await page.getByRole('button', { name: 'Cabina', exact: true }).click()
+  await expect(page.getByText('Picos por canal L / R', { exact: true })).toBeVisible()
+  const ttfaText = await page.getByText('Latencia (TTFA)', { exact: true }).locator('..').innerText()
+  const ttfaMatch = /(\d+)\s*ms/.exec(ttfaText)
+  expect(ttfaMatch).not.toBeNull()
+  const studio = await collect('studio')
+  const report = { environment: 'Headless Chromium CI; synthetic PCM; CPU task time proxy; not battery, device RAM or baseline comparison', ttfaMs: Number(ttfaMatch[1]), idle, playback, studio }
   console.log('PERFORMANCE ' + JSON.stringify(report))
   await info.attach('performance.json', { body: JSON.stringify(report, null, 2), contentType: 'application/json' })
   await cdp.detach()
