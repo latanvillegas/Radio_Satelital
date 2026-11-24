@@ -14,8 +14,12 @@ export function radioBrowserUuid(id: unknown): string | null {
   return UUID.test(value) ? value.toLowerCase() : null
 }
 
+let regionNames: Intl.DisplayNames | undefined
 export function countryName(code: string): string {
-  try { return new Intl.DisplayNames(['es'], { type: 'region' }).of(code) || code }
+  try {
+    regionNames ??= new Intl.DisplayNames(['es'], { type: 'region' })
+    return regionNames.of(code) || code
+  }
   catch { return code }
 }
 

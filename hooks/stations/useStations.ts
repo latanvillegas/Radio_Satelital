@@ -366,7 +366,7 @@ export default function useStations(
             : resolved === 'cajamarca'
             ? 'Cajamarca'
             : undefined,
-        genre: f.genre,
+        genre: (prev === 'browser') !== (resolved === 'browser') ? undefined : f.genre,
       }))
       return resolved
     })

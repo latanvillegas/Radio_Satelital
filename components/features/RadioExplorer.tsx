@@ -217,7 +217,7 @@ export default function RadioExplorer({
                 <h1 id="discover-heading" className="broadcast-explorer-title">Explorar emisoras</h1>
               )}
               <p className="broadcast-catalog-meta">
-                <span><strong>{rawStations.length}</strong> emisoras en el catálogo</span>
+                <span><strong>{rawStations.length}</strong> emisoras locales</span>
                 <span className="broadcast-meta-divider" aria-hidden="true" />
                 <span><strong>{countriesCount}</strong> países</span>
               </p>
@@ -249,6 +249,15 @@ export default function RadioExplorer({
                   }`}
                 >
                   Todas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleScopeSelect('browser')}
+                  aria-pressed={scope === 'browser'}
+                  className={`min-h-[44px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${scope === 'browser' ? 'bg-accent text-accent-fg border-accent' : 'bg-surface hover:bg-subtle text-ink-secondary hover:text-ink border-line'}`}
+                >
+                  <RadioTower size={14} aria-hidden="true" />
+                  Radio Browser
                 </button>
                 <button
                   type="button"
@@ -313,15 +322,6 @@ export default function RadioExplorer({
                 >
                   <Heart size={14} />
                   <span>Favoritas</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleScopeSelect('browser')}
-                  aria-pressed={scope === 'browser'}
-                  className={`min-h-[44px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${scope === 'browser' ? 'bg-accent text-accent-fg border-accent' : 'bg-surface hover:bg-subtle text-ink-secondary hover:text-ink border-line'}`}
-                >
-                  <RadioTower size={14} aria-hidden="true" />
-                  Radio Browser
                 </button>
                 {recentStations.length > 0 && (
                   <button
