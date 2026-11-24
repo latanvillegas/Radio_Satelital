@@ -1,5 +1,5 @@
 export const origin = 'http://127.0.0.1:4173'
-const stationUrl = 'https://sp.onliveperu.com/8108/stream'
+export const stationUrl = 'https://sp.onliveperu.com/8108/stream'
 
 // Deterministic 30-second stereo PCM fixture, different amplitudes per channel.
 export function makeWav() {
@@ -19,11 +19,11 @@ export function makeWav() {
   return bytes
 }
 
-export async function isolateNetwork(page, audio = false, baseUrl = origin) {
+export async function isolateNetwork(page, audio = false, baseUrl = origin, allowedMediaUrl = null) {
   const wav = audio ? makeWav() : null
   await page.route('**/*', async route => {
     const request = route.request()
-    if (request.url().startsWith(baseUrl + '/')) return route.continue()
+    if (request.url().startsWith(baseUrl + '/') || request.url() === allowedMediaUrl) return route.continue()
     if (wav && request.url() === stationUrl) {
       const headers = { 'access-control-allow-origin': '*', 'accept-ranges': 'bytes', 'content-type': 'audio/wav' }
       const match = /^bytes=(\d+)-(\d*)$/.exec(request.headers().range ?? '')

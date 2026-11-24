@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
-import { isolateNetwork } from './fixtures.mjs'
+import { isolateNetwork, origin } from './fixtures.mjs'
+import { startPcmServer } from './pcm-server.mjs'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -49,13 +50,19 @@ test('PCM playback, stereo DSP and pause in actual browser engine', async ({ pag
     if (window.AudioContext) window.AudioContext = Instrumented
     else window.webkitAudioContext = Instrumented
   })
-  await isolateNetwork(page, true)
+  const fixture = await startPcmServer(page)
+  try {
+  await isolateNetwork(page, false, origin, fixture.url)
   await page.goto('/')
   await page.getByRole('button', { name: 'Reproducir: Activa Jaén', exact: true }).click()
   await expect.poll(() => page.locator('#radioPlayer').evaluate(a => !a.paused && a.currentTime > 0.1)).toBe(true)
+  await expect.poll(() => page.locator('#radioPlayer').evaluate(a => a.currentSrc)).toBe(fixture.url)
+  expect(fixture.requests()).toBeGreaterThan(0)
   await page.getByRole('button', { name: /Abrir reproductor expandido/ }).click()
   await page.getByRole('button', { name: 'Cabina', exact: true }).click()
   await expect(page.getByText('Picos por canal L / R', { exact: true })).toBeVisible()
+  const activate = page.getByRole('button', { name: 'Activar análisis DSP', exact: true })
+  if (await activate.isVisible()) await activate.click()
   const peak = async channel => {
     const text = await page.getByText(channel, { exact: true }).locator('..').innerText()
     const match = /(-?\d+(?:\.\d+)?)\s*dBFS/.exec(text)
@@ -66,6 +73,8 @@ test('PCM playback, stereo DSP and pause in actual browser engine', async ({ pag
       const left = await peak('CH-L'), right = await peak('CH-R')
       return left === null || right === null ? 0 : left - right
     }).toBeGreaterThan(8)
+    expect(Math.abs((await peak('CH-L')) + 10.1)).toBeLessThan(2)
+    expect(Math.abs((await peak('CH-R')) + 22.2)).toBeLessThan(2)
   } finally {
     const probe = await page.evaluate(() => ({
       contexts: (window.__audioProbe ?? []).map(ctx => ({ state: ctx.state, sampleRate: ctx.sampleRate, currentTime: ctx.currentTime })),
@@ -75,6 +84,7 @@ test('PCM playback, stereo DSP and pause in actual browser engine', async ({ pag
       })(),
     }))
     console.log('CROSS_AUDIO_PROBE ' + JSON.stringify({ project: info.project.name, ...probe,
+      fixtureRequests: fixture.requests(),
       left: await page.getByText('CH-L', { exact: true }).locator('..').innerText(),
       right: await page.getByText('CH-R', { exact: true }).locator('..').innerText(),
     }))
@@ -82,6 +92,7 @@ test('PCM playback, stereo DSP and pause in actual browser engine', async ({ pag
   console.log('CROSS_STEREO ' + JSON.stringify({ project: info.project.name, left: await peak('CH-L'), right: await peak('CH-R') }))
   await page.getByRole('button', { name: 'Pausar transmisión' }).click()
   await expect.poll(() => page.locator('#radioPlayer').getAttribute('src')).toBe(null)
+  } finally { await fixture.close() }
 })
 
 test('manifest, service worker control and shell with the origin unavailable', async ({ page }, info) => {

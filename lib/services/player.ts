@@ -503,6 +503,13 @@ export function playStation(s: Station, isAutoRetry = false) {
   startStream(s, isAutoRetry)
 }
 
+/** Retry Web Audio from an explicit user gesture without restarting the media transport. */
+export function activateCurrentAudioDsp(): boolean {
+  const audio = getAudio()
+  if (!playbackRequested || !audio || audio.paused || plainMode) return false
+  return initAudioDsp(audio)
+}
+
 export function togglePlay() {
   setPlayingState(!playbackRequested)
 }

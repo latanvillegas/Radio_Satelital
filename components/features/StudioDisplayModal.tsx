@@ -29,7 +29,7 @@ import {
   type RecorderState,
   getRecorderState,
 } from '@/lib/services/recorder'
-import { getCurrentStreamTelemetry, resyncStream } from '@/lib/services/player'
+import { activateCurrentAudioDsp, getCurrentStreamTelemetry, resyncStream } from '@/lib/services/player'
 import { getStereoPeakLevels, releaseStereoMeter } from '@/lib/services/audio-dsp'
 import {
   getTelemetrySummary,
@@ -529,6 +529,15 @@ export default function StudioDisplayModal({
                   </div>
                 </div>
 
+                {isPlaying && peaks === null && (
+                  <button
+                    type="button"
+                    onClick={() => { activateCurrentAudioDsp() }}
+                    className="mt-2 min-h-[44px] rounded-xl border border-line px-3 text-xs font-semibold text-ink hover:bg-subtle"
+                  >
+                    Activar análisis DSP
+                  </button>
+                )}
                 <p className="mt-2 text-xs text-ink-muted">Pico de muestras por canal (ventana de 2048 muestras). No equivale a true peak ni LUFS. N/D indica que Web Audio no está disponible.</p>
                 <dl className="mt-6 pt-4 border-t border-line space-y-2.5 text-xs font-mono tabular-nums">
                   <div className="flex items-center justify-between gap-2">

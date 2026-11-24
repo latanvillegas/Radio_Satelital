@@ -111,6 +111,7 @@ let stereoAnalysers: [AnalyserNode, AnalyserNode] | null = null
 let stereoBuffer: Float32Array | null = null
 let streamDestNode: MediaStreamAudioDestinationNode | null = null
 let connectedAudioElement: HTMLAudioElement | null = null
+let pendingAudioElement: HTMLAudioElement | null = null
 let stateHydrated = false
 
 let currentState: DspState = { ...DEFAULT_STATE }
@@ -273,6 +274,15 @@ export function prepareAudioDsp(): boolean {
         (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
       if (!AudioContextClass) return false
       audioCtx = new AudioContextClass()
+      const ctx = audioCtx
+      ctx.addEventListener('statechange', () => {
+        if (audioCtx !== ctx) return
+        if (ctx.state === 'running' && pendingAudioElement && !pendingAudioElement.paused) {
+          const audio = pendingAudioElement
+          pendingAudioElement = null
+          initAudioDsp(audio)
+        }
+      })
     }
     resumeAudioDsp()
     return true
@@ -286,6 +296,13 @@ export function initAudioDsp(audio: HTMLAudioElement): boolean {
   if (audio.crossOrigin !== 'anonymous') return false
 
   ensureHydratedState()
+  // A suspended context must not capture the element: that would mute native playback.
+  if (!prepareAudioDsp() || !audioCtx) return false
+  if (audioCtx.state !== 'running') {
+    pendingAudioElement = audio
+    return false
+  }
+  pendingAudioElement = null
 
   if (connectedAudioElement === audio && audioCtx && audioCtx.state !== 'closed' && filterNodes.length === 5) {
     if (audioCtx.state === 'suspended') {
@@ -300,8 +317,6 @@ export function initAudioDsp(audio: HTMLAudioElement): boolean {
   }
 
   try {
-    if (!prepareAudioDsp() || !audioCtx) return false
-
     disconnectProcessingNodes()
 
     if (!sourceNode || connectedAudioElement !== audio) {
@@ -474,10 +489,11 @@ export function releaseStereoMeter(): void {
 }
 
 export function getDspOutputStream(): MediaStream | null {
-  return streamDestNode ? streamDestNode.stream : null
+  return audioCtx?.state === 'running' && streamDestNode ? streamDestNode.stream : null
 }
 
 export function suspendAudioDsp(): void {
+  pendingAudioElement = null
   if (audioCtx?.state === 'running') void audioCtx.suspend().catch(() => {})
 }
 
@@ -486,6 +502,7 @@ export function resumeAudioDsp(): void {
 }
 
 export function releaseAudioDsp(): void {
+  pendingAudioElement = null
   releaseStereoMeter()
   disconnectProcessingNodes()
   const ctx = audioCtx

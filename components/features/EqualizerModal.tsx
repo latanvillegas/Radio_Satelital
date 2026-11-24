@@ -14,6 +14,7 @@ import {
   applyPreset,
   setDspEnabled,
 } from '@/lib/services/audio-dsp'
+import { activateCurrentAudioDsp } from '@/lib/services/player'
 import { useDialogFocusTrap } from '@/hooks/ui/useDialogFocusTrap'
 
 interface Props {
@@ -119,6 +120,15 @@ export default function EqualizerModal({ isOpen, onClose }: Props) {
               </div>
             </div>
 
+            {!dspState.isWebAudioActive && (
+              <button
+                type="button"
+                onClick={() => { activateCurrentAudioDsp() }}
+                className="mt-3 min-h-[44px] rounded-xl border border-line text-sm font-semibold text-ink hover:bg-subtle"
+              >
+                Activar procesamiento DSP
+              </button>
+            )}
             {/* Selector de Presets */}
             <div className="my-5">
               <div className="flex items-center justify-between mb-2.5">
