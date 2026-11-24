@@ -462,10 +462,8 @@ function startStream(station: Station, isRetry: boolean) {
     if (token === runId && playbackRequested) onError()
   }, 15000)
 
-  void (async () => {
-    const handledByHlsJs = await attachHlsIfNeeded(activeAudio, optimal.url, token, onError, hlsCandidate)
-    if (handledByHlsJs || token !== runId || !playbackRequested) return
-
+  const playNative = () => {
+    if (token !== runId || !playbackRequested) return
     activeAudio.src = optimal.url
     activeAudio.load()
     activeAudio.play().catch((error: unknown) => {
@@ -481,7 +479,17 @@ function startStream(station: Station, isRetry: boolean) {
         onError()
       }
     })
-  })()
+  }
+
+  // Direct streams and native HLS must call play in the original user-activation
+  // stack. Only browsers that require HLS.js need the dynamic import.
+  if (!hlsCandidate || activeAudio.canPlayType('application/vnd.apple.mpegurl') !== '') {
+    playNative()
+    return
+  }
+  void attachHlsIfNeeded(activeAudio, optimal.url, token, onError, true).then(handled => {
+    if (!handled) playNative()
+  })
 }
 
 export function playStation(s: Station, isAutoRetry = false) {

@@ -41,6 +41,16 @@ test('PCM playback, stereo DSP and pause in actual browser engine', async ({ pag
     if (!Original) return
     const contexts = []
     window.__audioProbe = contexts
+    const playAttempts = []
+    window.__playAttempts = playAttempts
+    const originalPlay = HTMLMediaElement.prototype.play
+    HTMLMediaElement.prototype.play = function (...args) {
+      const attempt = { userActivation: navigator.userActivation?.isActive ?? null, src: this.src, result: 'pending' }
+      playAttempts.push(attempt)
+      const pending = originalPlay.apply(this, args)
+      pending?.then(() => { attempt.result = 'resolved' }, error => { attempt.result = error?.name ?? 'Error' })
+      return pending
+    }
     const Instrumented = class extends Original {
       constructor(...args) {
         super(...args)
@@ -55,9 +65,20 @@ test('PCM playback, stereo DSP and pause in actual browser engine', async ({ pag
   await isolateNetwork(page, false, origin, fixture.url)
   await page.goto('/')
   await page.getByRole('button', { name: 'Reproducir: Activa Jaén', exact: true }).click()
-  await expect.poll(() => page.locator('#radioPlayer').evaluate(a => !a.paused && a.currentTime > 0.1)).toBe(true)
-  await expect.poll(() => page.locator('#radioPlayer').evaluate(a => a.currentSrc)).toBe(fixture.url)
-  expect(fixture.requests()).toBeGreaterThan(0)
+  try {
+    await expect.poll(() => page.locator('#radioPlayer').evaluate(a => !a.paused && a.currentTime > 0.1)).toBe(true)
+    await expect.poll(() => page.locator('#radioPlayer').evaluate(a => a.currentSrc)).toBe(fixture.url)
+    expect(fixture.requests()).toBeGreaterThan(0)
+  } finally {
+    console.log('CROSS_STARTUP ' + JSON.stringify({ project: info.project.name, fixtureRequests: fixture.requests(),
+      ...(await page.evaluate(() => {
+        const a = document.getElementById('radioPlayer')
+        return { attempts: window.__playAttempts ?? [], media: a ? { src: a.src, currentSrc: a.currentSrc,
+          paused: a.paused, currentTime: a.currentTime, readyState: a.readyState, networkState: a.networkState,
+          errorCode: a.error?.code ?? null, errorMessage: a.error?.message ?? null } : null }
+      })),
+    }))
+  }
   await page.getByRole('button', { name: /Abrir reproductor expandido/ }).click()
   await page.getByRole('button', { name: 'Cabina', exact: true }).click()
   await expect(page.getByText('Picos por canal L / R', { exact: true })).toBeVisible()

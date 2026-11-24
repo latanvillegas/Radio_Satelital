@@ -31,23 +31,28 @@ describe('Live radio transport lifecycle', () => {
     vi.restoreAllMocks()
   })
 
-  it('cancels a pending startup rather than restarting the stream', async () => {
+  it('starts native media synchronously and cancels pending startup without restarting', async () => {
     playStation(station)
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1)
     expect(statuses.at(-1)).toBe('loading')
     togglePlay()
     await flush()
     vi.advanceTimersByTime(60000)
     expect(statuses.at(-1)).toBe('paused')
     expect(getAudio()?.getAttribute('src')).toBeNull()
-    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled()
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1)
   })
 
-  it('switches stations without letting the old pending request play', async () => {
+  it('ignores an old rejected play promise after switching direct stations', async () => {
+    let rejectFirst!: (reason: unknown) => void
+    vi.mocked(HTMLMediaElement.prototype.play).mockImplementationOnce(() => new Promise<void>((_, reject) => { rejectFirst = reject }))
     playStation(station)
     playStation(nextStation)
+    rejectFirst(new DOMException('old stream', 'NotAllowedError'))
     await flush()
+    expect(statuses.at(-1)).toBe('loading')
     expect(getAudio()?.getAttribute('src')).toBe(nextStation.streamUrl)
-    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1)
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2)
   })
 
   it('reconnects after network recovery only while playback remains requested', async () => {
