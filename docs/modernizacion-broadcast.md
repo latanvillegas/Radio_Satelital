@@ -61,3 +61,6 @@ Se incorpora workflow Firefox escritorio, WebKit escritorio, Pixel 7 emulado (Ch
 
 ### Comparación de rendimiento con la versión original
 Se fija el baseline original 8a58fbc4591827a5f6257e96e6086cfafb251479; ambos builds se prueban en el mismo runner Chromium, tres pares alternados de ejecución con contexto limpio y señal PCM idéntica. Captura CPU acumulada de procesos Chromium presentes en ambos extremos de cada ventana, PSS Linux (si accesible), heap JS y tiempo de tareas del hilo principal en idle/playback/studio. Se publica mediana y cambio porcentual; no se confunde con consumo de batería ni se afirma ahorro antes de resultados. Baseline no tenía lock npm, por lo que sus dependencias se resuelven actualmente y se guarda lock de esa resolución con informe. La comparación mide builds completos, incluyendo cambios de dependencias. No altera main ni despliega.
+
+### Aceptación física pendiente
+Se versiona [protocolo de dispositivos y energía](validacion-dispositivos-broadcast.md) con matriz de 11 escenarios, TalkBack/VoiceOver, PWA instalada, reproducción en segundo plano, interrupciones, grabación, actualización y mediciones emparejadas. No se dispone de dispositivos físicos en esta sesión; las mediciones de batería siguen explícitamente N/D. La aceptación y el despliegue requieren una decisión posterior basada en evidencia.
