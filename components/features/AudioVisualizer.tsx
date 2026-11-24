@@ -41,9 +41,9 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
       const barWidth = Math.max(2, Math.floor((width - (count - 1) * gap) / count))
 
       // Intentar obtener datos reales del Analyser de Web Audio
-      const realData = isPlaying ? getAnalyserData() : null
+      const realData = isPlaying && !motion.matches ? getAnalyserData() : null
       const hasRealAudio =
-        realData && realData.some((val) => val > 5)
+        realData && realData.length > 0
 
       if (!gradient) {
         const style = getComputedStyle(document.documentElement)
@@ -138,7 +138,8 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
       width={dimensions.width}
       height={dimensions.height}
       className={`audio-visualizer-canvas audio-visualizer-${variant}`}
-      aria-label="Visualizador de espectro acústico"
+      role="img"
+      aria-label="Visualizador de espectro acústico; animación orientativa si el analizador no está disponible"
     />
   )
 }

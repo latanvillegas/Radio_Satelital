@@ -105,7 +105,10 @@ export default function StudioDisplayModal({
     return () => clearInterval(timer)
   }, [isOpen])
 
-  useEffect(() => subscribeRecorder((state) => setRecorderState({ ...state })), [])
+  useEffect(() => {
+    if (!isOpen) return
+    return subscribeRecorder((state) => setRecorderState({ ...state }))
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -121,31 +124,43 @@ export default function StudioDisplayModal({
 
   useEffect(() => {
     if (!isOpen) return
-    let animId = 0
-    const updateVu = () => {
-      if (isPlaying) {
-        const realData = getAnalyserData()
-        let avg = 0
-        if (realData && realData.length > 0 && realData.some((v) => v > 4)) {
-          let sum = 0
-          const count = Math.min(32, realData.length)
-          for (let i = 0; i < count; i++) sum += realData[i] ?? 0
-          avg = sum / count / 255
-        } else {
-          avg = 0.4 + Math.sin(Date.now() / 180) * 0.22 + Math.cos(Date.now() / 290) * 0.14
-        }
-        const l = Math.min(1, Math.max(0.05, avg * (0.92 + Math.sin(Date.now() / 220) * 0.12)))
-        const r = Math.min(1, Math.max(0.05, avg * (0.92 + Math.cos(Date.now() / 250) * 0.12)))
-        setVuL((prev) => prev + (l - prev) * 0.3)
-        setVuR((prev) => prev + (r - prev) * 0.3)
-      } else {
-        setVuL((prev) => prev * 0.8)
-        setVuR((prev) => prev * 0.8)
-      }
-      animId = requestAnimationFrame(updateVu)
+    if (!isPlaying) {
+      setVuL(0)
+      setVuR(0)
+      return
     }
-    animId = requestAnimationFrame(updateVu)
-    return () => cancelAnimationFrame(animId)
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let timer: ReturnType<typeof setInterval> | null = null
+    const updateVu = () => {
+      const data = getAnalyserData()
+      const count = Math.min(32, data?.length ?? 0)
+      let sum = 0
+      for (let i = 0; i < count; i++) sum += data![i]
+      const now = Date.now()
+      // The existing spectrum analyser is not a stereo or calibrated peak meter.
+      const avg = count ? sum / count / 255 :
+        (motionPreference.matches ? 0.4 : 0.4 + Math.sin(now / 180) * 0.22 + Math.cos(now / 290) * 0.14)
+      const l = Math.min(1, Math.max(0, avg * (motionPreference.matches ? 1 : 0.92 + Math.sin(now / 220) * 0.12)))
+      const r = Math.min(1, Math.max(0, avg * (motionPreference.matches ? 1 : 0.92 + Math.cos(now / 250) * 0.12)))
+      setVuL(prev => motionPreference.matches ? l : prev + (l - prev) * 0.65)
+      setVuR(prev => motionPreference.matches ? r : prev + (r - prev) * 0.65)
+    }
+    const sync = () => {
+      if (timer !== null) clearInterval(timer)
+      timer = null
+      if (document.hidden) return
+      updateVu()
+      if (!motionPreference.matches) timer = setInterval(updateVu, 100)
+      else timer = setInterval(updateVu, 1000)
+    }
+    document.addEventListener('visibilitychange', sync)
+    motionPreference.addEventListener?.('change', sync)
+    sync()
+    return () => {
+      if (timer !== null) clearInterval(timer)
+      document.removeEventListener('visibilitychange', sync)
+      motionPreference.removeEventListener?.('change', sync)
+    }
   }, [isOpen, isPlaying])
 
   const handleStartRec = useCallback(() => {
@@ -184,13 +199,21 @@ export default function StudioDisplayModal({
 
   const toggleFullscreenMode = useCallback(() => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {})
-      setIsFullscreen(true)
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {})
+      }
     } else {
-      document.exitFullscreen().catch(() => {})
-      setIsFullscreen(false)
+      document.exitFullscreen?.().catch(() => {})
     }
   }, [])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const sync = () => setIsFullscreen(Boolean(document.fullscreenElement))
+    sync()
+    document.addEventListener('fullscreenchange', sync)
+    return () => document.removeEventListener('fullscreenchange', sync)
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -217,7 +240,9 @@ export default function StudioDisplayModal({
         return
       }
       if (showShortcuts) return
+      if (event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return
       if (event.code === 'Space') {
+        if (target?.closest('button, a[href], [role="button"]')) return
         event.preventDefault()
         togglePlay()
       } else if (event.key === 'ArrowLeft') {
@@ -276,7 +301,7 @@ export default function StudioDisplayModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.16 }}
-            className="fixed inset-0 backdrop-blur-xl cursor-pointer"
+            className="fixed inset-0 cursor-pointer"
             style={{ backgroundColor: 'var(--bg-scrim)' }}
             onClick={onClose}
             aria-hidden="true"
@@ -289,7 +314,7 @@ export default function StudioDisplayModal({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 10 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="relative z-10 w-full max-w-5xl bg-elevated border border-line rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 flex flex-col text-ink max-h-[95vh] overflow-y-auto"
+            className="relative z-10 w-full max-w-5xl bg-elevated border border-line rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 flex flex-col text-ink max-h-[95dvh] overflow-y-auto"
             role="dialog"
             aria-modal="true"
             aria-labelledby="studio-console-title"
@@ -413,7 +438,7 @@ export default function StudioDisplayModal({
                       type="button"
                       onClick={handleStartRec}
                       disabled={!isPlaying}
-                      className="inline-flex items-center gap-2 min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold border bg-accent-subtle text-accent border-accent transition-colors disabled:opacity-40"
+                      className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold border bg-accent-subtle text-accent border-accent transition-colors disabled:opacity-40"
                     >
                       <Circle size={13} fill="currentColor" />
                       <span>Grabar emisión</span>
@@ -422,7 +447,7 @@ export default function StudioDisplayModal({
                     <button
                       type="button"
                       onClick={handleStopRec}
-                      className="inline-flex items-center gap-2 min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold bg-red-500 text-white transition-colors tabular-nums"
+                      className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold bg-red-500 text-white transition-colors tabular-nums"
                     >
                       <Square size={13} fill="currentColor" />
                       <span>
@@ -435,7 +460,7 @@ export default function StudioDisplayModal({
                     <button
                       type="button"
                       onClick={() => downloadRecording()}
-                      className="inline-flex items-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-bold bg-accent text-accent-fg hover:bg-accent-hover transition-colors"
+                      className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold bg-accent text-accent-fg hover:bg-accent-hover transition-colors"
                     >
                       <Download size={14} />
                       <span>Descargar grabación</span>
@@ -445,7 +470,7 @@ export default function StudioDisplayModal({
                   <button
                     type="button"
                     onClick={onOpenEq}
-                    className="inline-flex items-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-subtle hover:bg-canvas text-ink border border-line transition-colors"
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-subtle hover:bg-canvas text-ink border border-line transition-colors"
                   >
                     <Sliders size={14} className="text-accent" />
                     <span>Ecualizador (E)</span>
@@ -455,7 +480,7 @@ export default function StudioDisplayModal({
                     type="button"
                     onClick={handleResync}
                     disabled={isResyncing}
-                    className="inline-flex items-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-subtle hover:bg-canvas text-ink border border-line transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-subtle hover:bg-canvas text-ink border border-line transition-colors disabled:opacity-50"
                   >
                     <RotateCw size={14} className={isResyncing ? 'animate-spin text-accent' : ''} />
                     <span>Re-sincronizar</span>
@@ -467,8 +492,8 @@ export default function StudioDisplayModal({
               <div className="lg:col-span-4 flex flex-col justify-between bg-surface border border-line rounded-2xl p-5">
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-ink">Vúmetros estéreo L / R</span>
-                    <span className="text-[11px] font-mono text-ink-muted">dBFS</span>
+                    <span className="text-xs font-bold text-ink">Indicadores L / R estimados</span>
+                    <span className="text-[11px] font-mono text-ink-muted">Orientativo</span>
                   </div>
 
                   {(
@@ -481,7 +506,7 @@ export default function StudioDisplayModal({
                       <div className="flex items-center justify-between text-xs font-mono tabular-nums text-ink-secondary mb-1">
                         <span className="font-bold text-accent">{label}</span>
                         <span>
-                          {isPlaying ? `${Math.round((value - 1) * 30)} dB` : '-∞ dB'}
+                          {isPlaying ? `${Math.round(value * 100)} %` : '0 %'}
                         </span>
                       </div>
                       <div className="h-3.5 bg-input rounded-lg p-0.5 overflow-hidden flex items-center border border-line">
@@ -494,15 +519,16 @@ export default function StudioDisplayModal({
                   ))}
 
                   <div className="flex justify-between text-[10px] font-mono tabular-nums text-ink-muted px-0.5 select-none">
-                    <span>-40</span>
-                    <span>-20</span>
-                    <span>-10</span>
-                    <span>-3</span>
-                    <span className="text-amber-500 font-bold">0</span>
-                    <span className="text-red-500 font-bold">+3</span>
+                    <span>0%</span>
+                    <span>20%</span>
+                    <span>40%</span>
+                    <span>60%</span>
+                    <span>80%</span>
+                    <span>100%</span>
                   </div>
                 </div>
 
+                <p className="mt-2 text-xs text-ink-muted">Nivel espectral estimado; no es medición estéreo ni dBFS calibrado. Sin acceso al analizador se muestra una señal indicativa.</p>
                 <dl className="mt-6 pt-4 border-t border-line space-y-2.5 text-xs font-mono tabular-nums">
                   <div className="flex items-center justify-between gap-2">
                     <dt className="text-ink-muted">Códec</dt>

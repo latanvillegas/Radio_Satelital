@@ -53,12 +53,12 @@ export const THEME_TOKENS: Record<ThemeName, ThemeTokens> = {
   amoled: {
     label: 'Rojo Broadcast',
     swatch: '#ef4444',
-    accent: '#ef4444',
+    accent: '#f05252',
     accentHover: '#f87171',
     accentFg: '#09090b',
     accentGlow: 'rgba(239, 68, 68, 0.30)',
     accentSubtle: 'rgba(239, 68, 68, 0.14)',
-    lightAccent: '#dc2626',
+    lightAccent: '#b91c1c',
     lightAccentHover: '#b91c1c',
     lightAccentFg: '#ffffff',
   },
@@ -84,7 +84,7 @@ export const THEME_TOKENS: Record<ThemeName, ThemeTokens> = {
     accentFg: '#09090b',
     accentGlow: 'rgba(59, 130, 246, 0.30)',
     accentSubtle: 'rgba(59, 130, 246, 0.14)',
-    lightAccent: '#2563eb',
+    lightAccent: '#1d4ed8',
     lightAccentHover: '#1d4ed8',
     lightAccentFg: '#ffffff',
   },
@@ -96,7 +96,7 @@ export const THEME_TOKENS: Record<ThemeName, ThemeTokens> = {
     accentFg: '#171203',
     accentGlow: 'rgba(212, 175, 55, 0.30)',
     accentSubtle: 'rgba(212, 175, 55, 0.14)',
-    lightAccent: '#b45309',
+    lightAccent: '#92400e',
     lightAccentHover: '#92400e',
     lightAccentFg: '#ffffff',
     lightAccentGlow: 'rgba(180, 83, 9, 0.24)',
@@ -110,14 +110,14 @@ export const THEME_TOKENS: Record<ThemeName, ThemeTokens> = {
     accentFg: '#1c0a02',
     accentGlow: 'rgba(249, 115, 22, 0.30)',
     accentSubtle: 'rgba(249, 115, 22, 0.14)',
-    lightAccent: '#c2410c',
-    lightAccentHover: '#c2410c',
+    lightAccent: '#9a3412',
+    lightAccentHover: '#9a3412',
     lightAccentFg: '#ffffff',
   },
   purple: {
     label: 'Violeta',
     swatch: '#a855f7',
-    accent: '#a855f7',
+    accent: '#b56bfa',
     accentHover: '#c084fc',
     accentFg: '#09090b',
     accentGlow: 'rgba(168, 85, 247, 0.30)',
@@ -173,31 +173,48 @@ export function isLightResolved(mode: AppearanceMode): boolean {
   )
 }
 
+function isThemeName(value: unknown): value is ThemeName {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(THEME_TOKENS, value)
+}
+
+export function resolveAccentTokens(theme: ThemeName, isLight: boolean) {
+  const t = THEME_TOKENS[isThemeName(theme) ? theme : DEFAULT_THEME]
+  return [
+    isLight ? t.lightAccent ?? t.accent : t.accent,
+    isLight ? t.lightAccentHover ?? t.accentHover : t.accentHover,
+    isLight ? t.lightAccentFg ?? t.accentFg : t.accentFg,
+    isLight ? t.lightAccentGlow ?? t.accentGlow : t.accentGlow,
+    isLight ? t.lightAccentSubtle ?? t.accentSubtle : t.accentSubtle,
+  ] as const
+}
+
+const ACCENT_PROPERTIES = ['--accent', '--accent-hover', '--accent-fg', '--accent-glow', '--accent-subtle'] as const
+
+/** Generates a pre-hydration script exclusively from trusted, static palette data. */
+export function buildThemeInitScript(): string {
+  const palettes = Object.fromEntries(getAvailableThemes().map(theme => [
+    theme, { dark: resolveAccentTokens(theme, false), light: resolveAccentTokens(theme, true) },
+  ]))
+  const payload = JSON.stringify(palettes)
+  return `(function(){try{var map=${payload};var theme=localStorage.getItem('ultra_theme');if(!Object.prototype.hasOwnProperty.call(map,theme))theme='wear-mint';var app=localStorage.getItem('ultra_appearance');var light=app==='light'||(app==='system'&&window.matchMedia('(prefers-color-scheme: light)').matches);var root=document.documentElement;root.setAttribute('data-theme',theme);root.setAttribute('data-appearance',light?'light':'dark');var colors=map[theme][light?'light':'dark'];${JSON.stringify(ACCENT_PROPERTIES)}.forEach(function(key,i){root.style.setProperty(key,colors[i])});var meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute('content',light?'#ffffff':theme==='amoled'?'#000000':'#060a0e')}catch(e){}})();`
+}
+
 function syncAccentTokens(theme: ThemeName, isLight: boolean) {
   if (typeof document === 'undefined') return
-  const tokens = THEME_TOKENS[theme] || THEME_TOKENS[DEFAULT_THEME]
+  const selected = isThemeName(theme) ? theme : DEFAULT_THEME
   const root = document.documentElement
-
-  const accent = isLight && tokens.lightAccent ? tokens.lightAccent : tokens.accent
-  const hover = isLight && tokens.lightAccentHover ? tokens.lightAccentHover : tokens.accentHover
-  const fg = isLight && tokens.lightAccentFg ? tokens.lightAccentFg : tokens.accentFg
-  const glow = isLight && tokens.lightAccentGlow ? tokens.lightAccentGlow : tokens.accentGlow
-  const subtle =
-    isLight && tokens.lightAccentSubtle ? tokens.lightAccentSubtle : tokens.accentSubtle
-
-  root.setAttribute('data-theme', theme)
-  root.style.setProperty('--accent', accent)
-  root.style.setProperty('--accent-hover', hover)
-  root.style.setProperty('--accent-fg', fg)
-  root.style.setProperty('--accent-glow', glow)
-  root.style.setProperty('--accent-subtle', subtle)
+  const colors = resolveAccentTokens(selected, isLight)
+  root.setAttribute('data-theme', selected)
+  ACCENT_PROPERTIES.forEach((key, i) => root.style.setProperty(key, colors[i]))
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) meta.setAttribute('content', isLight ? '#ffffff' : selected === 'amoled' ? '#000000' : '#060a0e')
 }
 
 export function getTheme(): ThemeName {
   if (typeof window === 'undefined') return DEFAULT_THEME
   try {
     const stored = localStorage.getItem(THEME_KEY) as ThemeName | null
-    return stored && THEME_TOKENS[stored] ? stored : DEFAULT_THEME
+    return isThemeName(stored) ? stored : DEFAULT_THEME
   } catch {
     return DEFAULT_THEME
   }
@@ -216,7 +233,7 @@ export function getAppearance(): AppearanceMode {
 export function setTheme(name: ThemeName) {
   if (typeof window === 'undefined') return
   try {
-    const selected = THEME_TOKENS[name] ? name : DEFAULT_THEME
+    const selected = isThemeName(name) ? name : DEFAULT_THEME
     localStorage.setItem(THEME_KEY, selected)
     const light = isLightResolved(getAppearance())
     syncAccentTokens(selected, light)
@@ -235,10 +252,6 @@ export function applyAppearance(mode: AppearanceMode) {
   root.setAttribute('data-appearance', light ? 'light' : 'dark')
   syncAccentTokens(getTheme(), light)
 
-  const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) {
-    meta.setAttribute('content', light ? '#f4f7f6' : '#060a0e')
-  }
 }
 
 export function setAppearance(mode: AppearanceMode) {
