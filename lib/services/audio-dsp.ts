@@ -106,6 +106,9 @@ let filterNodes: BiquadFilterNode[] = []
 let preAmpNode: GainNode | null = null
 let compressorNode: DynamicsCompressorNode | null = null
 let analyserNode: AnalyserNode | null = null
+let stereoSplitter: ChannelSplitterNode | null = null
+let stereoAnalysers: [AnalyserNode, AnalyserNode] | null = null
+let stereoBuffer: Float32Array | null = null
 let streamDestNode: MediaStreamAudioDestinationNode | null = null
 let connectedAudioElement: HTMLAudioElement | null = null
 let stateHydrated = false
@@ -238,6 +241,7 @@ function rewireGraph() {
 
   lastNode.connect(analyserNode)
   analyserNode.connect(audioCtx.destination)
+  if (stereoSplitter) analyserNode.connect(stereoSplitter)
   if (streamDestNode) {
     analyserNode.connect(streamDestNode)
   }
@@ -413,6 +417,56 @@ export function getAnalyserData(): Uint8Array | null {
   return analyserBuffer
 }
 
+/** Sample peak, not inter-sample true peak or LUFS. Zero amplitude is -Infinity dBFS. */
+export function samplePeakDbfs(samples: Float32Array): number {
+  let peak = 0
+  for (let i = 0; i < samples.length; i++) {
+    const value = Math.abs(samples[i])
+    if (Number.isFinite(value) && value > peak) peak = value
+  }
+  return peak > 0 ? 20 * Math.log10(peak) : -Infinity
+}
+
+/** Lazily attach a passive meter branch; audio output and recording graph are unchanged. */
+export function getStereoPeakLevels(): readonly [number, number] | null {
+  if (!audioCtx || audioCtx.state !== 'running' || !analyserNode) return null
+  try {
+    if (!stereoAnalysers || !stereoSplitter) {
+      const splitter = audioCtx.createChannelSplitter(2)
+      const left = audioCtx.createAnalyser()
+      const right = audioCtx.createAnalyser()
+      left.fftSize = right.fftSize = 2048
+      stereoSplitter = splitter
+      stereoAnalysers = [left, right]
+      stereoBuffer = new Float32Array(left.fftSize)
+      splitter.connect(left, 0)
+      splitter.connect(right, 1)
+      analyserNode.connect(splitter)
+    }
+    const buffer = stereoBuffer!
+    stereoAnalysers[0].getFloatTimeDomainData(buffer)
+    const leftPeak = samplePeakDbfs(buffer)
+    stereoAnalysers[1].getFloatTimeDomainData(buffer)
+    return [leftPeak, samplePeakDbfs(buffer)]
+  } catch {
+    releaseStereoMeter()
+    return null
+  }
+}
+
+export function releaseStereoMeter(): void {
+  if (stereoSplitter) {
+    try { analyserNode?.disconnect(stereoSplitter) } catch {}
+    try { stereoSplitter.disconnect() } catch {}
+  }
+  for (const node of stereoAnalysers ?? []) {
+    try { node.disconnect() } catch {}
+  }
+  stereoSplitter = null
+  stereoAnalysers = null
+  stereoBuffer = null
+}
+
 export function getDspOutputStream(): MediaStream | null {
   return streamDestNode ? streamDestNode.stream : null
 }
@@ -426,6 +480,7 @@ export function resumeAudioDsp(): void {
 }
 
 export function releaseAudioDsp(): void {
+  releaseStereoMeter()
   disconnectProcessingNodes()
   const ctx = audioCtx
   audioCtx = null

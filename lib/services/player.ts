@@ -1,6 +1,7 @@
 import type HlsType from 'hls.js'
 import type { Station } from '../../types/station'
 import { getOptimalUrl } from './proxy'
+import { validateStationUrl } from '../utils/validate'
 import { addRecentStation } from '../storage/recents'
 import { stationKey } from './station-normalizer'
 import { initAudioDsp, releaseAudioDsp, suspendAudioDsp, resumeAudioDsp } from './audio-dsp'
@@ -484,8 +485,9 @@ function startStream(station: Station, isRetry: boolean) {
 }
 
 export function playStation(s: Station, isAutoRetry = false) {
-  if (!s.streamUrl && !s.url) {
-    notifyStatus('error', { error: 'URL de emisora no disponible' })
+  if (!validateStationUrl(s.streamUrl || s.url || '')) {
+    setPlayingState(false)
+    notifyStatus('error', { error: 'URL de emisora no válida o no permitida' })
     return
   }
   if (!isAutoRetry) {

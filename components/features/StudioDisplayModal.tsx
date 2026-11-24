@@ -30,7 +30,7 @@ import {
   getRecorderState,
 } from '@/lib/services/recorder'
 import { getCurrentStreamTelemetry, resyncStream } from '@/lib/services/player'
-import { getAnalyserData } from '@/lib/services/audio-dsp'
+import { getStereoPeakLevels, releaseStereoMeter } from '@/lib/services/audio-dsp'
 import {
   getTelemetrySummary,
   subscribeTelemetry,
@@ -74,8 +74,7 @@ export default function StudioDisplayModal({
   const [localTime, setLocalTime] = useState('')
   const [utcTime, setUtcTime] = useState('')
   const [recorderState, setRecorderState] = useState<RecorderState>(() => getRecorderState())
-  const [vuL, setVuL] = useState(0)
-  const [vuR, setVuR] = useState(0)
+  const [peaks, setPeaks] = useState<readonly [number, number] | null>(null)
   const [telemetry, setTelemetry] = useState(() => getCurrentStreamTelemetry())
   const [opsSummary, setOpsSummary] = useState<TelemetrySummary>(() => getTelemetrySummary())
   const [isResyncing, setIsResyncing] = useState(false)
@@ -125,39 +124,37 @@ export default function StudioDisplayModal({
   useEffect(() => {
     if (!isOpen) return
     if (!isPlaying) {
-      setVuL(0)
-      setVuR(0)
+      setPeaks(null)
+      releaseStereoMeter()
       return
     }
     const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)')
     let timer: ReturnType<typeof setInterval> | null = null
     const updateVu = () => {
-      const data = getAnalyserData()
-      const count = Math.min(32, data?.length ?? 0)
-      let sum = 0
-      for (let i = 0; i < count; i++) sum += data![i]
-      const now = Date.now()
-      // The existing spectrum analyser is not a stereo or calibrated peak meter.
-      const avg = count ? sum / count / 255 :
-        (motionPreference.matches ? 0.4 : 0.4 + Math.sin(now / 180) * 0.22 + Math.cos(now / 290) * 0.14)
-      const l = Math.min(1, Math.max(0, avg * (motionPreference.matches ? 1 : 0.92 + Math.sin(now / 220) * 0.12)))
-      const r = Math.min(1, Math.max(0, avg * (motionPreference.matches ? 1 : 0.92 + Math.cos(now / 250) * 0.12)))
-      setVuL(prev => motionPreference.matches ? l : prev + (l - prev) * 0.65)
-      setVuR(prev => motionPreference.matches ? r : prev + (r - prev) * 0.65)
+      const next = getStereoPeakLevels()
+      setPeaks(previous => {
+        if (!next) return null
+        if (previous && next.every((value, i) => Math.round(value) === Math.round(previous[i]))) return previous
+        return next
+      })
     }
     const sync = () => {
       if (timer !== null) clearInterval(timer)
       timer = null
-      if (document.hidden) return
+      if (document.hidden) {
+        releaseStereoMeter()
+        setPeaks(null)
+        return
+      }
       updateVu()
-      if (!motionPreference.matches) timer = setInterval(updateVu, 100)
-      else timer = setInterval(updateVu, 1000)
+      timer = setInterval(updateVu, motionPreference.matches ? 1000 : 100)
     }
     document.addEventListener('visibilitychange', sync)
     motionPreference.addEventListener?.('change', sync)
     sync()
     return () => {
       if (timer !== null) clearInterval(timer)
+      releaseStereoMeter()
       document.removeEventListener('visibilitychange', sync)
       motionPreference.removeEventListener?.('change', sync)
     }
@@ -494,43 +491,43 @@ export default function StudioDisplayModal({
               <div className="lg:col-span-4 flex flex-col justify-between bg-surface border border-line rounded-2xl p-5">
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-ink">Indicadores L / R estimados</span>
-                    <span className="text-[11px] font-mono text-ink-muted">Orientativo</span>
+                    <span className="text-xs font-bold text-ink">Picos por canal L / R</span>
+                    <span className="text-[11px] font-mono text-ink-muted">dBFS</span>
                   </div>
 
                   {(
                     [
-                      ['CH-L', vuL],
-                      ['CH-R', vuR],
+                      ['CH-L', peaks?.[0] ?? null],
+                      ['CH-R', peaks?.[1] ?? null],
                     ] as const
                   ).map(([label, value]) => (
                     <div className="mb-4" key={label}>
                       <div className="flex items-center justify-between text-xs font-mono tabular-nums text-ink-secondary mb-1">
                         <span className="font-bold text-accent">{label}</span>
                         <span>
-                          {isPlaying ? `${Math.round(value * 100)} %` : '0 %'}
+                          {!isPlaying ? '−∞ dBFS' : value === null ? 'N/D' : value === -Infinity ? '−∞ dBFS' : `${value.toFixed(1)} dBFS`}
                         </span>
                       </div>
                       <div className="h-3.5 bg-input rounded-lg p-0.5 overflow-hidden flex items-center border border-line">
                         <div
                           className="h-full rounded-sm transition-all duration-75 bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500"
-                          style={{ width: `${value * 100}%` }}
+                          style={{ width: `${value === null ? 0 : Math.max(0, Math.min(100, (value + 60) / 60 * 100))}%` }}
                         />
                       </div>
                     </div>
                   ))}
 
                   <div className="flex justify-between text-[10px] font-mono tabular-nums text-ink-muted px-0.5 select-none">
-                    <span>0%</span>
-                    <span>20%</span>
-                    <span>40%</span>
-                    <span>60%</span>
-                    <span>80%</span>
-                    <span>100%</span>
+                    <span>−60</span>
+                    <span>−48</span>
+                    <span>−36</span>
+                    <span>−24</span>
+                    <span>−12</span>
+                    <span>0</span>
                   </div>
                 </div>
 
-                <p className="mt-2 text-xs text-ink-muted">Nivel espectral estimado; no es medición estéreo ni dBFS calibrado. Sin acceso al analizador se muestra una señal indicativa.</p>
+                <p className="mt-2 text-xs text-ink-muted">Pico de muestras por canal (ventana de 2048 muestras). No equivale a true peak ni LUFS. N/D indica que Web Audio no está disponible.</p>
                 <dl className="mt-6 pt-4 border-t border-line space-y-2.5 text-xs font-mono tabular-nums">
                   <div className="flex items-center justify-between gap-2">
                     <dt className="text-ink-muted">Códec</dt>
