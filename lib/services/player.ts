@@ -4,7 +4,7 @@ import { getOptimalUrl } from './proxy'
 import { validateStationUrl } from '../utils/validate'
 import { addRecentStation } from '../storage/recents'
 import { stationKey } from './station-normalizer'
-import { initAudioDsp, releaseAudioDsp, suspendAudioDsp, resumeAudioDsp } from './audio-dsp'
+import { initAudioDsp, releaseAudioDsp, suspendAudioDsp, prepareAudioDsp } from './audio-dsp'
 import { recordStreamFailure, recordStreamSuccess } from './telemetry'
 
 const AUDIO_ID = 'radioPlayer'
@@ -499,7 +499,7 @@ export function playStation(s: Station, isAutoRetry = false) {
   currentPlayingStation = s
   playbackRequested = true
   updateMediaSession(s)
-  resumeAudioDsp()
+  if (!isAutoRetry) prepareAudioDsp()
   startStream(s, isAutoRetry)
 }
 

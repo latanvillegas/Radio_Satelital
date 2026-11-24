@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { isolateNetwork } from './fixtures.mjs'
+import { spawn } from 'node:child_process'
+import { once } from 'node:events'
+import { setTimeout as delay } from 'node:timers/promises'
 
 test('catalog, favorites, theme persistence and keyboard navigation', async ({ page }, info) => {
   await isolateNetwork(page)
@@ -32,6 +35,20 @@ test('catalog, favorites, theme persistence and keyboard navigation', async ({ p
 })
 
 test('PCM playback, stereo DSP and pause in actual browser engine', async ({ page }, info) => {
+  await page.addInitScript(() => {
+    const Original = window.AudioContext || window.webkitAudioContext
+    if (!Original) return
+    const contexts = []
+    window.__audioProbe = contexts
+    const Instrumented = class extends Original {
+      constructor(...args) {
+        super(...args)
+        contexts.push(this)
+      }
+    }
+    if (window.AudioContext) window.AudioContext = Instrumented
+    else window.webkitAudioContext = Instrumented
+  })
   await isolateNetwork(page, true)
   await page.goto('/')
   await page.getByRole('button', { name: 'Reproducir: Activa Jaén', exact: true }).click()
@@ -44,27 +61,65 @@ test('PCM playback, stereo DSP and pause in actual browser engine', async ({ pag
     const match = /(-?\d+(?:\.\d+)?)\s*dBFS/.exec(text)
     return match ? Number(match[1]) : null
   }
-  await expect.poll(async () => {
-    const left = await peak('CH-L'), right = await peak('CH-R')
-    return left === null || right === null ? 0 : left - right
-  }).toBeGreaterThan(8)
+  try {
+    await expect.poll(async () => {
+      const left = await peak('CH-L'), right = await peak('CH-R')
+      return left === null || right === null ? 0 : left - right
+    }).toBeGreaterThan(8)
+  } finally {
+    const probe = await page.evaluate(() => ({
+      contexts: (window.__audioProbe ?? []).map(ctx => ({ state: ctx.state, sampleRate: ctx.sampleRate, currentTime: ctx.currentTime })),
+      media: (() => {
+        const a = document.getElementById('radioPlayer')
+        return a ? { crossOrigin: a.crossOrigin, paused: a.paused, currentTime: a.currentTime, errorCode: a.error?.code ?? null } : null
+      })(),
+    }))
+    console.log('CROSS_AUDIO_PROBE ' + JSON.stringify({ project: info.project.name, ...probe,
+      left: await page.getByText('CH-L', { exact: true }).locator('..').innerText(),
+      right: await page.getByText('CH-R', { exact: true }).locator('..').innerText(),
+    }))
+  }
   console.log('CROSS_STEREO ' + JSON.stringify({ project: info.project.name, left: await peak('CH-L'), right: await peak('CH-R') }))
   await page.getByRole('button', { name: 'Pausar transmisión' }).click()
   await expect.poll(() => page.locator('#radioPlayer').getAttribute('src')).toBe(null)
 })
 
-test('manifest, service worker control and offline shell', async ({ page, context }, info) => {
-  await isolateNetwork(page)
-  await page.goto('/')
-  await page.waitForFunction(() => navigator.serviceWorker?.controller !== null && Boolean(navigator.serviceWorker?.controller))
-  const manifest = await page.evaluate(async () => (await fetch('/manifest.json')).json())
-  expect(manifest.display).toBe('standalone')
-  expect(manifest.orientation).toBe('any')
-  await context.setOffline(true)
-  await page.reload({ waitUntil: 'domcontentloaded' })
-  await expect(page.getByText(/Sin conexión a Internet/)).toBeVisible()
-  await page.getByRole('button', { name: 'Abrir ajustes de apariencia y audio' }).click()
-  await expect(page.getByRole('dialog', { name: /ajustes/i })).toBeVisible()
-  await context.setOffline(false)
-  console.log('CROSS_PWA ' + JSON.stringify({ project: info.project.name, offlineInteractive: true }))
+test('manifest, service worker control and shell with the origin unavailable', async ({ page }, info) => {
+  const url = 'http://127.0.0.1:4175'
+  const server = spawn('python3', ['-m','http.server','4175','--bind','127.0.0.1','--directory','out'], { stdio: 'ignore' })
+  const exited = once(server, 'exit')
+  try {
+    let ready = false
+    for (let i = 0; i < 40; i++) {
+      try { ready = (await fetch(url)).ok } catch {}
+      if (ready) break
+      await delay(250)
+    }
+    expect(ready).toBe(true)
+    await isolateNetwork(page, false, url)
+    await page.goto(url)
+    await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller))
+    const manifest = await page.evaluate(async () => (await fetch('/manifest.json')).json())
+    expect(manifest.display).toBe('standalone')
+    expect(manifest.orientation).toBe('any')
+    const cached = await page.evaluate(async () => {
+      const cache = await caches.open((await caches.keys()).find(name => name.startsWith('radio-satelital-shell-')))
+      return Boolean(await cache.match('/'))
+    })
+    expect(cached).toBe(true)
+    // Disconnect the actual origin instead of browser protocol offline emulation,
+    // which produced NS_ERROR_OFFLINE before Firefox dispatched navigation to the SW.
+    server.kill()
+    await exited
+    await expect(fetch(url)).rejects.toThrow()
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.getByRole('button', { name: 'Abrir ajustes de apariencia y audio' }).click()
+    await expect(page.getByRole('dialog', { name: /ajustes/i })).toBeVisible()
+    console.log('CROSS_PWA ' + JSON.stringify({ project: info.project.name, originUnavailableInteractive: true }))
+  } finally {
+    if (server.exitCode === null && server.signalCode === null) {
+      server.kill()
+      await exited
+    }
+  }
 })

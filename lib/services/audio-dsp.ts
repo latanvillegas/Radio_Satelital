@@ -264,6 +264,23 @@ function syncNodeParameters() {
   }
 }
 
+/** Start/resume the context in the synchronous user interaction, before asynchronous media loading. */
+export function prepareAudioDsp(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    if (!audioCtx || audioCtx.state === 'closed') {
+      const AudioContextClass = window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      if (!AudioContextClass) return false
+      audioCtx = new AudioContextClass()
+    }
+    resumeAudioDsp()
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function initAudioDsp(audio: HTMLAudioElement): boolean {
   if (typeof window === 'undefined') return false
   if (audio.crossOrigin !== 'anonymous') return false
@@ -283,18 +300,7 @@ export function initAudioDsp(audio: HTMLAudioElement): boolean {
   }
 
   try {
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-    if (!AudioContextClass) return false
-
-    if (!audioCtx || audioCtx.state === 'closed') {
-      audioCtx = new AudioContextClass()
-    }
-
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {})
-    }
+    if (!prepareAudioDsp() || !audioCtx) return false
 
     disconnectProcessingNodes()
 
