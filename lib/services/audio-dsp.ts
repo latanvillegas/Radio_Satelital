@@ -304,10 +304,7 @@ export function initAudioDsp(audio: HTMLAudioElement): boolean {
   }
   pendingAudioElement = null
 
-  if (connectedAudioElement === audio && audioCtx && audioCtx.state !== 'closed' && filterNodes.length === 5) {
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {})
-    }
+  if (connectedAudioElement === audio && filterNodes.length === 5) {
     syncNodeParameters()
     if (!currentState.isWebAudioActive) {
       currentState = { ...currentState, isWebAudioActive: true }
