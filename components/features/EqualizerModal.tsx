@@ -71,7 +71,7 @@ export default function EqualizerModal({ isOpen, onClose }: Props) {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="relative z-10 w-full max-w-2xl bg-elevated border border-line rounded-2xl shadow-2xl p-5 sm:p-7 flex flex-col text-ink max-h-[90dvh] overflow-y-auto"
+            className="relative z-10 w-full max-w-2xl bg-elevated border border-line rounded-2xl p-5 sm:p-7 flex flex-col text-ink max-h-[90dvh] overflow-y-auto"
             role="dialog"
             aria-modal="true"
             aria-labelledby="eq-dialog-title"
@@ -99,7 +99,7 @@ export default function EqualizerModal({ isOpen, onClose }: Props) {
                   type="button"
                   onClick={() => setDspEnabled(!dspState.enabled)}
                   aria-pressed={dspState.enabled}
-                  className={`min-h-[40px] px-3.5 rounded-xl text-xs font-bold border transition-colors ${
+                  className={`min-h-[44px] px-3.5 rounded-xl text-xs font-bold border transition-colors ${
                     dspState.enabled
                       ? 'bg-accent-subtle text-accent border-accent'
                       : 'bg-surface text-ink-muted border-line'

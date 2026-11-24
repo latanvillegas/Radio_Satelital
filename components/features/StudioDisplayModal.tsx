@@ -313,7 +313,7 @@ export default function StudioDisplayModal({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 10 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="relative z-10 w-full max-w-5xl bg-elevated border border-line rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 flex flex-col text-ink max-h-[95dvh] overflow-y-auto"
+            className="relative z-10 w-full max-w-5xl bg-elevated border border-line rounded-2xl p-4 sm:p-6 md:p-8 flex flex-col text-ink max-h-[95dvh] overflow-y-auto"
             role="dialog"
             aria-modal="true"
             aria-labelledby="studio-console-title"
@@ -395,7 +395,7 @@ export default function StudioDisplayModal({
 
             {/* Cuerpo de Cabina */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 my-5">
-              <div className="lg:col-span-8 flex flex-col justify-between bg-surface border border-line rounded-2xl p-5 sm:p-6">
+              <div className="lg:col-span-8 flex flex-col justify-between bg-surface border border-line rounded-xl p-5 sm:p-6">
                 <div className="flex items-center gap-4">
                   <StationArtwork station={currentStation} variant="card" />
                   <div className="min-w-0 flex-1">
@@ -490,7 +490,7 @@ export default function StudioDisplayModal({
               </div>
 
               {/* Telemetría y Vúmetros */}
-              <div className="lg:col-span-4 flex flex-col justify-between bg-surface border border-line rounded-2xl p-5">
+              <div className="lg:col-span-4 flex flex-col justify-between bg-surface border border-line rounded-xl p-5">
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-xs font-bold text-ink">Picos por canal L / R</span>

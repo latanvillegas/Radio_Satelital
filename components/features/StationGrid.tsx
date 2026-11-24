@@ -27,7 +27,7 @@ const PAGE_SIZE = 24
 export default function StationGrid({
   stations,
   title = 'Todas las emisoras',
-  subtitle = 'Explora el catálogo, sintoniza en directo y guarda tus frecuencias favoritas.',
+  subtitle = 'Elige una frecuencia para empezar a escuchar.',
   playStation,
   toggleFavorite,
   onResetFilters,
@@ -70,7 +70,7 @@ export default function StationGrid({
 
   return (
     <section id="station-list" className="scroll-mt-24" aria-label="Catálogo de emisoras">
-      <div className="flex flex-wrap justify-between items-end gap-3 mb-5">
+      <div className="broadcast-catalog-heading flex flex-wrap justify-between items-end gap-3 mb-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-ink">
             {title}
@@ -109,7 +109,7 @@ export default function StationGrid({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-3">
             {page.map((station) => (
               <StationCard
                 key={stationKey(station)}

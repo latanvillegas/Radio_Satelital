@@ -200,3 +200,38 @@ test('all nine accent palettes retain WCAG contrast in settings in dark and exte
   console.log('PALETTE_AUDIT ' + JSON.stringify({ combinations: results.length, failures }))
   expect(failures).toEqual([])
 })
+
+test('premium visual contract: responsive home, modes and expanded player evidence', async ({ page }, info) => {
+  await isolateNetwork(page, true)
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: 'Radio en vivo, sin fronteras.' })).toBeVisible()
+  for (const width of [1440, 768, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.evaluate(() => document.fonts.ready)
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      scroll: document.documentElement.scrollWidth,
+      brand: document.querySelector('.broadcast-brand').getBoundingClientRect().right,
+      settings: document.querySelector('[aria-label="Abrir ajustes de apariencia y audio"]').getBoundingClientRect().left,
+    }))
+    expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.viewport + 1)
+    expect(dimensions.brand).toBeLessThanOrEqual(dimensions.settings)
+    await expect(page.getByRole('searchbox')).toBeVisible()
+    await info.attach('premium-dark-' + width + '.png', { body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png' })
+  }
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.getByRole('button', { name: 'Abrir ajustes de apariencia y audio' }).click()
+  const settings = page.getByRole('dialog', { name: /ajustes/i })
+  await settings.getByRole('button', { name: /Claro Exterior/ }).click()
+  await settings.getByRole('button', { name: /Cerrar ajustes/ }).click()
+  await expect(settings).toBeHidden()
+  await info.attach('premium-exterior-390.png', { body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png' })
+  await page.getByRole('button', { name: 'Reproducir: Activa Jaén', exact: true }).click()
+  await expect.poll(() => page.locator('#radioPlayer').evaluate(a => !a.paused && a.currentTime > 0.1)).toBe(true)
+  await page.getByRole('button', { name: /Abrir reproductor expandido/ }).click()
+  await expect(page.getByRole('dialog', { name: 'Activa Jaén' })).toBeVisible()
+  await info.attach('premium-player-390.png', { body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png' })
+  await page.getByRole('button', { name: 'Cabina', exact: true }).click()
+  await expect(page.getByText('Picos por canal L / R', { exact: true })).toBeVisible()
+  await info.attach('premium-studio-390.png', { body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png' })
+})

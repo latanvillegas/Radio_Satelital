@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { AlertCircle, ArrowLeft, Clock3, Globe2, Heart, MapPin, Play, Settings2 } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Clock3, Globe2, Heart, MapPin, Play, RadioTower, Settings2 } from 'lucide-react'
 import type { Station, StationScope } from '@/types/station'
 import ThemeInitializer from '@/components/common/ThemeInitializer'
 import ServiceWorkerRegistration from '@/components/common/ServiceWorkerRegistration'
@@ -105,14 +105,15 @@ export default function RadioExplorer({
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }
               }}
-              className="text-base sm:text-lg font-extrabold tracking-tight text-ink whitespace-nowrap shrink-0"
+              className="broadcast-brand"
             >
-              Radio Satelital
+              <span className="broadcast-brand-mark" aria-hidden="true"><RadioTower size={20} strokeWidth={1.8} /></span>
+              <span className="broadcast-wordmark">Radio <span>Satelital</span></span>
             </Link>
 
             <nav
               aria-label="Navegación rápida por regiones"
-              className="hidden md:flex items-center gap-6 text-sm font-medium text-ink-secondary"
+              className="hidden lg:flex items-center gap-7 text-sm font-medium text-ink-secondary"
             >
               {NAV_SCOPES.map((item) => {
                 const active = scope === item.key
@@ -122,7 +123,7 @@ export default function RadioExplorer({
                     type="button"
                     onClick={() => handleScopeSelect(item.key)}
                     aria-pressed={active}
-                    className={`py-1 whitespace-nowrap shrink-0 border-b-2 transition-colors ${
+                    className={`min-h-[44px] inline-flex items-center whitespace-nowrap shrink-0 border-b-2 transition-colors ${
                       active
                         ? 'border-accent text-ink font-semibold'
                         : 'border-transparent hover:text-ink'
@@ -150,7 +151,7 @@ export default function RadioExplorer({
 
         <main
           id="inicio"
-          className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-11 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:pb-32"
+          className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-5 sm:pt-9 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:pb-32"
         >
           {featuredStation && (
             <section
@@ -205,48 +206,43 @@ export default function RadioExplorer({
             className="scroll-mt-24 mb-8 sm:mb-10"
             aria-labelledby="discover-heading"
           >
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-6">
-              <div className="max-w-2xl">
-                <p className="text-xs font-semibold text-accent mb-2">
-                  Observatorio de señales en directo
-                </p>
+            <div className="broadcast-hero">
+              <div className="broadcast-hero-copy">
                 {featuredStation ? (
-                  <h2
-                    id="discover-heading"
-                    className="text-2xl sm:text-3xl font-extrabold tracking-tight text-ink leading-[1.15] [text-wrap:balance]"
-                  >
-                    Más emisoras en <span className="text-accent">Radio Satelital</span>
+                  <h2 id="discover-heading" className="broadcast-display">
+                    Más emisoras en Radio Satelital
                   </h2>
                 ) : (
-                  <h1
-                    id="discover-heading"
-                    className="text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold tracking-tight text-ink leading-[1.1] [text-wrap:balance]"
-                  >
-                    Sintoniza tu próxima <span className="text-accent">emisora en vivo.</span>
+                  <h1 id="discover-heading" className="broadcast-display">
+                    Radio en vivo, <span>sin fronteras.</span>
                   </h1>
                 )}
-                <p className="mt-3 text-sm sm:text-base text-ink-secondary leading-relaxed max-w-[62ch]">
-                  Transmisiones continuas de Jaén, Cajamarca, Perú y el mundo con ecualización
-                  paramétrica de 5 bandas y reconexión automática.
+                <p className="broadcast-intro">
+                  De Jaén y Cajamarca al mundo. Descubre tus emisoras favoritas con ecualizador de cinco bandas y reconexión automática.
+                </p>
+                <p className="broadcast-catalog-meta">
+                  <Globe2 size={17} aria-hidden="true" />
+                  <span><strong>{rawStations.length}</strong> emisoras en el catálogo</span>
+                  <span className="broadcast-meta-divider" aria-hidden="true" />
+                  <span><strong>{countriesCount}</strong> países</span>
                 </p>
               </div>
-
-              <div className="flex items-baseline gap-3 text-xs text-ink-secondary shrink-0 font-mono tabular-nums">
-                <span>
-                  <strong className="text-lg sm:text-xl font-bold text-ink mr-1.5">
-                    {rawStations.length}
-                  </strong>
-                  emisoras activas
-                </span>
-                <span aria-hidden="true" className="text-ink-muted">
-                  ·
-                </span>
-                <span>
-                  <strong className="text-lg sm:text-xl font-bold text-ink mr-1.5">
-                    {countriesCount}
-                  </strong>
-                  países
-                </span>
+              <div className="broadcast-dial" aria-hidden="true">
+                <svg viewBox="0 0 320 240" fill="none" focusable="false">
+                  <circle cx="183" cy="120" r="108" stroke="currentColor" opacity=".18" />
+                  <circle cx="183" cy="120" r="86" stroke="currentColor" opacity=".26" />
+                  <circle cx="183" cy="120" r="64" stroke="currentColor" opacity=".16" />
+                  {Array.from({ length: 48 }, (_, i) => (
+                    <line key={i} x1="183" y1={i % 4 === 0 ? 15 : 20} x2="183" y2={i % 4 === 0 ? 29 : 25}
+                      transform={`rotate(${i * 7.5} 183 120)`} stroke="currentColor" opacity={i % 4 === 0 ? '.62' : '.28'} strokeWidth={i % 4 === 0 ? 1.5 : 1} />
+                  ))}
+                  <path d="M107 80 A86 86 0 0 1 242 57" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d="M183 120 L242 57" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
+                  <circle cx="242" cy="57" r="5" fill="var(--accent)" />
+                  <circle cx="183" cy="120" r="35" fill="var(--bg-surface)" stroke="currentColor" opacity=".85" />
+                  <circle cx="183" cy="120" r="7" fill="var(--accent)" />
+                  <path d="M40 120H69 M297 120H314 M183 3V10 M183 231V238" stroke="currentColor" opacity=".35" />
+                </svg>
               </div>
             </div>
 
@@ -258,7 +254,7 @@ export default function RadioExplorer({
             />
 
             {/* Controles segmentados rápidos */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="broadcast-scope-row flex flex-wrap items-center justify-between gap-3">
               <div
                 className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 max-w-full"
                 role="group"
@@ -361,7 +357,7 @@ export default function RadioExplorer({
                 <button
                   type="button"
                   onClick={resetAllFilters}
-                  className="min-h-[36px] px-2 text-xs font-semibold text-accent hover:underline underline-offset-4 whitespace-nowrap shrink-0"
+                  className="min-h-[44px] px-2 text-xs font-semibold text-accent hover:underline underline-offset-4 whitespace-nowrap shrink-0"
                 >
                   Limpiar filtros
                 </button>
