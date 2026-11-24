@@ -1,6 +1,6 @@
 "use client"
 
-import React, { memo, useEffect, useState } from 'react'
+import React, { memo, useState } from 'react'
 import type { Station } from '@/types/station'
 import { RadioTower } from 'lucide-react'
 import { getStationDial } from '@/lib/services/station-frequency'
@@ -25,11 +25,9 @@ interface Props {
 }
 
 function StationArtwork({ station, variant = 'card', className = '' }: Props) {
-  const [brokenLogo, setBrokenLogo] = useState(false)
-
-  useEffect(() => {
-    setBrokenLogo(false)
-  }, [station?.logoUrl])
+  const [loadedLogo, setLoadedLogo] = useState<string | null>(null)
+  const logoUrl = station?.logoUrl
+  const logoReady = Boolean(logoUrl && loadedLogo === logoUrl)
 
   const name = station?.name || 'Radio Satelital'
   const [start, end, accent] = stationColors(name)
@@ -50,18 +48,8 @@ function StationArtwork({ station, variant = 'card', className = '' }: Props) {
         color: accent,
       }}
     >
-      {station?.logoUrl && !brokenLogo ? (
-        <img
-          src={station.logoUrl}
-          alt={station.name}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          className="dial-art-logo"
-          onError={() => setBrokenLogo(true)}
-        />
-      ) : (
-        <span className="dial-art-fallback" aria-hidden="true">
+      <span className="dial-art-fallback" aria-hidden="true">
+
           <RadioTower className="dial-art-icon" />
           {dial ? (
             <span className="dial-art-number">
@@ -71,7 +59,19 @@ function StationArtwork({ station, variant = 'card', className = '' }: Props) {
           ) : (
             <span className="dial-art-label">RADIO</span>
           )}
-        </span>
+      </span>
+      {logoUrl && (
+        <img
+          key={logoUrl}
+          src={logoUrl}
+          alt={name}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          className={`dial-art-logo ${logoReady ? 'is-ready' : ''}`}
+          onLoad={() => setLoadedLogo(logoUrl)}
+          onError={() => setLoadedLogo(null)}
+        />
       )}
     </span>
   )

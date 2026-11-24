@@ -13,15 +13,17 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: '.nvmrc'
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: TypeScript validation
         run: npm run lint
       - name: Unit tests
-        run: npm test
+        run: npm run test
       - name: Production static export
         run: npm run build
       - name: Verify built pages

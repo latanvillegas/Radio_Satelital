@@ -1,0 +1,45 @@
+name: Browser quality — PWA, audio and accessibility
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build static export
+        run: npm run build
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Generate deterministic HLS fixture
+        run: |
+          if ! command -v ffmpeg >/dev/null; then sudo apt-get update && sudo apt-get install -y ffmpeg; fi
+          mkdir -p out/hls-fixture
+          ffmpeg -hide_banner -loglevel error -f lavfi -i sine=frequency=440:sample_rate=44100 -t 24 -c:a aac -b:a 96k -f hls -hls_time 4 -hls_playlist_type vod -hls_segment_filename 'out/hls-fixture/segment-%03d.ts' out/hls-fixture/master.m3u8
+      - name: Browser integration, WCAG and performance
+        run: npm run test:browser
+      - name: Live station diagnostic (external availability)
+        if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        continue-on-error: true
+        run: node scripts/check-browser-streams.mjs
+      - name: Upload browser results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-quality-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14

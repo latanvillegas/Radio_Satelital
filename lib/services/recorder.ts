@@ -9,6 +9,7 @@ import { getAudio } from './player'
 export interface RecorderState {
   isRecording: boolean
   isPaused: boolean
+  isFinalizing?: boolean
   durationSeconds: number
   recordedBlob: Blob | null
   recordedUrl: string | null
@@ -30,7 +31,11 @@ const DEFAULT_RECORDER_STATE: RecorderState = {
 
 let mediaRecorder: MediaRecorder | null = null
 let recordedChunks: Blob[] = []
+let stopPromise: Promise<Blob | null> | null = null
+let resolveStop: ((blob: Blob | null) => void) | null = null
 let timerInterval: ReturnType<typeof setInterval> | null = null
+let finalizationTimer: ReturnType<typeof setTimeout> | null = null
+const FINALIZATION_TIMEOUT_MS = 5000
 let currentState: RecorderState = DEFAULT_RECORDER_STATE
 const recorderListeners = new Set<(state: RecorderState) => void>()
 
@@ -72,6 +77,7 @@ export function startRecording(stationName = 'Radio Satelital'): boolean {
     return false
   }
 
+  if (currentState.isFinalizing || stopPromise) return false
   if (currentState.isRecording) {
     return true
   }
@@ -95,7 +101,7 @@ export function startRecording(stationName = 'Radio Satelital'): boolean {
     }
   }
 
-  if (!stream) {
+  if (!stream || stream.getAudioTracks().length === 0) {
     currentState = {
       ...currentState,
       error: 'Inicia la reproducción de una emisora antes de grabar',
@@ -107,21 +113,25 @@ export function startRecording(stationName = 'Radio Satelital'): boolean {
   try {
     const mimeType = getSupportedMimeType()
     const options: MediaRecorderOptions = mimeType ? { mimeType } : {}
-    mediaRecorder = new MediaRecorder(stream, options)
+    const recorder = new MediaRecorder(stream, options)
+    mediaRecorder = recorder
     recordedChunks = []
 
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) {
+    recorder.ondataavailable = (e) => {
+      if (mediaRecorder === recorder && e.data && e.data.size > 0) {
         recordedChunks.push(e.data)
       }
     }
 
-    mediaRecorder.onerror = (err) => {
-      console.error('[Recorder] Error en MediaRecorder:', err)
-      stopRecording()
+    recorder.onstop = () => finishRecording(recorder)
+    recorder.onerror = () => {
+      if (mediaRecorder !== recorder) return
+      currentState = { ...currentState, error: 'La captura se interrumpió; se conservan los datos disponibles.' }
+      void stopRecording()
     }
 
-    mediaRecorder.start(1000) // Trocear cada segundo
+    recorder.start(1000) // Trocear cada segundo
+    if (currentState.recordedUrl) URL.revokeObjectURL(currentState.recordedUrl)
 
     if (timerInterval) clearInterval(timerInterval)
     const startTime = Date.now()
@@ -134,12 +144,13 @@ export function startRecording(stationName = 'Radio Satelital'): boolean {
 
     const cleanStation = stationName.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 30)
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19)
-    const ext = mimeType.includes('ogg') ? 'ogg' : 'webm'
+    const ext = recordingExtension(recorder.mimeType || mimeType)
     const fileName = `RadioSatelital_${cleanStation}_${timestamp}.${ext}`
 
     currentState = {
       isRecording: true,
       isPaused: false,
+      isFinalizing: false,
       durationSeconds: 0,
       recordedBlob: null,
       recordedUrl: null,
@@ -151,6 +162,8 @@ export function startRecording(stationName = 'Radio Satelital'): boolean {
     return true
   } catch (err) {
     console.error('[Recorder] Error al iniciar grabación:', err)
+    mediaRecorder = null
+    recordedChunks = []
     currentState = {
       ...currentState,
       error: 'No se pudo iniciar la captura de audio (seguridad de stream o permisos)',
@@ -160,37 +173,73 @@ export function startRecording(stationName = 'Radio Satelital'): boolean {
   }
 }
 
-export function stopRecording(): Blob | null {
-  if (!currentState.isRecording || !mediaRecorder) {
-    return null
+export function recordingExtension(mime: string): string {
+  const type = mime.toLowerCase()
+  if (type.includes('ogg')) return 'ogg'
+  if (type.includes('mp4')) return 'm4a'
+  return 'webm'
+}
+
+function clearRecordingTimer() {
+  if (timerInterval !== null) clearInterval(timerInterval)
+  timerInterval = null
+}
+
+function finishRecording(recorder: MediaRecorder) {
+  if (mediaRecorder !== recorder) return
+  clearRecordingTimer()
+  if (finalizationTimer !== null) clearTimeout(finalizationTimer)
+  finalizationTimer = null
+  const mimeType = recorder.mimeType || recordedChunks[0]?.type || 'audio/webm'
+  const blob = recordedChunks.length ? new Blob(recordedChunks, { type: mimeType }) : null
+  let url: string | null = null
+  if (blob) {
+    try { url = URL.createObjectURL(blob) } catch {}
   }
-
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
-  }
-
-  try {
-    if (mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop()
-    }
-  } catch (e) {
-    console.warn('[Recorder] Error al detener:', e)
-  }
-
-  const mimeType = mediaRecorder.mimeType || 'audio/webm'
-  const blob = new Blob(recordedChunks, { type: mimeType })
-  const url = URL.createObjectURL(blob)
-
+  recordedChunks = []
+  mediaRecorder = null
+  recorder.ondataavailable = null
+  recorder.onerror = null
+  recorder.onstop = null
+  const resolve = resolveStop
+  resolveStop = null
+  stopPromise = null
   currentState = {
     ...currentState,
     isRecording: false,
     isPaused: false,
+    isFinalizing: false,
     recordedBlob: blob,
     recordedUrl: url,
+    fileName: currentState.fileName?.replace(/\.[^.]+$/, '.' + recordingExtension(mimeType)) ?? null,
+    error: currentState.error || (blob ? null : 'No se recibieron datos de audio.'),
   }
+  resolve?.(blob)
   notifyRecorderChange()
-  return blob
+}
+
+/** Wait for the final data and stop event; preserve received chunks if the browser never completes. */
+export function stopRecording(): Promise<Blob | null> {
+  if (stopPromise) return stopPromise
+  const recorder = mediaRecorder
+  if (!recorder) return Promise.resolve(null)
+  clearRecordingTimer()
+  const pending = new Promise<Blob | null>(resolve => { resolveStop = resolve })
+  stopPromise = pending
+  currentState = { ...currentState, isRecording: false, isFinalizing: true }
+  finalizationTimer = setTimeout(() => {
+    if (mediaRecorder !== recorder) return
+    currentState = { ...currentState, error: 'El navegador no confirmó el cierre; la grabación puede estar incompleta.' }
+    finishRecording(recorder)
+  }, FINALIZATION_TIMEOUT_MS)
+  notifyRecorderChange()
+  try {
+    if (recorder.state !== 'inactive') recorder.stop()
+  } catch {
+    currentState = { ...currentState, error: 'No se pudo detener normalmente la grabación.' }
+    finishRecording(recorder)
+  }
+  return pending
 }
 
 export function downloadRecording(blob?: Blob | null, fileName?: string | null) {
@@ -208,7 +257,7 @@ export function downloadRecording(blob?: Blob | null, fileName?: string | null) 
   a.click()
 
   setTimeout(() => {
-    document.body.removeChild(a)
+    a.remove()
     URL.revokeObjectURL(url)
   }, 1500)
 }

@@ -29,8 +29,8 @@ import {
   type RecorderState,
   getRecorderState,
 } from '@/lib/services/recorder'
-import { getCurrentStreamTelemetry, resyncStream } from '@/lib/services/player'
-import { getAnalyserData } from '@/lib/services/audio-dsp'
+import { activateCurrentAudioDsp, getCurrentStreamTelemetry, resyncStream } from '@/lib/services/player'
+import { getStereoPeakLevels, releaseStereoMeter } from '@/lib/services/audio-dsp'
 import {
   getTelemetrySummary,
   subscribeTelemetry,
@@ -43,6 +43,7 @@ interface Props {
   onClose: () => void
   currentStation: Station | null
   isPlaying: boolean
+  canCancel: boolean
   togglePlay: () => void
   onNextStation: () => void
   onPrevStation: () => void
@@ -66,6 +67,7 @@ export default function StudioDisplayModal({
   onClose,
   currentStation,
   isPlaying,
+  canCancel,
   togglePlay,
   onNextStation,
   onPrevStation,
@@ -74,8 +76,7 @@ export default function StudioDisplayModal({
   const [localTime, setLocalTime] = useState('')
   const [utcTime, setUtcTime] = useState('')
   const [recorderState, setRecorderState] = useState<RecorderState>(() => getRecorderState())
-  const [vuL, setVuL] = useState(0)
-  const [vuR, setVuR] = useState(0)
+  const [peaks, setPeaks] = useState<readonly [number, number] | null>(null)
   const [telemetry, setTelemetry] = useState(() => getCurrentStreamTelemetry())
   const [opsSummary, setOpsSummary] = useState<TelemetrySummary>(() => getTelemetrySummary())
   const [isResyncing, setIsResyncing] = useState(false)
@@ -105,7 +106,10 @@ export default function StudioDisplayModal({
     return () => clearInterval(timer)
   }, [isOpen])
 
-  useEffect(() => subscribeRecorder((state) => setRecorderState({ ...state })), [])
+  useEffect(() => {
+    if (!isOpen) return
+    return subscribeRecorder((state) => setRecorderState({ ...state }))
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -121,31 +125,41 @@ export default function StudioDisplayModal({
 
   useEffect(() => {
     if (!isOpen) return
-    let animId = 0
-    const updateVu = () => {
-      if (isPlaying) {
-        const realData = getAnalyserData()
-        let avg = 0
-        if (realData && realData.length > 0 && realData.some((v) => v > 4)) {
-          let sum = 0
-          const count = Math.min(32, realData.length)
-          for (let i = 0; i < count; i++) sum += realData[i] ?? 0
-          avg = sum / count / 255
-        } else {
-          avg = 0.4 + Math.sin(Date.now() / 180) * 0.22 + Math.cos(Date.now() / 290) * 0.14
-        }
-        const l = Math.min(1, Math.max(0.05, avg * (0.92 + Math.sin(Date.now() / 220) * 0.12)))
-        const r = Math.min(1, Math.max(0.05, avg * (0.92 + Math.cos(Date.now() / 250) * 0.12)))
-        setVuL((prev) => prev + (l - prev) * 0.3)
-        setVuR((prev) => prev + (r - prev) * 0.3)
-      } else {
-        setVuL((prev) => prev * 0.8)
-        setVuR((prev) => prev * 0.8)
-      }
-      animId = requestAnimationFrame(updateVu)
+    if (!isPlaying) {
+      setPeaks(null)
+      releaseStereoMeter()
+      return
     }
-    animId = requestAnimationFrame(updateVu)
-    return () => cancelAnimationFrame(animId)
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let timer: ReturnType<typeof setInterval> | null = null
+    const updateVu = () => {
+      const next = getStereoPeakLevels()
+      setPeaks(previous => {
+        if (!next) return null
+        if (previous && next.every((value, i) => Math.round(value) === Math.round(previous[i]))) return previous
+        return next
+      })
+    }
+    const sync = () => {
+      if (timer !== null) clearInterval(timer)
+      timer = null
+      if (document.hidden) {
+        releaseStereoMeter()
+        setPeaks(null)
+        return
+      }
+      updateVu()
+      timer = setInterval(updateVu, motionPreference.matches ? 1000 : 100)
+    }
+    document.addEventListener('visibilitychange', sync)
+    motionPreference.addEventListener?.('change', sync)
+    sync()
+    return () => {
+      if (timer !== null) clearInterval(timer)
+      releaseStereoMeter()
+      document.removeEventListener('visibilitychange', sync)
+      motionPreference.removeEventListener?.('change', sync)
+    }
   }, [isOpen, isPlaying])
 
   const handleStartRec = useCallback(() => {
@@ -153,7 +167,7 @@ export default function StudioDisplayModal({
   }, [currentStation?.name])
 
   const handleStopRec = useCallback(() => {
-    stopRecording()
+    void stopRecording()
   }, [])
 
   const handleResync = useCallback(() => {
@@ -184,13 +198,21 @@ export default function StudioDisplayModal({
 
   const toggleFullscreenMode = useCallback(() => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {})
-      setIsFullscreen(true)
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {})
+      }
     } else {
-      document.exitFullscreen().catch(() => {})
-      setIsFullscreen(false)
+      document.exitFullscreen?.().catch(() => {})
     }
   }, [])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const sync = () => setIsFullscreen(Boolean(document.fullscreenElement))
+    sync()
+    document.addEventListener('fullscreenchange', sync)
+    return () => document.removeEventListener('fullscreenchange', sync)
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -217,7 +239,9 @@ export default function StudioDisplayModal({
         return
       }
       if (showShortcuts) return
+      if (event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return
       if (event.code === 'Space') {
+        if (target?.closest('button, a[href], [role="button"]')) return
         event.preventDefault()
         togglePlay()
       } else if (event.key === 'ArrowLeft') {
@@ -276,7 +300,7 @@ export default function StudioDisplayModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.16 }}
-            className="fixed inset-0 backdrop-blur-xl cursor-pointer"
+            className="fixed inset-0 cursor-pointer"
             style={{ backgroundColor: 'var(--bg-scrim)' }}
             onClick={onClose}
             aria-hidden="true"
@@ -289,7 +313,7 @@ export default function StudioDisplayModal({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 10 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="relative z-10 w-full max-w-5xl bg-elevated border border-line rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 flex flex-col text-ink max-h-[95vh] overflow-y-auto"
+            className="relative z-10 w-full max-w-5xl bg-elevated border border-line rounded-2xl p-4 sm:p-6 md:p-8 flex flex-col text-ink max-h-[95dvh] overflow-y-auto"
             role="dialog"
             aria-modal="true"
             aria-labelledby="studio-console-title"
@@ -371,7 +395,7 @@ export default function StudioDisplayModal({
 
             {/* Cuerpo de Cabina */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 my-5">
-              <div className="lg:col-span-8 flex flex-col justify-between bg-surface border border-line rounded-2xl p-5 sm:p-6">
+              <div className="lg:col-span-8 flex flex-col justify-between bg-surface border border-line rounded-xl p-5 sm:p-6">
                 <div className="flex items-center gap-4">
                   <StationArtwork station={currentStation} variant="card" />
                   <div className="min-w-0 flex-1">
@@ -408,12 +432,14 @@ export default function StudioDisplayModal({
                 )}
 
                 <div className="flex flex-wrap items-center gap-2.5 mt-5">
-                  {!recorderState.isRecording ? (
+                  {recorderState.isFinalizing ? (
+                    <span role="status" className="text-sm text-ink-secondary">Finalizando grabación…</span>
+                  ) : !recorderState.isRecording ? (
                     <button
                       type="button"
                       onClick={handleStartRec}
                       disabled={!isPlaying}
-                      className="inline-flex items-center gap-2 min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold border bg-accent-subtle text-accent border-accent transition-colors disabled:opacity-40"
+                      className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold border bg-accent-subtle text-accent border-accent transition-colors disabled:opacity-40"
                     >
                       <Circle size={13} fill="currentColor" />
                       <span>Grabar emisión</span>
@@ -422,7 +448,7 @@ export default function StudioDisplayModal({
                     <button
                       type="button"
                       onClick={handleStopRec}
-                      className="inline-flex items-center gap-2 min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold bg-red-500 text-white transition-colors tabular-nums"
+                      className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold bg-red-500 text-white transition-colors tabular-nums"
                     >
                       <Square size={13} fill="currentColor" />
                       <span>
@@ -435,7 +461,7 @@ export default function StudioDisplayModal({
                     <button
                       type="button"
                       onClick={() => downloadRecording()}
-                      className="inline-flex items-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-bold bg-accent text-accent-fg hover:bg-accent-hover transition-colors"
+                      className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold bg-accent text-accent-fg hover:bg-accent-hover transition-colors"
                     >
                       <Download size={14} />
                       <span>Descargar grabación</span>
@@ -445,7 +471,7 @@ export default function StudioDisplayModal({
                   <button
                     type="button"
                     onClick={onOpenEq}
-                    className="inline-flex items-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-subtle hover:bg-canvas text-ink border border-line transition-colors"
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-subtle hover:bg-canvas text-ink border border-line transition-colors"
                   >
                     <Sliders size={14} className="text-accent" />
                     <span>Ecualizador (E)</span>
@@ -455,7 +481,7 @@ export default function StudioDisplayModal({
                     type="button"
                     onClick={handleResync}
                     disabled={isResyncing}
-                    className="inline-flex items-center gap-1.5 min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-subtle hover:bg-canvas text-ink border border-line transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-subtle hover:bg-canvas text-ink border border-line transition-colors disabled:opacity-50"
                   >
                     <RotateCw size={14} className={isResyncing ? 'animate-spin text-accent' : ''} />
                     <span>Re-sincronizar</span>
@@ -464,45 +490,55 @@ export default function StudioDisplayModal({
               </div>
 
               {/* Telemetría y Vúmetros */}
-              <div className="lg:col-span-4 flex flex-col justify-between bg-surface border border-line rounded-2xl p-5">
+              <div className="lg:col-span-4 flex flex-col justify-between bg-surface border border-line rounded-xl p-5">
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-ink">Vúmetros estéreo L / R</span>
+                    <span className="text-xs font-bold text-ink">Picos por canal L / R</span>
                     <span className="text-[11px] font-mono text-ink-muted">dBFS</span>
                   </div>
 
                   {(
                     [
-                      ['CH-L', vuL],
-                      ['CH-R', vuR],
+                      ['CH-L', peaks?.[0] ?? null],
+                      ['CH-R', peaks?.[1] ?? null],
                     ] as const
                   ).map(([label, value]) => (
                     <div className="mb-4" key={label}>
                       <div className="flex items-center justify-between text-xs font-mono tabular-nums text-ink-secondary mb-1">
                         <span className="font-bold text-accent">{label}</span>
                         <span>
-                          {isPlaying ? `${Math.round((value - 1) * 30)} dB` : '-∞ dB'}
+                          {!isPlaying ? '−∞ dBFS' : value === null ? 'N/D' : value === -Infinity ? '−∞ dBFS' : `${value.toFixed(1)} dBFS`}
                         </span>
                       </div>
                       <div className="h-3.5 bg-input rounded-lg p-0.5 overflow-hidden flex items-center border border-line">
                         <div
                           className="h-full rounded-sm transition-all duration-75 bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500"
-                          style={{ width: `${value * 100}%` }}
+                          style={{ width: `${value === null ? 0 : Math.max(0, Math.min(100, (value + 60) / 60 * 100))}%` }}
                         />
                       </div>
                     </div>
                   ))}
 
                   <div className="flex justify-between text-[10px] font-mono tabular-nums text-ink-muted px-0.5 select-none">
-                    <span>-40</span>
-                    <span>-20</span>
-                    <span>-10</span>
-                    <span>-3</span>
-                    <span className="text-amber-500 font-bold">0</span>
-                    <span className="text-red-500 font-bold">+3</span>
+                    <span>−60</span>
+                    <span>−48</span>
+                    <span>−36</span>
+                    <span>−24</span>
+                    <span>−12</span>
+                    <span>0</span>
                   </div>
                 </div>
 
+                {isPlaying && peaks === null && (
+                  <button
+                    type="button"
+                    onClick={() => { activateCurrentAudioDsp() }}
+                    className="mt-2 min-h-[44px] rounded-xl border border-line px-3 text-xs font-semibold text-ink hover:bg-subtle"
+                  >
+                    Activar análisis DSP
+                  </button>
+                )}
+                <p className="mt-2 text-xs text-ink-muted">Pico de muestras por canal (ventana de 2048 muestras). No equivale a true peak ni LUFS. N/D indica que Web Audio no está disponible.</p>
                 <dl className="mt-6 pt-4 border-t border-line space-y-2.5 text-xs font-mono tabular-nums">
                   <div className="flex items-center justify-between gap-2">
                     <dt className="text-ink-muted">Códec</dt>
@@ -554,7 +590,7 @@ export default function StudioDisplayModal({
                 <button
                   type="button"
                   onClick={handleExportDiagnostics}
-                  className="mt-4 w-full min-h-[38px] px-3 rounded-xl border border-line bg-canvas hover:bg-subtle text-ink-secondary hover:text-ink text-xs font-semibold inline-flex items-center justify-center gap-2 transition-colors"
+                  className="mt-4 w-full min-h-[44px] px-3 rounded-xl border border-line bg-canvas hover:bg-subtle text-ink-secondary hover:text-ink text-xs font-semibold inline-flex items-center justify-center gap-2 transition-colors"
                 >
                   <Download size={13} className="text-accent" />
                   <span>Exportar diagnóstico JSON</span>
@@ -577,9 +613,9 @@ export default function StudioDisplayModal({
                   type="button"
                   onClick={togglePlay}
                   className="w-12 h-12 rounded-xl bg-accent text-accent-fg hover:bg-accent-hover grid place-items-center shadow-md transition-colors"
-                  aria-label={isPlaying ? 'Pausar transmisión' : 'Iniciar transmisión'}
+                  aria-label={canCancel ? 'Pausar transmisión' : 'Iniciar transmisión'}
                 >
-                  {isPlaying ? (
+                  {canCancel ? (
                     <Pause size={22} fill="currentColor" />
                   ) : (
                     <Play size={22} fill="currentColor" className="ml-0.5" />

@@ -26,6 +26,7 @@ export default function Filters({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || document.querySelector('[role="dialog"][aria-modal="true"]')) return
       const tag = document.activeElement?.tagName || ''
       if (
         (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) &&
@@ -51,9 +52,9 @@ export default function Filters({
   ].filter(Boolean).length
 
   return (
-    <div id="filters-panel" className="mb-4">
+    <div id="filters-panel" className="broadcast-search mb-4">
       <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
-        <div className="relative flex-1 min-w-[220px]">
+        <div className="relative flex-1 min-w-0 basis-[220px]">
           <Search
             size={18}
             className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none"
@@ -63,15 +64,15 @@ export default function Filters({
             type="search"
             value={localQuery}
             onChange={(e) => handleChange(e.target.value)}
-            placeholder="Buscar por nombre, ciudad, país o género… (/)"
+            placeholder="Busca una emisora, ciudad o género…"
             aria-label="Buscar emisoras por nombre, ciudad, país o género"
-            className="w-full h-12 rounded-xl bg-input border border-line pl-11 pr-11 text-sm text-ink placeholder:text-ink-muted outline-none focus:border-accent transition-colors"
+            className="w-full h-12 rounded-xl bg-input border border-line pl-11 pr-11 text-base text-ink placeholder:text-ink-muted outline-none focus:border-accent transition-colors"
           />
           {localQuery && (
             <button
               type="button"
               onClick={() => handleChange('')}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 min-w-[40px] min-h-[40px] grid place-items-center rounded-lg text-ink-muted hover:text-ink hover:bg-subtle transition-colors"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] grid place-items-center rounded-lg text-ink-muted hover:text-ink hover:bg-subtle transition-colors"
               aria-label="Limpiar búsqueda"
             >
               <X size={16} />

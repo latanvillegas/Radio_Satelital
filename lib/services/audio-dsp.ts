@@ -106,8 +106,12 @@ let filterNodes: BiquadFilterNode[] = []
 let preAmpNode: GainNode | null = null
 let compressorNode: DynamicsCompressorNode | null = null
 let analyserNode: AnalyserNode | null = null
+let stereoSplitter: ChannelSplitterNode | null = null
+let stereoAnalysers: [AnalyserNode, AnalyserNode] | null = null
+let stereoBuffer: Float32Array | null = null
 let streamDestNode: MediaStreamAudioDestinationNode | null = null
 let connectedAudioElement: HTMLAudioElement | null = null
+let pendingAudioElement: HTMLAudioElement | null = null
 let stateHydrated = false
 
 let currentState: DspState = { ...DEFAULT_STATE }
@@ -238,6 +242,7 @@ function rewireGraph() {
 
   lastNode.connect(analyserNode)
   analyserNode.connect(audioCtx.destination)
+  if (stereoSplitter) analyserNode.connect(stereoSplitter)
   if (streamDestNode) {
     analyserNode.connect(streamDestNode)
   }
@@ -260,18 +265,47 @@ function syncNodeParameters() {
   }
 }
 
+/** Start/resume the context in the synchronous user interaction, before asynchronous media loading. */
+export function prepareAudioDsp(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    if (!audioCtx || audioCtx.state === 'closed') {
+      const AudioContextClass = window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      if (!AudioContextClass) return false
+      audioCtx = new AudioContextClass()
+      const ctx = audioCtx
+      ctx.addEventListener('statechange', () => {
+        if (audioCtx !== ctx) return
+        if (ctx.state === 'running' && pendingAudioElement && !pendingAudioElement.paused) {
+          const audio = pendingAudioElement
+          pendingAudioElement = null
+          initAudioDsp(audio)
+        }
+      })
+    }
+    resumeAudioDsp()
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function initAudioDsp(audio: HTMLAudioElement): boolean {
   if (typeof window === 'undefined') return false
   if (audio.crossOrigin !== 'anonymous') return false
 
   ensureHydratedState()
+  // A suspended context must not capture the element: that would mute native playback.
+  if (!prepareAudioDsp() || !audioCtx) return false
+  if (audioCtx.state !== 'running') {
+    pendingAudioElement = audio
+    return false
+  }
+  pendingAudioElement = null
 
-  if (connectedAudioElement === audio && audioCtx && audioCtx.state !== 'closed' && filterNodes.length === 5) {
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {})
-    }
+  if (connectedAudioElement === audio && filterNodes.length === 5) {
     syncNodeParameters()
-    rewireGraph()
     if (!currentState.isWebAudioActive) {
       currentState = { ...currentState, isWebAudioActive: true }
       notifyDspChange()
@@ -280,19 +314,6 @@ export function initAudioDsp(audio: HTMLAudioElement): boolean {
   }
 
   try {
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-    if (!AudioContextClass) return false
-
-    if (!audioCtx || audioCtx.state === 'closed') {
-      audioCtx = new AudioContextClass()
-    }
-
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {})
-    }
-
     disconnectProcessingNodes()
 
     if (!sourceNode || connectedAudioElement !== audio) {
@@ -352,7 +373,7 @@ export function setDspEnabled(enabled: boolean) {
 
 export function setBandGain(bandIndex: number, gainDb: number) {
   ensureHydratedState()
-  if (bandIndex < 0 || bandIndex >= 5) return
+  if (!Number.isInteger(bandIndex) || bandIndex < 0 || bandIndex >= 5 || !Number.isFinite(gainDb)) return
   const clamped = Math.max(-12, Math.min(12, gainDb))
   const newBands = [...currentState.bands] as [number, number, number, number, number]
   newBands[bandIndex] = clamped
@@ -369,6 +390,7 @@ export function setBandGain(bandIndex: number, gainDb: number) {
 
 export function setPreAmpGain(gainDb: number) {
   ensureHydratedState()
+  if (!Number.isFinite(gainDb)) return
   const clamped = Math.max(0, Math.min(12, gainDb))
   currentState = { ...currentState, preAmp: clamped }
   saveState(currentState)
@@ -413,12 +435,76 @@ export function getAnalyserData(): Uint8Array | null {
   return analyserBuffer
 }
 
+/** Sample peak, not inter-sample true peak or LUFS. Zero amplitude is -Infinity dBFS. */
+export function samplePeakDbfs(samples: Float32Array): number {
+  let peak = 0
+  for (let i = 0; i < samples.length; i++) {
+    const value = Math.abs(samples[i])
+    if (Number.isFinite(value) && value > peak) peak = value
+  }
+  return peak > 0 ? 20 * Math.log10(peak) : -Infinity
+}
+
+/** Lazily attach a passive meter branch; audio output and recording graph are unchanged. */
+export function getStereoPeakLevels(): readonly [number, number] | null {
+  if (!audioCtx || audioCtx.state !== 'running' || !analyserNode) return null
+  try {
+    if (!stereoAnalysers || !stereoSplitter) {
+      const splitter = audioCtx.createChannelSplitter(2)
+      const left = audioCtx.createAnalyser()
+      const right = audioCtx.createAnalyser()
+      left.fftSize = right.fftSize = 2048
+      stereoSplitter = splitter
+      stereoAnalysers = [left, right]
+      stereoBuffer = new Float32Array(left.fftSize)
+      splitter.connect(left, 0)
+      splitter.connect(right, 1)
+      analyserNode.connect(splitter)
+    }
+    const buffer = stereoBuffer!
+    stereoAnalysers[0].getFloatTimeDomainData(buffer)
+    const leftPeak = samplePeakDbfs(buffer)
+    stereoAnalysers[1].getFloatTimeDomainData(buffer)
+    return [leftPeak, samplePeakDbfs(buffer)]
+  } catch {
+    releaseStereoMeter()
+    return null
+  }
+}
+
+export function releaseStereoMeter(): void {
+  if (stereoSplitter) {
+    try { analyserNode?.disconnect(stereoSplitter) } catch {}
+    try { stereoSplitter.disconnect() } catch {}
+  }
+  for (const node of stereoAnalysers ?? []) {
+    try { node.disconnect() } catch {}
+  }
+  stereoSplitter = null
+  stereoAnalysers = null
+  stereoBuffer = null
+}
+
 export function getDspOutputStream(): MediaStream | null {
-  return streamDestNode ? streamDestNode.stream : null
+  return audioCtx?.state === 'running' && streamDestNode ? streamDestNode.stream : null
+}
+
+export function suspendAudioDsp(): void {
+  pendingAudioElement = null
+  if (audioCtx?.state === 'running') void audioCtx.suspend().catch(() => {})
+}
+
+export function resumeAudioDsp(): void {
+  if (audioCtx?.state === 'suspended') void audioCtx.resume().catch(() => {})
 }
 
 export function releaseAudioDsp(): void {
+  pendingAudioElement = null
+  releaseStereoMeter()
   disconnectProcessingNodes()
+  const ctx = audioCtx
+  audioCtx = null
+  if (ctx && ctx.state !== 'closed') void ctx.close().catch(() => {})
   sourceNode = null
   connectedAudioElement = null
   filterNodes = []

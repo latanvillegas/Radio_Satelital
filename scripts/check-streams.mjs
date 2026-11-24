@@ -5,7 +5,7 @@
  * Verifica disponibilidad HTTP/HTTPS, latencia de cabecera, Mixed Content (HTTP) y formato HLS.
  *
  * Uso:
- *   node scripts/check-streams.mjs [--concurrency=12] [--timeout=4500] [--output=report.json] [--strict]
+ *   node scripts/check-streams.mjs [--concurrency=12] [--timeout=4500] [--output=report.json] [--strict] [--redact-urls]
  */
 
 import fs from 'node:fs'
@@ -25,6 +25,16 @@ const CONCURRENCY = Math.max(1, Number(getArgValue('--concurrency', '12')) || 12
 const TIMEOUT_MS = Math.max(1000, Number(getArgValue('--timeout', '4500')) || 4500)
 const OUTPUT_FILE = getArgValue('--output', '')
 const STRICT_MODE = args.includes('--strict')
+const REDACT_URLS = args.includes('--redact-urls')
+
+function reportUrl(value) {
+  if (!REDACT_URLS) return value
+  try {
+    const url = new URL(value)
+    // Do not persist user info, query parameters, fragments or path tokens in CI artifacts.
+    return url.origin
+  } catch { return '[invalid URL]' }
+}
 
 function loadCatalogStations() {
   const files = [
@@ -122,6 +132,7 @@ async function runPool(items, concurrency, worker) {
 
 async function main() {
   const stations = loadCatalogStations()
+  if (stations.length === 0) throw new Error('El catálogo no contiene streams para auditar.')
   console.log(`Auditando ${stations.length} streams unicos (concurrencia=${CONCURRENCY}, timeout=${TIMEOUT_MS}ms)...`)
 
   const results = await runPool(stations, CONCURRENCY, probeStream)
@@ -147,7 +158,7 @@ async function main() {
     failedStreams: failed.map((f) => ({
       name: f.name,
       country: f.country,
-      streamUrl: f.streamUrl,
+      streamUrl: reportUrl(f.streamUrl),
       error: f.error,
     })),
   }
@@ -163,7 +174,8 @@ async function main() {
 
   if (OUTPUT_FILE) {
     const resolvedOut = path.resolve(process.cwd(), OUTPUT_FILE)
-    fs.writeFileSync(resolvedOut, JSON.stringify({ summary, results }, null, 2), 'utf8')
+    const reportResults = results.map(r => ({ ...r, streamUrl: reportUrl(r.streamUrl) }))
+    fs.writeFileSync(resolvedOut, JSON.stringify({ summary, results: reportResults }, null, 2), 'utf8')
     console.log(`Reporte JSON guardado en: ${resolvedOut}`)
   }
 

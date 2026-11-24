@@ -1,14 +1,16 @@
 import type HlsType from 'hls.js'
 import type { Station } from '../../types/station'
 import { getOptimalUrl } from './proxy'
+import { validateStationUrl } from '../utils/validate'
 import { addRecentStation } from '../storage/recents'
 import { stationKey } from './station-normalizer'
-import { initAudioDsp, releaseAudioDsp } from './audio-dsp'
+import { initAudioDsp, releaseAudioDsp, suspendAudioDsp, prepareAudioDsp } from './audio-dsp'
 import { recordStreamFailure, recordStreamSuccess } from './telemetry'
 
 const AUDIO_ID = 'radioPlayer'
 const MAX_RETRIES = 3
 const STALL_MS = 6500
+const STABLE_PLAYBACK_SECONDS = 10
 const RETRY_DELAYS_MS = [2000, 4000, 8000]
 
 let sleepTimerId: ReturnType<typeof setTimeout> | null = null
@@ -59,11 +61,11 @@ export function isHlsStreamUrl(url: string): boolean {
 }
 
 function destroyHls() {
-  if (!activeHls) return
-  try {
-    activeHls.destroy()
-  } catch {}
+  const hls = activeHls
   activeHls = null
+  if (hls) {
+    try { hls.destroy() } catch {}
+  }
 }
 
 function notifyStatus(
@@ -103,12 +105,31 @@ function clearTimers() {
   }
 }
 
+// Invalidate asynchronous work before stopping transport.
+function cancelTransport(): number {
+  const token = ++runId
+  clearTimers()
+  const audio = typeof document === 'undefined' ? null :
+    document.getElementById(AUDIO_ID) as HTMLAudioElement | null
+  if (audio) {
+    audio.onerror = audio.onwaiting = audio.onstalled = audio.onplaying = audio.onpause = audio.ontimeupdate = null
+  }
+  destroyHls()
+  if (audio) {
+    audio.pause()
+    audio.removeAttribute('src')
+    audio.load()
+  }
+  return token
+}
+
 function installNetworkListeners() {
   if (networkListenersInstalled || typeof window === 'undefined') return
   networkListenersInstalled = true
   window.addEventListener('offline', () => {
     if (!playbackRequested) return
-    clearTimers()
+    cancelTransport()
+    suspendAudioDsp()
     notifyStatus('offline')
   })
   window.addEventListener('online', () => {
@@ -142,6 +163,7 @@ function replaceAudio(withCors: boolean): HTMLAudioElement | null {
   oldAudio.onstalled = null
   oldAudio.onplaying = null
   oldAudio.onpause = null
+  oldAudio.ontimeupdate = null
   oldAudio.pause()
   oldAudio.removeAttribute('src')
   oldAudio.load()
@@ -254,9 +276,9 @@ export function bindMediaNavigation(next: () => void, previous: () => void): voi
 }
 
 function scheduleReconnect(station: Station, token: number, error?: string) {
-  if (token !== runId || !playbackRequested) return
-  clearTimers()
-  destroyHls()
+  if (token !== runId || !playbackRequested || retryTimer !== null) return
+  const retryToken = cancelTransport()
+  suspendAudioDsp()
 
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     notifyStatus('offline')
@@ -265,6 +287,7 @@ function scheduleReconnect(station: Station, token: number, error?: string) {
 
   if (retryCount >= MAX_RETRIES) {
     isReconnecting = false
+    playbackRequested = false
     const isHttpOnHttps =
       typeof window !== 'undefined' &&
       window.location.protocol === 'https:' &&
@@ -288,7 +311,7 @@ function scheduleReconnect(station: Station, token: number, error?: string) {
   retryTimer = setTimeout(() => {
     retryTimer = null
     if (
-      token === runId &&
+      retryToken === runId &&
       playbackRequested &&
       currentPlayingStation &&
       stationKey(currentPlayingStation) === stationKey(station)
@@ -302,9 +325,10 @@ async function attachHlsIfNeeded(
   audio: HTMLAudioElement,
   streamUrl: string,
   token: number,
-  onFatalError: () => void
+  onFatalError: () => void,
+  isHls: boolean
 ): Promise<boolean> {
-  if (!isHlsStreamUrl(streamUrl)) return false
+  if (!isHls) return false
 
   // Safari / iOS reproduce HLS nativamente en el elemento <audio>
   if (audio.canPlayType('application/vnd.apple.mpegurl') !== '') {
@@ -321,19 +345,23 @@ async function attachHlsIfNeeded(
     const hls = new Hls({
       enableWorker: true,
       lowLatencyMode: true,
-      backBufferLength: 30,
+      backBufferLength: 15,
+      maxBufferLength: 30,
+      maxMaxBufferLength: 60,
     })
     activeHls = hls
+    let mediaRecoveryAttempted = false
 
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      if (token !== runId || !playbackRequested) return
+      if (token !== runId || !playbackRequested || activeHls !== hls) return
       audio.play().catch((err: unknown) => {
         const domErr = err as { name?: string } | null
         if (token !== runId || !playbackRequested || domErr?.name === 'AbortError') return
         if (domErr?.name === 'NotAllowedError') {
           playbackRequested = false
           isReconnecting = false
-          clearTimers()
+          cancelTransport()
+          suspendAudioDsp()
           notifyStatus('paused')
         } else {
           onFatalError()
@@ -342,12 +370,12 @@ async function attachHlsIfNeeded(
     })
 
     hls.on(Hls.Events.ERROR, (_event, data) => {
-      if (token !== runId || !playbackRequested) return
+      if (token !== runId || !playbackRequested || activeHls !== hls) return
       if (!data.fatal) return
-      if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-        hls.recoverMediaError()
+      if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !mediaRecoveryAttempted) {
+        mediaRecoveryAttempted = true
+        try { hls.recoverMediaError() } catch { onFatalError() }
       } else {
-        destroyHls()
         onFatalError()
       }
     })
@@ -356,18 +384,22 @@ async function attachHlsIfNeeded(
     hls.attachMedia(audio)
     return true
   } catch {
+    if (token !== runId || !playbackRequested) return true
+    destroyHls()
     return false
   }
 }
 
 function startStream(station: Station, isRetry: boolean) {
   if (!playbackRequested) return
-  clearTimers()
-  destroyHls()
-
-  const token = ++runId
+  const token = cancelTransport()
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    suspendAudioDsp()
+    notifyStatus('offline')
+    return
+  }
   const optimal = getOptimalUrl(station)
-  const hlsCandidate = isHlsStreamUrl(optimal.url)
+  const hlsCandidate = isHlsStreamUrl(optimal.url) || isHlsStreamUrl(station.streamUrl || station.url || '')
   currentStreamMeta = { ...optimal, isHls: hlsCandidate }
 
   if (!isRetry) {
@@ -385,10 +417,11 @@ function startStream(station: Station, isRetry: boolean) {
   notifyStatus(isRetry ? 'reconnecting' : 'loading')
 
   const onError = () => {
-    if (token !== runId || !playbackRequested) return
+    if (token !== runId || !playbackRequested || retryTimer !== null) return
     if (!plainMode) {
       plainMode = true
       isReconnecting = true
+      cancelTransport()
       releaseAudioDsp()
       replaceAudio(false)
       startStream(station, true)
@@ -397,18 +430,28 @@ function startStream(station: Station, isRetry: boolean) {
     scheduleReconnect(station, token)
   }
 
-  activeAudio.onerror = onError
+  // A queued error from a previous resource can arrive after load() has reset MediaError.
+  activeAudio.onerror = () => { if (activeAudio.error) onError() }
+  let firstPlayingTime: number | null = null
+  let stablePlayback = false
+  activeAudio.ontimeupdate = () => {
+    if (token !== runId || !playbackRequested || stablePlayback || firstPlayingTime === null) return
+    if (activeAudio.currentTime - firstPlayingTime >= STABLE_PLAYBACK_SECONDS) {
+      stablePlayback = true
+      retryCount = 0
+    }
+  }
   activeAudio.onwaiting = activeAudio.onstalled = () => {
-    if (token !== runId || !playbackRequested || stallTimer) return
+    if (token !== runId || !playbackRequested || stallTimer || retryTimer !== null) return
     stallTimer = setTimeout(() => {
       stallTimer = null
       if (token === runId && playbackRequested) scheduleReconnect(station, token)
     }, STALL_MS)
   }
   activeAudio.onplaying = () => {
-    if (token !== runId) return
+    if (token !== runId || !playbackRequested) return
     clearTimers()
-    retryCount = 0
+    if (firstPlayingTime === null) firstPlayingTime = activeAudio.currentTime
     isReconnecting = false
     if (streamRequestedAt > 0 && lastTtfaMs === null) {
       lastTtfaMs = Math.round(performance.now() - streamRequestedAt)
@@ -425,10 +468,14 @@ function startStream(station: Station, isRetry: boolean) {
     if (token === runId && !isReconnecting && !playbackRequested) notifyStatus('paused')
   }
 
-  void (async () => {
-    const handledByHlsJs = await attachHlsIfNeeded(activeAudio, optimal.url, token, onError)
-    if (handledByHlsJs || token !== runId || !playbackRequested) return
+  // Bound startup time even if no waiting/error event arrives.
+  stallTimer = setTimeout(() => {
+    stallTimer = null
+    if (token === runId && playbackRequested) onError()
+  }, 15000)
 
+  const playNative = () => {
+    if (token !== runId || !playbackRequested) return
     activeAudio.src = optimal.url
     activeAudio.load()
     activeAudio.play().catch((error: unknown) => {
@@ -437,18 +484,30 @@ function startStream(station: Station, isRetry: boolean) {
       if (domErr?.name === 'NotAllowedError') {
         playbackRequested = false
         isReconnecting = false
-        clearTimers()
+        cancelTransport()
+        suspendAudioDsp()
         notifyStatus('paused')
       } else {
         onError()
       }
     })
-  })()
+  }
+
+  // Direct streams and native HLS must call play in the original user-activation
+  // stack. Only browsers that require HLS.js need the dynamic import.
+  if (!hlsCandidate || activeAudio.canPlayType('application/vnd.apple.mpegurl') !== '') {
+    playNative()
+    return
+  }
+  void attachHlsIfNeeded(activeAudio, optimal.url, token, onError, true).then(handled => {
+    if (!handled) playNative()
+  })
 }
 
 export function playStation(s: Station, isAutoRetry = false) {
-  if (!s.streamUrl && !s.url) {
-    notifyStatus('error', { error: 'URL de emisora no disponible' })
+  if (!validateStationUrl(s.streamUrl || s.url || '')) {
+    setPlayingState(false)
+    notifyStatus('error', { error: 'URL de emisora no válida o no permitida' })
     return
   }
   if (!isAutoRetry) {
@@ -460,51 +519,32 @@ export function playStation(s: Station, isAutoRetry = false) {
   currentPlayingStation = s
   playbackRequested = true
   updateMediaSession(s)
+  if (!isAutoRetry) prepareAudioDsp()
   startStream(s, isAutoRetry)
 }
 
-export function togglePlay() {
+/** Retry Web Audio from an explicit user gesture without restarting the media transport. */
+export function activateCurrentAudioDsp(): boolean {
   const audio = getAudio()
-  if (!audio) return
-  if (audio.paused || (!audio.src && !activeHls)) {
-    if (!currentPlayingStation) return
-    if (!audio.src && !activeHls) {
-      playStation(currentPlayingStation)
-      return
-    }
-    playbackRequested = true
-    startStream(currentPlayingStation, false)
-  } else {
-    playbackRequested = false
-    isReconnecting = false
-    clearTimers()
-    destroyHls()
-    ++runId
-    audio.pause()
-    notifyStatus('paused')
-  }
+  if (!playbackRequested || !audio || audio.paused || plainMode) return false
+  return initAudioDsp(audio)
+}
+
+export function togglePlay() {
+  setPlayingState(!playbackRequested)
 }
 
 export function setPlayingState(state: boolean) {
-  const audio = getAudio()
-  if (!audio) return
   if (state) {
-    if (!currentPlayingStation) return
-    if (!audio.src && !activeHls) {
-      playStation(currentPlayingStation)
-      return
-    }
-    playbackRequested = true
-    startStream(currentPlayingStation, false)
-  } else {
-    playbackRequested = false
-    isReconnecting = false
-    clearTimers()
-    destroyHls()
-    ++runId
-    audio.pause()
-    notifyStatus('paused')
+    if (playbackRequested || !currentPlayingStation) return
+    playStation(currentPlayingStation)
+    return
   }
+  playbackRequested = false
+  isReconnecting = false
+  cancelTransport()
+  suspendAudioDsp()
+  notifyStatus('paused')
 }
 
 export type SleepTimerListener = (remainingMinutes: number | null) => void
@@ -534,16 +574,7 @@ export function setSleepTimer(minutes: number | null) {
   sleepTimerEndsAt = Date.now() + minutes * 60 * 1000
   notifySleepTimer(minutes)
   sleepTimerId = setTimeout(() => {
-    playbackRequested = false
-    isReconnecting = false
-    clearTimers()
-    destroyHls()
-    ++runId
-    const audio = getAudio()
-    if (audio) {
-      audio.pause()
-      notifyStatus('paused')
-    }
+    setPlayingState(false)
     sleepTimerId = null
     sleepTimerEndsAt = null
     notifySleepTimer(null)

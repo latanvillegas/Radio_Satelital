@@ -17,13 +17,23 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    let animFrame: number
+    let animFrame: number | null = null
+    let lastFrame = -Infinity
+    let gradient: CanvasGradient | null = null
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     const count =
       barCount ||
       (variant === 'mini' ? 12 : variant === 'card' ? 24 : variant === 'studio' ? 48 : 36)
     const heights = new Array(count).fill(4)
 
-    const render = () => {
+    const render = (time: number) => {
+      animFrame = null
+      if (!isPlaying || document.hidden) return
+      if (!motion.matches && time - lastFrame < 1000 / 24 - 1) {
+        animFrame = requestAnimationFrame(render)
+        return
+      }
+      lastFrame = time
       const { width, height } = canvas
       ctx.clearRect(0, 0, width, height)
 
@@ -31,20 +41,25 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
       const barWidth = Math.max(2, Math.floor((width - (count - 1) * gap) / count))
 
       // Intentar obtener datos reales del Analyser de Web Audio
-      const realData = isPlaying ? getAnalyserData() : null
+      const realData = isPlaying && !motion.matches ? getAnalyserData() : null
       const hasRealAudio =
-        realData && realData.some((val) => val > 5)
+        realData && realData.length > 0
 
-      const style = getComputedStyle(document.documentElement)
-      const grad = ctx.createLinearGradient(0, height, 0, 0)
-      grad.addColorStop(0, style.getPropertyValue('--accent').trim() || '#10b981')
-      grad.addColorStop(0.6, style.getPropertyValue('--accent-hover').trim() || '#34d399')
-      grad.addColorStop(1, style.getPropertyValue('--text-primary').trim() || '#f4f7f9')
+      if (!gradient) {
+        const style = getComputedStyle(document.documentElement)
+        gradient = ctx.createLinearGradient(0, height, 0, 0)
+        gradient.addColorStop(0, style.getPropertyValue('--accent').trim() || '#10b981')
+        gradient.addColorStop(0.6, style.getPropertyValue('--accent-hover').trim() || '#34d399')
+        gradient.addColorStop(1, style.getPropertyValue('--text-primary').trim() || '#f4f7f9')
+      }
+      ctx.fillStyle = gradient
 
       for (let i = 0; i < count; i++) {
         if (isPlaying) {
           let targetHeight: number
-          if (hasRealAudio && realData) {
+          if (motion.matches) {
+            targetHeight = Math.max(3, height * 0.25)
+          } else if (hasRealAudio && realData) {
             // Mapear el índice de barra a los bins de frecuencia (rango logarítmico para mejor visual)
             const binIndex = Math.min(
               realData.length - 1,
@@ -64,7 +79,7 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
               )
             )
           }
-          heights[i] += (targetHeight - heights[i]) * 0.28
+          heights[i] = motion.matches ? targetHeight : heights[i] + (targetHeight - heights[i]) * 0.48
         } else {
           // Bajar suavemente a reposo
           heights[i] += (3 - heights[i]) * 0.15
@@ -74,7 +89,6 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
         const x = i * (barWidth + gap)
         const y = height - barHeight
 
-        ctx.fillStyle = grad
         ctx.beginPath()
         if (ctx.roundRect) {
           ctx.roundRect(x, y, barWidth, barHeight, [2, 2, 0, 0])
@@ -84,14 +98,28 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
         ctx.fill()
       }
 
-      animFrame = requestAnimationFrame(render)
+      if (!motion.matches) animFrame = requestAnimationFrame(render)
     }
 
-    if (isPlaying) render()
-    else ctx.clearRect(0, 0, canvas.width, canvas.height)
-
+    const restart = () => {
+      if (animFrame !== null) cancelAnimationFrame(animFrame)
+      animFrame = null
+      lastFrame = -Infinity
+      if (isPlaying && !document.hidden) animFrame = requestAnimationFrame(render)
+      else ctx.clearRect(0, 0, canvas.width, canvas.height)
+    }
+    const observer = new MutationObserver(() => { gradient = null; restart() })
+    if (isPlaying) {
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-appearance', 'style'] })
+      document.addEventListener('visibilitychange', restart)
+      motion.addEventListener?.('change', restart)
+    }
+    restart()
     return () => {
-      cancelAnimationFrame(animFrame)
+      if (animFrame !== null) cancelAnimationFrame(animFrame)
+      observer.disconnect()
+      document.removeEventListener('visibilitychange', restart)
+      motion.removeEventListener?.('change', restart)
     }
   }, [isPlaying, variant, barCount])
 
@@ -110,7 +138,8 @@ export default function AudioVisualizer({ isPlaying, variant = 'mini', barCount 
       width={dimensions.width}
       height={dimensions.height}
       className={`audio-visualizer-canvas audio-visualizer-${variant}`}
-      aria-label="Visualizador de espectro acústico"
+      role="img"
+      aria-label="Visualizador de espectro acústico; animación orientativa si el analizador no está disponible"
     />
   )
 }

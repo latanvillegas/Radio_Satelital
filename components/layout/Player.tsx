@@ -125,6 +125,7 @@ export default function Player({
     ? [currentStation.region, currentStation.country].filter(Boolean).join(' · ')
     : 'Selecciona una emisora para escuchar'
 
+  const canCancel = isPlaying || playbackStatus === 'loading' || playbackStatus === 'reconnecting' || playbackStatus === 'offline'
   const statusBadge =
     playbackStatus === 'reconnecting'
       ? 'Reconectando'
@@ -148,19 +149,18 @@ export default function Player({
           visible ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[68px] flex items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 broadcast-dock flex items-center justify-between gap-2 sm:gap-3">
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            aria-label="Abrir reproductor expandido"
             aria-haspopup="dialog"
             aria-expanded={expanded}
             className="flex items-center gap-3 min-w-0 flex-1 text-left rounded-xl py-1"
           >
-            <StationArtwork station={currentStation} variant="dock" />
+            <span aria-hidden="true"><StationArtwork station={currentStation} variant="dock" /></span>
             <div className="min-w-0 flex-1">
               <div
-                className={`text-sm font-bold truncate ${
+                className={`broadcast-now-title font-bold truncate ${
                   isPlaying ? 'text-accent' : 'text-ink'
                 }`}
               >
@@ -170,6 +170,7 @@ export default function Player({
                 {statusMessage || meta}
               </div>
             </div>
+            <span className="sr-only">Abrir reproductor expandido</span>
           </button>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -186,10 +187,10 @@ export default function Player({
               type="button"
               onClick={togglePlay}
               disabled={!currentStation}
-              aria-label={isPlaying ? 'Pausar radio' : 'Reproducir radio'}
-              className="w-11 h-11 rounded-full grid place-items-center bg-accent text-accent-fg hover:bg-accent-hover shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              aria-label={canCancel ? 'Pausar radio' : 'Reproducir radio'}
+              className="broadcast-primary-play w-12 h-12 rounded-full grid place-items-center bg-accent text-accent-fg hover:bg-accent-hover shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              {isPlaying ? (
+              {canCancel ? (
                 <Pause size={20} fill="currentColor" />
               ) : (
                 <Play size={20} fill="currentColor" className="ml-0.5" />
@@ -212,7 +213,7 @@ export default function Player({
                 type="button"
                 onClick={toggleMute}
                 aria-label={volume === 0 ? 'Restaurar volumen' : 'Silenciar audio'}
-                className="min-w-[36px] min-h-[36px] rounded-lg grid place-items-center text-ink-muted hover:text-ink"
+                className="min-w-[44px] min-h-[44px] rounded-lg grid place-items-center text-ink-muted hover:text-ink"
               >
                 {volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
               </button>
@@ -257,7 +258,7 @@ export default function Player({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.16 }}
-              className="absolute inset-0 backdrop-blur-xl"
+              className="absolute inset-0 "
               style={{ backgroundColor: 'var(--bg-scrim)' }}
               onClick={() => setExpanded(false)}
               aria-hidden="true"
@@ -273,7 +274,7 @@ export default function Player({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.18, ease: 'easeOut' }}
-              className="relative z-10 w-full h-full sm:h-auto sm:max-w-xl sm:max-h-[92vh] overflow-y-auto sm:rounded-3xl border-0 sm:border border-line bg-elevated p-6 sm:p-8 shadow-2xl flex flex-col justify-between text-ink"
+              className="broadcast-player-dialog relative z-10 w-full h-full sm:h-auto sm:max-w-xl sm:max-h-[92dvh] overflow-y-auto sm:rounded-3xl border-0 sm:border border-line bg-elevated p-6 sm:p-8 shadow-2xl flex flex-col justify-between text-ink"
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="inline-flex items-center gap-2 text-xs font-mono font-bold text-accent">
@@ -306,7 +307,7 @@ export default function Player({
                 </p>
               </div>
 
-              <div className="my-5 h-14 rounded-2xl bg-surface border border-line flex items-center justify-center overflow-hidden">
+              <div className="my-5 h-16 rounded-xl bg-surface border border-line flex items-center justify-center overflow-hidden">
                 <AudioVisualizer isPlaying={isPlaying} variant="card" />
               </div>
 
@@ -324,10 +325,10 @@ export default function Player({
                   type="button"
                   onClick={togglePlay}
                   disabled={!currentStation}
-                  aria-label={isPlaying ? 'Pausar radio' : 'Reproducir radio'}
+                  aria-label={canCancel ? 'Pausar radio' : 'Reproducir radio'}
                   className="w-16 h-16 rounded-full grid place-items-center bg-accent text-accent-fg hover:bg-accent-hover shadow-lg active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
-                  {isPlaying ? (
+                  {canCancel ? (
                     <Pause size={27} fill="currentColor" />
                   ) : (
                     <Play size={27} fill="currentColor" className="ml-1" />
@@ -353,7 +354,7 @@ export default function Player({
                   type="button"
                   onClick={toggleMute}
                   aria-label={volume === 0 ? 'Restaurar volumen' : 'Silenciar'}
-                  className="min-w-[40px] min-h-[40px] rounded-xl grid place-items-center text-ink-muted hover:text-ink hover:bg-subtle"
+                  className="min-w-[44px] min-h-[44px] rounded-xl grid place-items-center text-ink-muted hover:text-ink hover:bg-subtle"
                 >
                   {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
                 </button>
@@ -373,7 +374,7 @@ export default function Player({
                   type="button"
                   onClick={handleShare}
                   disabled={!currentStation}
-                  className="min-h-[40px] px-3.5 rounded-xl inline-flex items-center gap-2 bg-subtle hover:bg-surface border border-line text-xs font-semibold text-ink transition-colors whitespace-nowrap disabled:opacity-40"
+                  className="min-h-[44px] px-3.5 rounded-xl inline-flex items-center gap-2 bg-subtle hover:bg-surface border border-line text-xs font-semibold text-ink transition-colors whitespace-nowrap disabled:opacity-40"
                 >
                   {copied ? <Check size={14} className="text-accent" /> : <Share2 size={14} />}
                   <span>{copied ? 'Enlace copiado' : 'Compartir'}</span>
@@ -420,6 +421,7 @@ export default function Player({
         onClose={() => setStudioOpen(false)}
         currentStation={currentStation}
         isPlaying={isPlaying}
+        canCancel={canCancel}
         togglePlay={togglePlay}
         onNextStation={onNextStation}
         onPrevStation={onPrevStation}

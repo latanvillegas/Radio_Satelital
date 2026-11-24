@@ -32,7 +32,7 @@ function StationCard({
     isActive && (playbackStatus === 'error' || playbackStatus === 'offline')
 
   const handlePlayOrPause = () => {
-    if (playing) onPause()
+    if (playing || loading || (isActive && playbackStatus === 'offline')) onPause()
     else onPlay(station)
   }
 
@@ -54,16 +54,15 @@ function StationCard({
       <button
         type="button"
         onClick={handlePlayOrPause}
-        className="flex flex-1 items-center gap-3.5 min-w-0 text-left rounded-xl py-0.5"
-        aria-label={`${playing ? 'Pausar' : 'Escuchar'} ${station.name}`}
+        className="flex flex-1 items-center gap-3 min-w-0 text-left rounded-lg py-1"
       >
-        <StationArtwork station={station} variant="card" />
+        <span aria-hidden="true"><StationArtwork station={station} variant="card" /></span>
         <span className="min-w-0 flex-1 flex flex-col gap-0.5">
-          <strong className="block truncate text-sm font-bold text-ink">
+          <strong className="station-name block truncate font-bold text-ink">
             {station.name}
           </strong>
-          <span className="flex items-center gap-1.5 text-xs text-ink-secondary truncate">
-            {place && <span className="truncate">{place}</span>}
+          <span className="station-meta flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-secondary">
+            {place && <span className="min-w-0 truncate">{place}</span>}
             {place && <span aria-hidden="true">·</span>}
             <span
               className={
@@ -78,6 +77,7 @@ function StationCard({
             </span>
           </span>
         </span>
+        <span className="sr-only">{playing || loading || (isActive && playbackStatus === 'offline') ? 'Pausar emisora' : 'Escuchar emisora'}</span>
       </button>
 
       <div className="flex items-center gap-1 shrink-0">
@@ -100,8 +100,8 @@ function StationCard({
         <button
           type="button"
           onClick={handlePlayOrPause}
-          aria-label={`${playing ? 'Pausar:' : 'Reproducir:'} ${station.name}`}
-          className="min-w-[44px] min-h-[44px] rounded-full grid place-items-center bg-accent text-accent-fg hover:bg-accent-hover transition-colors shadow-sm"
+          aria-label={`${playing || loading || (isActive && playbackStatus === 'offline') ? 'Pausar:' : 'Reproducir:'} ${station.name}`}
+          className={`station-play min-w-[44px] min-h-[44px] rounded-full grid place-items-center transition-colors ${isActive ? 'bg-accent text-accent-fg hover:bg-accent-hover' : 'bg-subtle text-ink hover:bg-accent hover:text-accent-fg'}`}
         >
           {loading ? (
             <LoaderCircle size={18} className="animate-spin" />
