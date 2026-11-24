@@ -31,3 +31,6 @@ Fase 3 validada en runs 45435381151 y 45435381072: 57/57 tests, 13/13 archivos y
 
 ### Accesibilidad de diálogos
 El hook compartido conserva foco y bloqueo de scroll aunque cambie la identidad de callbacks React. Se arbitra Escape y Tab por pila de diálogos, y se restaura el foco al cerrar. Se filtran elementos ocultos, deshabilitados o con tabindex negativo. Cuatro pruebas DOM verifican ciclo Tab, callback actualizado, diálogo superior y Escape delegado. El EQ deja de suscribirse cuando está cerrado; se reducen desenfoques y se usa viewport dinámico donde corresponde. No es una auditoría WCAG completa ni una prueba de lector de pantalla real.
+
+### Primera ejecución de seguridad
+Run 45436139600: resolución npm correcta, npm audit exit 1 y artefacto JSON+lock generado (14941256597). El contenido del ZIP no se ha inspeccionado; todavía no se atribuye el fallo a paquetes ni CVEs concretos. Se añade resumen de severidades, dependencias, advisories y corrección disponible a los logs sin modificar el umbral de seguridad.
