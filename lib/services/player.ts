@@ -10,6 +10,7 @@ import { recordStreamFailure, recordStreamSuccess } from './telemetry'
 const AUDIO_ID = 'radioPlayer'
 const MAX_RETRIES = 3
 const STALL_MS = 6500
+const STABLE_PLAYBACK_SECONDS = 10
 const RETRY_DELAYS_MS = [2000, 4000, 8000]
 
 let sleepTimerId: ReturnType<typeof setTimeout> | null = null
@@ -111,7 +112,7 @@ function cancelTransport(): number {
   const audio = typeof document === 'undefined' ? null :
     document.getElementById(AUDIO_ID) as HTMLAudioElement | null
   if (audio) {
-    audio.onerror = audio.onwaiting = audio.onstalled = audio.onplaying = audio.onpause = null
+    audio.onerror = audio.onwaiting = audio.onstalled = audio.onplaying = audio.onpause = audio.ontimeupdate = null
   }
   destroyHls()
   if (audio) {
@@ -162,6 +163,7 @@ function replaceAudio(withCors: boolean): HTMLAudioElement | null {
   oldAudio.onstalled = null
   oldAudio.onplaying = null
   oldAudio.onpause = null
+  oldAudio.ontimeupdate = null
   oldAudio.pause()
   oldAudio.removeAttribute('src')
   oldAudio.load()
@@ -372,7 +374,7 @@ async function attachHlsIfNeeded(
       if (!data.fatal) return
       if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !mediaRecoveryAttempted) {
         mediaRecoveryAttempted = true
-        hls.recoverMediaError()
+        try { hls.recoverMediaError() } catch { onFatalError() }
       } else {
         onFatalError()
       }
@@ -428,7 +430,17 @@ function startStream(station: Station, isRetry: boolean) {
     scheduleReconnect(station, token)
   }
 
-  activeAudio.onerror = onError
+  // A queued error from a previous resource can arrive after load() has reset MediaError.
+  activeAudio.onerror = () => { if (activeAudio.error) onError() }
+  let firstPlayingTime: number | null = null
+  let stablePlayback = false
+  activeAudio.ontimeupdate = () => {
+    if (token !== runId || !playbackRequested || stablePlayback || firstPlayingTime === null) return
+    if (activeAudio.currentTime - firstPlayingTime >= STABLE_PLAYBACK_SECONDS) {
+      stablePlayback = true
+      retryCount = 0
+    }
+  }
   activeAudio.onwaiting = activeAudio.onstalled = () => {
     if (token !== runId || !playbackRequested || stallTimer || retryTimer !== null) return
     stallTimer = setTimeout(() => {
@@ -439,7 +451,7 @@ function startStream(station: Station, isRetry: boolean) {
   activeAudio.onplaying = () => {
     if (token !== runId || !playbackRequested) return
     clearTimers()
-    retryCount = 0
+    if (firstPlayingTime === null) firstPlayingTime = activeAudio.currentTime
     isReconnecting = false
     if (streamRequestedAt > 0 && lastTtfaMs === null) {
       lastTtfaMs = Math.round(performance.now() - streamRequestedAt)

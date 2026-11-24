@@ -39,6 +39,15 @@ test('PCM playback, stereo DSP and pause in actual browser engine', async ({ pag
   await page.addInitScript(() => {
     const Original = window.AudioContext || window.webkitAudioContext
     if (!Original) return
+    const events = []
+    window.__mediaEvents = events
+    for (const type of ['loadstart','loadedmetadata','loadeddata','canplay','playing','waiting','stalled','pause','abort','emptied','error','ended','timeupdate']) {
+      document.addEventListener(type, event => {
+        const a = event.target
+        if (!(a instanceof HTMLMediaElement) || a.id !== 'radioPlayer' || events.length >= 120) return
+        events.push({ type, t: Math.round(performance.now()), clock: a.currentTime, paused: a.paused, readyState: a.readyState, error: a.error?.code ?? null, message: a.error?.message ?? null })
+      }, true)
+    }
     const contexts = []
     window.__audioProbe = contexts
     const playAttempts = []
@@ -70,10 +79,10 @@ test('PCM playback, stereo DSP and pause in actual browser engine', async ({ pag
     await expect.poll(() => page.locator('#radioPlayer').evaluate(a => a.currentSrc)).toBe(fixture.url)
     expect(fixture.requests()).toBeGreaterThan(0)
   } finally {
-    console.log('CROSS_STARTUP ' + JSON.stringify({ project: info.project.name, fixtureRequests: fixture.requests(),
+    console.log('CROSS_STARTUP ' + JSON.stringify({ project: info.project.name, fixtureRequests: fixture.requests(), responses: fixture.responses(),
       ...(await page.evaluate(() => {
         const a = document.getElementById('radioPlayer')
-        return { attempts: window.__playAttempts ?? [], media: a ? { src: a.src, currentSrc: a.currentSrc,
+        return { events: window.__mediaEvents ?? [], attempts: window.__playAttempts ?? [], media: a ? { src: a.src, currentSrc: a.currentSrc,
           paused: a.paused, currentTime: a.currentTime, readyState: a.readyState, networkState: a.networkState,
           errorCode: a.error?.code ?? null, errorMessage: a.error?.message ?? null } : null }
       })),
@@ -154,4 +163,36 @@ test('manifest, service worker control and shell with the origin unavailable', a
       await exited
     }
   }
+})
+
+test('control: native HTML audio plays the exact local cross-origin PCM resource', async ({ page }, info) => {
+  const fixture = await startPcmServer(page)
+  const probeUrl = origin + '/__pcm-control'
+  try {
+    await page.route(probeUrl, route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="es"><title>Control PCM</title><button id="play">Reproducir control</button><audio id="control" crossorigin="anonymous"></audio></html>' }))
+    await page.goto(probeUrl)
+    await page.evaluate(url => {
+      const audio = document.getElementById('control')
+      window.__controlEvents = []
+      for (const type of ['loadstart','loadedmetadata','canplay','playing','waiting','stalled','error','ended','pause','timeupdate']) {
+        audio.addEventListener(type, () => {
+          if (window.__controlEvents.length < 80) window.__controlEvents.push({ type, time: audio.currentTime, ready: audio.readyState, error: audio.error?.code ?? null, message: audio.error?.message ?? null })
+        })
+      }
+      document.getElementById('play').addEventListener('click', () => {
+        audio.src = url
+        audio.play().then(() => { window.__controlPlay = 'resolved' }, e => { window.__controlPlay = e.name })
+      })
+    }, fixture.url)
+    await page.getByRole('button', { name: 'Reproducir control' }).click()
+    try {
+      await expect.poll(() => page.locator('#control').evaluate(a => !a.paused && a.currentTime > 0.5)).toBe(true)
+      expect(fixture.requests()).toBeGreaterThan(0)
+    } finally {
+      console.log('NATIVE_CONTROL ' + JSON.stringify({ project: info.project.name, responses: fixture.responses(), ...(await page.evaluate(() => ({
+        play: window.__controlPlay ?? null, events: window.__controlEvents ?? [],
+        clock: document.getElementById('control').currentTime
+      }))) }))
+    }
+  } finally { await fixture.close() }
 })

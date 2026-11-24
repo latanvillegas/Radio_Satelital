@@ -5,6 +5,7 @@ import { makeWav, stationUrl } from './fixtures.mjs'
 export async function startPcmServer(page) {
   const wav = makeWav()
   let requests = 0
+  const responses = []
   const server = createServer((req, res) => {
     const headers = {
       'access-control-allow-origin': '*',
@@ -31,6 +32,7 @@ export async function startPcmServer(page) {
       headers['content-range'] = `bytes ${start}-${end}/${wav.length}`
     }
     headers['content-length'] = end - start + 1
+    responses.push({ method: req.method, range: req.headers.range ?? null, status: range ? 206 : 200, bytes: end - start + 1 })
     res.writeHead(range ? 206 : 200, headers)
     res.end(req.method === 'HEAD' ? undefined : wav.subarray(start, end + 1))
   })
@@ -50,6 +52,7 @@ export async function startPcmServer(page) {
   return {
     url,
     requests: () => requests,
+    responses: () => [...responses],
     close: () => new Promise(resolve => { server.close(resolve); server.closeAllConnections() }),
   }
 }
