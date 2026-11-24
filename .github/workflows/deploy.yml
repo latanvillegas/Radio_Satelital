@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -14,15 +15,21 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 
+env:
+  PAGES_ARTIFACT: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+
 jobs:
   build-and-deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -35,8 +42,17 @@ jobs:
       - name: Build static site
         run: npm run build
 
-      - name: Preserve custom domain in artifact
-        run: echo "latanvillegas.online" > out/CNAME
+      - name: Prepare and verify static export
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s out/index.html
+          test -s out/manifest.json
+          test -d out/_next/static
+          grep -q 'station-search' out/index.html
+          printf '%s\n' 'latanvillegas.online' > out/CNAME
+          printf '%s\n' "$GITHUB_SHA" > out/release.txt
+          touch out/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -44,8 +60,49 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          name: ${{ env.PAGES_ARTIFACT }}
           path: ./out
+
+      - name: Wait for artifact metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in {1..18}; do
+            count="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=$PAGES_ARTIFACT" --jq '.total_count' 2>/dev/null || true)"
+            if [[ "$count" == 1 ]]; then
+              echo "Unique Pages artifact registered: $PAGES_ARTIFACT"
+              exit 0
+            fi
+            if [[ "$count" =~ ^[0-9]+$ ]] && (( count > 1 )); then
+              echo "::error::Unexpected duplicate Pages artifact: $PAGES_ARTIFACT"
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "::error::Pages artifact metadata not available after bounded retries"
+          exit 1
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: ${{ env.PAGES_ARTIFACT }}
+
+      - name: Verify public release and application
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in {1..18}; do
+            release="$(curl -fsS --max-time 10 --header 'Cache-Control: no-cache' "https://latanvillegas.online/release.txt?sha=$GITHUB_SHA&attempt=$attempt" || true)"
+            if [[ "$release" == "$GITHUB_SHA" ]] &&
+               curl -fsS --max-time 10 --header 'Cache-Control: no-cache' "https://latanvillegas.online/?sha=$GITHUB_SHA" -o "$RUNNER_TEMP/radio-public.html" &&
+               grep -q 'station-search' "$RUNNER_TEMP/radio-public.html"; then
+              echo "Public release verified: $GITHUB_SHA"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Public domain does not serve this Next.js release. Check Settings > Pages > Source is GitHub Actions."
+          exit 1
