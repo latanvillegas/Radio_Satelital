@@ -13,3 +13,6 @@ Impeccable (audit, optimize, craft-floor), Matt Pocock (diagnosing-bugs, TDD y r
 
 ## Validación pendiente
 Workflow Web quality: npm run lint, npm run test, npm run build. Verificar catálogo, búsqueda, filtros, favoritos, recientes, compartir, reproducción, volumen, EQ, grabación, temporizador, estudio, Media Session, proxy, reconexión, PWA, temas y teclado en 320–1920px. Medir CPU, RAM y batería antes/después, auditar dependencias resueltas y headers de hosting, validar WCAG 2.2 AA manualmente. No fusionar sin verificación.
+
+## CI — diagnóstico de la primera iteración
+Ejecuciones 45433781486 y 45433781841: instalación y TypeScript correctos; 28 tests pasaron en 9 archivos, el décimo (integración DOM) no pudo iniciar. Vitest terminó con TypeError en undici/lib/interceptor/decompress.js (reading 'bind'). Los logs de npm identifican Node 20.20.2 fuera del rango de jsdom 31.0.1 y de undici 8.13.1. El build fue omitido. Se alinea CI web y despliegue con Node 24 LTS mediante .nvmrc y se declara engines. No se omite ninguna prueba. Las credenciales de checkout no se persisten en los workflows de PR. Pendiente confirmar nueva ejecución.
