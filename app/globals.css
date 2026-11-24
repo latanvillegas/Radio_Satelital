@@ -8,8 +8,8 @@
 
   /* Superficies semánticas — Oscuro AMOLED / Broadcast */
   --bg-canvas: #060a0e;
-  --bg-header: rgba(8, 13, 19, 0.92);
-  --bg-player: rgba(9, 15, 22, 0.96);
+  --bg-header: #080d13;
+  --bg-player: #090f16;
   --bg-surface: #0d141c;
   --bg-surface-hover: #131e29;
   --bg-elevated: #111a24;
@@ -40,8 +40,8 @@ html[data-appearance='light'] {
 
   /* Superficies semánticas — Modo Claro / Exterior de alto contraste */
   --bg-canvas: #f4f7f6;
-  --bg-header: rgba(248, 251, 250, 0.94);
-  --bg-player: rgba(255, 255, 255, 0.97);
+  --bg-header: #f8fbfa;
+  --bg-player: #ffffff;
   --bg-surface: #ffffff;
   --bg-surface-hover: #edf4f1;
   --bg-elevated: #ffffff;
@@ -71,11 +71,7 @@ html[data-appearance='light'] {
     margin: 0;
     min-height: 100vh;
     background-color: var(--bg-canvas);
-    background-image: radial-gradient(
-      ellipse 75% 38% at 50% -8%,
-      var(--accent-subtle),
-      transparent 65%
-    );
+    background-image: none;
     color: var(--text-primary);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -129,13 +125,11 @@ html[data-appearance='light'] {
 .surface-header {
   background-color: var(--bg-header);
   border-bottom: 1px solid var(--border-subtle);
-  backdrop-filter: blur(20px);
 }
 
 .surface-player-bar {
   background-color: var(--bg-player);
   border-top: 1px solid var(--border-strong);
-  backdrop-filter: blur(20px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -246,12 +240,12 @@ html[data-appearance='light'] {
 .station-tile:hover {
   background-color: var(--bg-surface-hover);
   border-color: var(--border-strong);
-  transform: translateY(-1px);
+  transform: none;
 }
 
 .station-tile.is-active {
   border-color: var(--accent);
-  background-image: linear-gradient(120deg, var(--accent-subtle), transparent 72%);
+  background-color: var(--bg-surface-hover);
 }
 
 /* Barras horizontales sin scrollbar intrusivo */
@@ -278,4 +272,44 @@ html[data-appearance='light'] {
   .station-tile:hover {
     transform: none;
   }
+}
+
+/* Broadcast: superficies opacas y jerarquía de estado. */
+html[data-theme='amoled'][data-appearance='dark'] {
+  --bg-canvas: #000;
+  --bg-header: #000;
+  --bg-player: #000;
+  --bg-surface: #080808;
+  --bg-surface-hover: #171717;
+  --bg-elevated: #101010;
+  --bg-input: #0c0c0c;
+  --text-primary: #fafafa;
+  --text-secondary: #d4d4d4;
+  --text-muted: #a3a3a3;
+  --border-subtle: #303030;
+  --border-strong: #737373;
+}
+html[data-appearance='light'] {
+  --bg-canvas: #fff;
+  --bg-surface-hover: #e9efec;
+  --border-subtle: #a1ada8;
+  --border-strong: #62756c;
+  --text-muted: #445950;
+}
+html[data-appearance='light'] .text-red-500 { color: #b91c1c; }
+::selection { background: var(--accent); color: var(--accent-fg); }
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 3px;
+  scroll-margin-block: 5rem 8rem;
+}
+html { scroll-padding-block: 5rem 8rem; }
+.station-tile { min-height: 76px; border-radius: 12px; }
+@media (max-width: 380px) {
+  .station-tile { gap: 6px; padding: 8px; }
+  .station-tile .dial-art { width: 40px; height: 40px; }
+}
+@media (forced-colors: active) {
+  .station-tile.is-active { border: 2px solid Highlight; }
+  :where(button, a, input, select, textarea, [tabindex]):focus-visible { outline-color: Highlight; }
 }

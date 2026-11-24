@@ -9,6 +9,7 @@ import { installWebVitalsObserver } from '@/lib/services/telemetry'
  * y expone estado de red offline en tiempo real.
  */
 export default function ServiceWorkerRegistration() {
+  const updateRequested = React.useRef(false)
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null)
   const [dismissedUpdate, setDismissedUpdate] = useState(false)
   const [isOnline, setIsOnline] = useState(true)
@@ -32,7 +33,7 @@ export default function ServiceWorkerRegistration() {
 
     let refreshing = false
     const onControllerChange = () => {
-      if (refreshing) return
+      if (refreshing || !updateRequested.current) return
       refreshing = true
       window.location.reload()
     }
@@ -76,6 +77,7 @@ export default function ServiceWorkerRegistration() {
 
   const applyUpdate = () => {
     if (!waitingWorker) return
+    updateRequested.current = true
     waitingWorker.postMessage({ type: 'SKIP_WAITING' })
   }
 
@@ -105,7 +107,7 @@ export default function ServiceWorkerRegistration() {
             <button
               type="button"
               onClick={applyUpdate}
-              className="min-h-[34px] px-3 rounded-lg bg-accent text-accent-fg font-bold inline-flex items-center gap-1.5 hover:bg-accent-hover transition-colors"
+              className="min-h-[44px] px-3 rounded-lg bg-accent text-accent-fg font-bold inline-flex items-center gap-1.5 hover:bg-accent-hover transition-colors"
             >
               <RefreshCw size={13} />
               <span>Actualizar</span>
@@ -114,7 +116,7 @@ export default function ServiceWorkerRegistration() {
               type="button"
               onClick={() => setDismissedUpdate(true)}
               aria-label="Posponer actualización"
-              className="w-8 h-8 rounded-lg grid place-items-center text-ink-muted hover:text-ink hover:bg-subtle"
+              className="w-11 h-11 rounded-lg grid place-items-center text-ink-muted hover:text-ink hover:bg-subtle"
             >
               <X size={14} />
             </button>

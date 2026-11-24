@@ -95,7 +95,7 @@ export default function RadioExplorer({
 
         {/* Top Bar Contract: 3 zonas limpias (Marca · Navegación de regiones · Acción principal) */}
         <header className="surface-header sticky top-0 z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-6">
             <Link
               href={featuredStation ? '/' : '#inicio'}
               onClick={(e) => {
@@ -139,7 +139,7 @@ export default function RadioExplorer({
                 type="button"
                 onClick={() => setMenuOpen(true)}
                 aria-label="Abrir ajustes de apariencia y audio"
-                className="min-h-[42px] px-3.5 rounded-xl border border-line bg-surface hover:bg-subtle text-ink text-xs font-semibold inline-flex items-center gap-2 transition-colors whitespace-nowrap shrink-0"
+                className="min-h-[44px] px-3.5 rounded-xl border border-line bg-surface hover:bg-subtle text-ink text-xs font-semibold inline-flex items-center gap-2 transition-colors whitespace-nowrap shrink-0"
               >
                 <Settings2 size={16} />
                 <span>Ajustes</span>
@@ -150,7 +150,7 @@ export default function RadioExplorer({
 
         <main
           id="inicio"
-          className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-11 pb-36 sm:pb-32"
+          className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-11 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:pb-32"
         >
           {featuredStation && (
             <section
@@ -268,7 +268,7 @@ export default function RadioExplorer({
                   type="button"
                   onClick={() => handleScopeSelect('all')}
                   aria-pressed={scope === 'all' && !hasActiveFilters}
-                  className={`min-h-[40px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
+                  className={`min-h-[44px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
                     scope === 'all' && !hasActiveFilters
                       ? 'bg-accent text-accent-fg border-accent'
                       : 'bg-surface hover:bg-subtle text-ink-secondary hover:text-ink border-line'
@@ -280,7 +280,7 @@ export default function RadioExplorer({
                   type="button"
                   onClick={() => handleScopeSelect('jaen')}
                   aria-pressed={scope === 'jaen'}
-                  className={`min-h-[40px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
+                  className={`min-h-[44px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
                     scope === 'jaen'
                       ? 'bg-accent text-accent-fg border-accent'
                       : 'bg-surface hover:bg-subtle text-ink-secondary hover:text-ink border-line'
@@ -293,7 +293,7 @@ export default function RadioExplorer({
                   type="button"
                   onClick={() => handleScopeSelect('cajamarca')}
                   aria-pressed={scope === 'cajamarca'}
-                  className={`min-h-[40px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
+                  className={`min-h-[44px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
                     scope === 'cajamarca'
                       ? 'bg-accent text-accent-fg border-accent'
                       : 'bg-surface hover:bg-subtle text-ink-secondary hover:text-ink border-line'
@@ -306,7 +306,7 @@ export default function RadioExplorer({
                   type="button"
                   onClick={() => handleScopeSelect('peru')}
                   aria-pressed={scope === 'peru'}
-                  className={`min-h-[40px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
+                  className={`min-h-[44px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
                     scope === 'peru'
                       ? 'bg-accent text-accent-fg border-accent'
                       : 'bg-surface hover:bg-subtle text-ink-secondary hover:text-ink border-line'
@@ -318,7 +318,7 @@ export default function RadioExplorer({
                   type="button"
                   onClick={() => handleScopeSelect('world')}
                   aria-pressed={scope === 'world'}
-                  className={`min-h-[40px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
+                  className={`min-h-[44px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
                     scope === 'world'
                       ? 'bg-accent text-accent-fg border-accent'
                       : 'bg-surface hover:bg-subtle text-ink-secondary hover:text-ink border-line'
@@ -331,7 +331,7 @@ export default function RadioExplorer({
                   type="button"
                   onClick={() => handleScopeSelect('favorites')}
                   aria-pressed={scope === 'favorites'}
-                  className={`min-h-[40px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
+                  className={`min-h-[44px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
                     scope === 'favorites'
                       ? 'bg-accent text-accent-fg border-accent'
                       : 'bg-surface hover:bg-subtle text-ink-secondary hover:text-ink border-line'
@@ -345,7 +345,7 @@ export default function RadioExplorer({
                     type="button"
                     onClick={() => handleScopeSelect('recent')}
                     aria-pressed={scope === 'recent'}
-                    className={`min-h-[40px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
+                    className={`min-h-[44px] px-3.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 border transition-colors ${
                       scope === 'recent'
                         ? 'bg-accent text-accent-fg border-accent'
                         : 'bg-surface hover:bg-subtle text-ink-secondary hover:text-ink border-line'

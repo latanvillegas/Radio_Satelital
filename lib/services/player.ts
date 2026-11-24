@@ -254,7 +254,7 @@ export function bindMediaNavigation(next: () => void, previous: () => void): voi
 }
 
 function scheduleReconnect(station: Station, token: number, error?: string) {
-  if (token !== runId || !playbackRequested) return
+  if (token !== runId || !playbackRequested || retryTimer !== null) return
   clearTimers()
   destroyHls()
 
@@ -321,9 +321,12 @@ async function attachHlsIfNeeded(
     const hls = new Hls({
       enableWorker: true,
       lowLatencyMode: true,
-      backBufferLength: 30,
+      backBufferLength: 15,
+      maxBufferLength: 30,
+      maxMaxBufferLength: 60,
     })
     activeHls = hls
+    let mediaRecoveryAttempted = false
 
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
       if (token !== runId || !playbackRequested) return
@@ -342,9 +345,10 @@ async function attachHlsIfNeeded(
     })
 
     hls.on(Hls.Events.ERROR, (_event, data) => {
-      if (token !== runId || !playbackRequested) return
+      if (token !== runId || !playbackRequested || activeHls !== hls) return
       if (!data.fatal) return
-      if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+      if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !mediaRecoveryAttempted) {
+        mediaRecoveryAttempted = true
         hls.recoverMediaError()
       } else {
         destroyHls()
@@ -385,7 +389,7 @@ function startStream(station: Station, isRetry: boolean) {
   notifyStatus(isRetry ? 'reconnecting' : 'loading')
 
   const onError = () => {
-    if (token !== runId || !playbackRequested) return
+    if (token !== runId || !playbackRequested || retryTimer !== null) return
     if (!plainMode) {
       plainMode = true
       isReconnecting = true
@@ -424,6 +428,12 @@ function startStream(station: Station, isRetry: boolean) {
   activeAudio.onpause = () => {
     if (token === runId && !isReconnecting && !playbackRequested) notifyStatus('paused')
   }
+
+  // Bound startup time even if no waiting/error event arrives.
+  stallTimer = setTimeout(() => {
+    stallTimer = null
+    if (token === runId && playbackRequested) onError()
+  }, 15000)
 
   void (async () => {
     const handledByHlsJs = await attachHlsIfNeeded(activeAudio, optimal.url, token, onError)

@@ -115,8 +115,8 @@ export default function StationGrid({
                 key={stationKey(station)}
                 station={station}
                 isActive={selectedKey === stationKey(station)}
-                isPlaying={playback.playing}
-                playbackStatus={playback.status}
+                isPlaying={selectedKey === stationKey(station) && playback.playing}
+                playbackStatus={selectedKey === stationKey(station) ? playback.status : 'idle'}
                 onPlay={playStation}
                 onPause={togglePlay}
                 onToggleFav={toggleFavorite}
