@@ -23,3 +23,8 @@ SIGNING_README.txt
 /playwright-report/
 /test-results/
 /npm-audit.json
+
+/playwright-report-cross/
+/test-results-cross/
+/benchmark-results/
+/baseline/

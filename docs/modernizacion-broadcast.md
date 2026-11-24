@@ -58,3 +58,6 @@ Run 45437822924: 6/7 E2E aprobados. PCM y recuperación offline, PWA, viewport 3
 
 ### Matriz de compatibilidad
 Se incorpora workflow Firefox escritorio, WebKit escritorio, Pixel 7 emulado (Chromium) e iPhone 13 emulado (WebKit), tres escenarios por proyecto: catálogo/favoritos/tema/axe, PCM estéreo/pausa y shell PWA offline. Los perfiles emulados en Linux no son dispositivos Android/iOS físicos ni equivalen a certificar Safari del sistema, codecs nativos o comportamiento energético. Cada motor genera evidencias independientes; no se silencian fallos de compatibilidad.
+
+### Comparación de rendimiento con la versión original
+Se fija el baseline original 8a58fbc4591827a5f6257e96e6086cfafb251479; ambos builds se prueban en el mismo runner Chromium, tres pares alternados de ejecución con contexto limpio y señal PCM idéntica. Captura CPU acumulada de procesos Chromium presentes en ambos extremos de cada ventana, PSS Linux (si accesible), heap JS y tiempo de tareas del hilo principal en idle/playback/studio. Se publica mediana y cambio porcentual; no se confunde con consumo de batería ni se afirma ahorro antes de resultados. Baseline no tenía lock npm, por lo que sus dependencias se resuelven actualmente y se guarda lock de esa resolución con informe. La comparación mide builds completos, incluyendo cambios de dependencias. No altera main ni despliega.
