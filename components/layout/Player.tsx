@@ -125,6 +125,7 @@ export default function Player({
     ? [currentStation.region, currentStation.country].filter(Boolean).join(' · ')
     : 'Selecciona una emisora para escuchar'
 
+  const canCancel = isPlaying || playbackStatus === 'loading' || playbackStatus === 'reconnecting' || playbackStatus === 'offline'
   const statusBadge =
     playbackStatus === 'reconnecting'
       ? 'Reconectando'
@@ -186,10 +187,10 @@ export default function Player({
               type="button"
               onClick={togglePlay}
               disabled={!currentStation}
-              aria-label={isPlaying ? 'Pausar radio' : 'Reproducir radio'}
+              aria-label={canCancel ? 'Pausar radio' : 'Reproducir radio'}
               className="w-11 h-11 rounded-full grid place-items-center bg-accent text-accent-fg hover:bg-accent-hover shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              {isPlaying ? (
+              {canCancel ? (
                 <Pause size={20} fill="currentColor" />
               ) : (
                 <Play size={20} fill="currentColor" className="ml-0.5" />
@@ -324,10 +325,10 @@ export default function Player({
                   type="button"
                   onClick={togglePlay}
                   disabled={!currentStation}
-                  aria-label={isPlaying ? 'Pausar radio' : 'Reproducir radio'}
+                  aria-label={canCancel ? 'Pausar radio' : 'Reproducir radio'}
                   className="w-16 h-16 rounded-full grid place-items-center bg-accent text-accent-fg hover:bg-accent-hover shadow-lg active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
-                  {isPlaying ? (
+                  {canCancel ? (
                     <Pause size={27} fill="currentColor" />
                   ) : (
                     <Play size={27} fill="currentColor" className="ml-1" />

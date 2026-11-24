@@ -168,7 +168,7 @@ export default function StudioDisplayModal({
   }, [currentStation?.name])
 
   const handleStopRec = useCallback(() => {
-    stopRecording()
+    void stopRecording()
   }, [])
 
   const handleResync = useCallback(() => {
@@ -433,7 +433,9 @@ export default function StudioDisplayModal({
                 )}
 
                 <div className="flex flex-wrap items-center gap-2.5 mt-5">
-                  {!recorderState.isRecording ? (
+                  {recorderState.isFinalizing ? (
+                    <span role="status" className="text-sm text-ink-secondary">Finalizando grabación…</span>
+                  ) : !recorderState.isRecording ? (
                     <button
                       type="button"
                       onClick={handleStartRec}

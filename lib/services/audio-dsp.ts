@@ -271,7 +271,6 @@ export function initAudioDsp(audio: HTMLAudioElement): boolean {
       audioCtx.resume().catch(() => {})
     }
     syncNodeParameters()
-    rewireGraph()
     if (!currentState.isWebAudioActive) {
       currentState = { ...currentState, isWebAudioActive: true }
       notifyDspChange()
@@ -352,7 +351,7 @@ export function setDspEnabled(enabled: boolean) {
 
 export function setBandGain(bandIndex: number, gainDb: number) {
   ensureHydratedState()
-  if (bandIndex < 0 || bandIndex >= 5) return
+  if (!Number.isInteger(bandIndex) || bandIndex < 0 || bandIndex >= 5 || !Number.isFinite(gainDb)) return
   const clamped = Math.max(-12, Math.min(12, gainDb))
   const newBands = [...currentState.bands] as [number, number, number, number, number]
   newBands[bandIndex] = clamped
@@ -369,6 +368,7 @@ export function setBandGain(bandIndex: number, gainDb: number) {
 
 export function setPreAmpGain(gainDb: number) {
   ensureHydratedState()
+  if (!Number.isFinite(gainDb)) return
   const clamped = Math.max(0, Math.min(12, gainDb))
   currentState = { ...currentState, preAmp: clamped }
   saveState(currentState)
@@ -417,8 +417,19 @@ export function getDspOutputStream(): MediaStream | null {
   return streamDestNode ? streamDestNode.stream : null
 }
 
+export function suspendAudioDsp(): void {
+  if (audioCtx?.state === 'running') void audioCtx.suspend().catch(() => {})
+}
+
+export function resumeAudioDsp(): void {
+  if (audioCtx?.state === 'suspended') void audioCtx.resume().catch(() => {})
+}
+
 export function releaseAudioDsp(): void {
   disconnectProcessingNodes()
+  const ctx = audioCtx
+  audioCtx = null
+  if (ctx && ctx.state !== 'closed') void ctx.close().catch(() => {})
   sourceNode = null
   connectedAudioElement = null
   filterNodes = []

@@ -24,20 +24,17 @@ export default function usePlayer() {
 
   useEffect(() => {
     let boundAudio: HTMLAudioElement | null = null
-    const onPlay = () => setIsPlaying(true)
     const onPause = () => setIsPlaying(false)
     const onTime = () => { if (boundAudio) setSecondsElapsed(Math.floor(boundAudio.currentTime)) }
     const bindCurrentAudio = () => {
       const audio = getAudio()
       if (boundAudio === audio) return
       if (boundAudio) {
-        boundAudio.removeEventListener('play', onPlay)
         boundAudio.removeEventListener('pause', onPause)
         boundAudio.removeEventListener('timeupdate', onTime)
       }
       boundAudio = audio
       if (audio) {
-        audio.addEventListener('play', onPlay)
         audio.addEventListener('pause', onPause)
         audio.addEventListener('timeupdate', onTime)
         setIsPlaying(!audio.paused && Boolean(audio.src))
@@ -51,15 +48,14 @@ export default function usePlayer() {
       setPlaybackStatus(status)
       if (status === 'playing') { setIsPlaying(true); setStatusMessage(null) }
       else if (status === 'paused') { setIsPlaying(false); setStatusMessage(null) }
-      else if (status === 'loading') setStatusMessage('Conectando stream...')
-      else if (status === 'reconnecting') setStatusMessage('Reconectando señal...')
+      else if (status === 'loading') { setIsPlaying(false); setSecondsElapsed(0); setStatusMessage('Conectando stream...') }
+      else if (status === 'reconnecting') { setIsPlaying(false); setStatusMessage('Reconectando señal...') }
       else if (status === 'offline') { setIsPlaying(false); setStatusMessage('Sin conexión a Internet') }
       else if (status === 'error') { setIsPlaying(false); setStatusMessage(meta?.error || 'Transmisión no disponible') }
     })
     const unsubscribeSleep = subscribeSleepTimer(setSleepTimerMinutes)
     return () => {
       if (boundAudio) {
-        boundAudio.removeEventListener('play', onPlay)
         boundAudio.removeEventListener('pause', onPause)
         boundAudio.removeEventListener('timeupdate', onTime)
       }
