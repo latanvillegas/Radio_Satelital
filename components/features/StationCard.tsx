@@ -55,9 +55,8 @@ function StationCard({
         type="button"
         onClick={handlePlayOrPause}
         className="flex flex-1 items-center gap-3.5 min-w-0 text-left rounded-xl py-0.5"
-        aria-label={`${playing || loading || (isActive && playbackStatus === 'offline') ? 'Pausar' : 'Escuchar'} ${station.name}`}
       >
-        <StationArtwork station={station} variant="card" />
+        <span aria-hidden="true"><StationArtwork station={station} variant="card" /></span>
         <span className="min-w-0 flex-1 flex flex-col gap-0.5">
           <strong className="block truncate text-sm font-bold text-ink">
             {station.name}
@@ -78,6 +77,7 @@ function StationCard({
             </span>
           </span>
         </span>
+        <span className="sr-only">{playing || loading || (isActive && playbackStatus === 'offline') ? 'Pausar emisora' : 'Escuchar emisora'}</span>
       </button>
 
       <div className="flex items-center gap-1 shrink-0">

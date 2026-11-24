@@ -78,7 +78,7 @@ test('PWA installs the static shell and remains interactive after offline reload
 test('real Chromium audio playback, offline recovery and manual cancellation with PCM fixture', async ({ page, context }) => {
   await isolateNetwork(page, true)
   await page.goto('/')
-  await page.getByRole('button', { name: 'Escuchar Activa Jaén', exact: true }).click()
+  await page.getByRole('button', { name: 'Reproducir: Activa Jaén', exact: true }).click()
   await expect.poll(() => page.locator('#radioPlayer').evaluate(a => !a.paused && a.currentTime > 0.1)).toBe(true)
   await context.setOffline(true)
   await expect(page.getByText('Sin red', { exact: true }).first()).toBeVisible()
@@ -137,7 +137,7 @@ test('capture Chromium task duration and JS heap in idle and playback', async ({
     return value
   }
   const idle = await collect('idle')
-  await page.getByRole('button', { name: 'Escuchar Activa Jaén', exact: true }).click()
+  await page.getByRole('button', { name: 'Reproducir: Activa Jaén', exact: true }).click()
   await expect.poll(() => page.locator('#radioPlayer').evaluate(a => !a.paused && a.currentTime > 0.1)).toBe(true)
   const playback = await collect('playback')
   const report = { environment: 'Headless Chromium CI; synthetic PCM; CPU task time proxy; not battery, device RAM or baseline comparison', idle, playback }
@@ -149,9 +149,9 @@ test('capture Chromium task duration and JS heap in idle and playback', async ({
 test('stereo peak meter separates PCM channels and recorder produces a downloadable file', async ({ page }, info) => {
   await isolateNetwork(page, true)
   await page.goto('/')
-  await page.getByRole('button', { name: 'Escuchar Activa Jaén', exact: true }).click()
+  await page.getByRole('button', { name: 'Reproducir: Activa Jaén', exact: true }).click()
   await expect.poll(() => page.locator('#radioPlayer').evaluate(a => !a.paused && a.currentTime > 0.1)).toBe(true)
-  await page.getByRole('button', { name: 'Abrir reproductor expandido' }).click()
+  await page.getByRole('button', { name: /Abrir reproductor expandido/ }).click()
   await page.getByRole('button', { name: 'Cabina', exact: true }).click()
   await expect(page.getByText('Picos por canal L / R', { exact: true })).toBeVisible()
   const readPeak = async channel => {
@@ -199,7 +199,7 @@ test('HLS.js plays a local AAC transport stream in the real browser', async ({ p
   })
   await page.goto('/')
   await page.getByRole('searchbox', { name: /Buscar emisoras/ }).fill('RNE Radio Clásica')
-  await page.getByRole('button', { name: 'Escuchar RNE Radio Clásica', exact: true }).click()
+  await page.getByRole('button', { name: 'Reproducir: RNE Radio Clásica', exact: true }).click()
   await expect.poll(() => page.locator('#radioPlayer').evaluate(a => !a.paused && a.currentTime > 0.1), { timeout: 25000 }).toBe(true)
   expect(segmentRequests).toBeGreaterThan(0)
   await page.getByRole('button', { name: 'Pausar radio', exact: true }).click()

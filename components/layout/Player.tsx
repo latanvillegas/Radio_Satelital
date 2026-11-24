@@ -153,12 +153,11 @@ export default function Player({
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            aria-label="Abrir reproductor expandido"
             aria-haspopup="dialog"
             aria-expanded={expanded}
             className="flex items-center gap-3 min-w-0 flex-1 text-left rounded-xl py-1"
           >
-            <StationArtwork station={currentStation} variant="dock" />
+            <span aria-hidden="true"><StationArtwork station={currentStation} variant="dock" /></span>
             <div className="min-w-0 flex-1">
               <div
                 className={`text-sm font-bold truncate ${
@@ -171,6 +170,7 @@ export default function Player({
                 {statusMessage || meta}
               </div>
             </div>
+            <span className="sr-only">Abrir reproductor expandido</span>
           </button>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
