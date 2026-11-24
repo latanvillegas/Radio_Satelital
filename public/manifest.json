@@ -8,7 +8,7 @@
   "display": "standalone",
   "background_color": "#060a0e",
   "theme_color": "#060a0e",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "lang": "es",
   "dir": "ltr",
   "categories": ["music", "entertainment", "news"],

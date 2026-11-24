@@ -26,6 +26,7 @@ export default function Filters({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || document.querySelector('[role="dialog"][aria-modal="true"]')) return
       const tag = document.activeElement?.tagName || ''
       if (
         (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) &&
@@ -53,7 +54,7 @@ export default function Filters({
   return (
     <div id="filters-panel" className="mb-4">
       <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
-        <div className="relative flex-1 min-w-[220px]">
+        <div className="relative flex-1 min-w-0 basis-[220px]">
           <Search
             size={18}
             className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none"

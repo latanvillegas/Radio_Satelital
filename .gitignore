@@ -19,3 +19,7 @@ android-keystore.jks
 android-keystore.txt
 SIGNING_README.txt
 .env.local
+
+/playwright-report/
+/test-results/
+/npm-audit.json
