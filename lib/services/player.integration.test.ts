@@ -87,23 +87,27 @@ describe('Live radio transport lifecycle', () => {
   })
 
   it('bounds retries even when a stream briefly emits playing before each failure', async () => {
-    const mediaError = vi.spyOn(HTMLMediaElement.prototype, 'error', 'get').mockReturnValue({ code: 3, message: 'decode' } as MediaError)
+    const emitError = () => {
+      const audio = getAudio()!
+      Object.defineProperty(audio, 'error', { configurable: true, value: { code: 3, message: 'decode' } })
+      try { audio.dispatchEvent(new Event('error')) }
+      finally { Reflect.deleteProperty(audio, 'error') }
+    }
     playStation(station)
-    getAudio()!.dispatchEvent(new Event('error')) // initial CORS fallback
+    emitError() // initial CORS fallback
     for (const wait of [2000, 4000, 8000]) {
       getAudio()!.dispatchEvent(new Event('playing'))
-      getAudio()!.dispatchEvent(new Event('error'))
+      emitError()
       expect(statuses.at(-1)).toBe('reconnecting')
       await vi.advanceTimersByTimeAsync(wait)
     }
     getAudio()!.dispatchEvent(new Event('playing'))
-    getAudio()!.dispatchEvent(new Event('error'))
+    emitError()
     expect(statuses.at(-1)).toBe('error')
     expect(getAudio()?.getAttribute('src')).toBeNull()
     const attempts = vi.mocked(HTMLMediaElement.prototype.play).mock.calls.length
     await vi.advanceTimersByTimeAsync(60000)
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(attempts)
-    mediaError.mockRestore()
   })
 
   it('stops the transport when the sleep timer expires', async () => {
