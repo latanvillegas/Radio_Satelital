@@ -1,6 +1,7 @@
 import type HlsType from 'hls.js'
 import type { Station } from '../../types/station'
 import { getOptimalUrl } from './proxy'
+import { reportRadioBrowserPlay } from './radio-browser'
 import { validateStationUrl } from '../utils/validate'
 import { addRecentStation } from '../storage/recents'
 import { stationKey } from './station-normalizer'
@@ -399,7 +400,7 @@ function startStream(station: Station, isRetry: boolean) {
     return
   }
   const optimal = getOptimalUrl(station)
-  const hlsCandidate = isHlsStreamUrl(optimal.url) || isHlsStreamUrl(station.streamUrl || station.url || '')
+  const hlsCandidate = station.hls === true || isHlsStreamUrl(optimal.url) || isHlsStreamUrl(station.streamUrl || station.url || '')
   currentStreamMeta = { ...optimal, isHls: hlsCandidate }
 
   if (!isRetry) {
@@ -515,6 +516,7 @@ export function playStation(s: Station, isAutoRetry = false) {
     retryCount = 0
     plainMode = false
     addRecentStation(stationKey(s))
+    reportRadioBrowserPlay(s)
   }
   currentPlayingStation = s
   playbackRequested = true

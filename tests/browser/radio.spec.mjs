@@ -254,3 +254,27 @@ test('station artwork preserves a clean fallback while remote logos are unavaila
   }))).toBe(true)
   await info.attach('artwork-offline-fallback.png', { body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png' })
 })
+
+test('Radio Browser discovery, favorite persistence and shared UUID without replacing local catalog', async ({ page }) => {
+  await isolateNetwork(page, true)
+  const uuid = '01234567-89ab-cdef-0123-456789abcdef'
+  const entry = { stationuuid: uuid, name: 'Radio Browser Fixture', url_resolved: 'https://radio.example.com/live', countrycode: 'ES', tags: 'rock', lastcheckok: 1 }
+  let requests = 0
+  await page.route('https://*.api.radio-browser.info/json/**', async route => {
+    requests++
+    return route.fulfill({ json: [entry], headers: { 'access-control-allow-origin': '*' } })
+  })
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Reproducir: Activa Jaén', exact: true })).toBeVisible()
+  expect(requests).toBe(0)
+  await page.getByRole('button', { name: 'Radio Browser', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Reproducir: Radio Browser Fixture', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Guardar en favoritas: Radio Browser Fixture', exact: true }).click()
+  await page.reload()
+  await page.getByRole('group', { name: 'Filtrar catálogo por alcance' }).getByRole('button', { name: 'Favoritas', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Quitar de favoritas: Radio Browser Fixture', exact: true })).toBeVisible()
+  await page.goto('/?station=rb-' + uuid + '&scope=browser')
+  await expect(page.locator('.broadcast-now-title')).toHaveText('Radio Browser Fixture')
+  await page.getByRole('group', { name: 'Filtrar catálogo por alcance' }).getByRole('button', { name: 'Todas', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Reproducir: Activa Jaén', exact: true })).toBeVisible()
+})
