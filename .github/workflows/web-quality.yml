@@ -21,7 +21,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
       - name: Instalar dependencias
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: TypeScript
         run: npm run lint
       - name: Pruebas unitarias
