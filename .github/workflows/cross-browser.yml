@@ -32,6 +32,20 @@ jobs:
       - run: npm run build
       - name: Install browser
         run: npx playwright install --with-deps ${{ matrix.engine }}
+      - name: Configure Firefox audio output on headless Linux
+        if: matrix.engine == 'firefox'
+        run: |
+          if ! command -v pulseaudio >/dev/null || ! command -v pactl >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y pulseaudio pulseaudio-utils
+          fi
+          if ! pactl info >/dev/null 2>&1; then
+            pulseaudio --start --exit-idle-time=-1
+          fi
+          pactl load-module module-null-sink sink_name=broadcast_ci rate=44100 channels=2
+          pactl set-default-sink broadcast_ci
+          pactl info
+          pactl list short sinks
       - name: Compatibility scenarios
         run: npx playwright test --config=playwright.cross.config.mjs --project=${{ matrix.project }}
       - name: Upload browser evidence

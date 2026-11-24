@@ -4,6 +4,7 @@ import { isolateNetwork, origin } from './fixtures.mjs'
 import { startPcmServer } from './pcm-server.mjs'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
+import { writeFile, unlink } from 'node:fs/promises'
 import { setTimeout as delay } from 'node:timers/promises'
 
 test('catalog, favorites, theme persistence and keyboard navigation', async ({ page }, info) => {
@@ -167,10 +168,10 @@ test('manifest, service worker control and shell with the origin unavailable', a
 
 test('control: native HTML audio plays the exact local cross-origin PCM resource', async ({ page }, info) => {
   const fixture = await startPcmServer(page)
-  const probeUrl = origin + '/__pcm-control'
+  const probePath = 'out/__pcm-control.html'
   try {
-    await page.route(probeUrl, route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="es"><title>Control PCM</title><button id="play">Reproducir control</button><audio id="control" crossorigin="anonymous"></audio></html>' }))
-    await page.goto(probeUrl)
+    await writeFile(probePath, '<!doctype html><html lang="es"><title>Control PCM</title><button id="play">Reproducir control</button><audio id="control" crossorigin="anonymous"></audio></html>')
+    await page.goto(origin + '/__pcm-control.html')
     await page.evaluate(url => {
       const audio = document.getElementById('control')
       window.__controlEvents = []
@@ -188,11 +189,16 @@ test('control: native HTML audio plays the exact local cross-origin PCM resource
     try {
       await expect.poll(() => page.locator('#control').evaluate(a => !a.paused && a.currentTime > 0.5)).toBe(true)
       expect(fixture.requests()).toBeGreaterThan(0)
+      expect(await page.locator('#control').evaluate(a => a.error?.code ?? null)).toBeNull()
+      expect(await page.evaluate(() => window.__controlEvents.filter(e => e.type === 'error'))).toEqual([])
     } finally {
       console.log('NATIVE_CONTROL ' + JSON.stringify({ project: info.project.name, responses: fixture.responses(), ...(await page.evaluate(() => ({
         play: window.__controlPlay ?? null, events: window.__controlEvents ?? [],
         clock: document.getElementById('control').currentTime
       }))) }))
     }
-  } finally { await fixture.close() }
+  } finally {
+    await fixture.close()
+    await unlink(probePath).catch(() => {})
+  }
 })
