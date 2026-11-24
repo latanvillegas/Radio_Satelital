@@ -235,3 +235,16 @@ test('premium visual contract: responsive home, modes and expanded player eviden
   await expect(page.getByText('Picos por canal L / R', { exact: true })).toBeVisible()
   await info.attach('premium-studio-390.png', { body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png' })
 })
+
+test('station artwork preserves a clean fallback while remote logos are unavailable', async ({ page }, info) => {
+  await isolateNetwork(page)
+  await page.goto('/')
+  const logos = page.locator('#station-list .dial-art-logo')
+  expect(await logos.count()).toBeGreaterThan(0)
+  await expect.poll(() => logos.evaluateAll(images => images.every(img => {
+    const style = getComputedStyle(img)
+    const fallback = img.parentElement.querySelector('.dial-art-fallback')
+    return Number(style.opacity) === 0 && fallback && getComputedStyle(fallback).display !== 'none'
+  }))).toBe(true)
+  await info.attach('artwork-offline-fallback.png', { body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png' })
+})

@@ -368,3 +368,11 @@ html { scroll-padding-block: 5rem 8rem; }
   .broadcast-brand-mark, .station-play { border: 1px solid ButtonText; }
   .broadcast-display span { color: CanvasText; }
 }
+
+/* Artwork is never shown before a successful load. The local dial remains
+   visible for slow, unavailable or lazy-loaded remote station logos. */
+.dial-art-logo { position: absolute; inset: 0; opacity: 0; background: inherit; }
+.dial-art-logo.is-ready { opacity: 1; }
+@media (max-width: 380px) {
+  .station-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: anywhere; }
+}
