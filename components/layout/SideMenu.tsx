@@ -91,7 +91,7 @@ export default function SideMenu({ open, onClose, onResetFilters }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.16 }}
-            className="fixed inset-0 backdrop-blur-sm"
+            className="fixed inset-0 "
             style={{ backgroundColor: 'var(--bg-scrim)' }}
             onClick={onClose}
             aria-hidden="true"

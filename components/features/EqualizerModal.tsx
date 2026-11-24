@@ -42,10 +42,11 @@ export default function EqualizerModal({ isOpen, onClose }: Props) {
   })
 
   useEffect(() => {
+    if (!isOpen) return
     return subscribeDsp((state) => {
       setDspState({ ...state })
     })
-  }, [])
+  }, [isOpen])
 
   return (
     <AnimatePresence>
@@ -56,7 +57,7 @@ export default function EqualizerModal({ isOpen, onClose }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.16 }}
-            className="fixed inset-0 backdrop-blur-md cursor-pointer"
+            className="fixed inset-0 cursor-pointer"
             style={{ backgroundColor: 'var(--bg-scrim)' }}
             onClick={onClose}
             aria-hidden="true"
@@ -69,7 +70,7 @@ export default function EqualizerModal({ isOpen, onClose }: Props) {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.97, opacity: 0, y: 8 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="relative z-10 w-full max-w-2xl bg-elevated border border-line rounded-2xl shadow-2xl p-5 sm:p-7 flex flex-col text-ink max-h-[90vh] overflow-y-auto"
+            className="relative z-10 w-full max-w-2xl bg-elevated border border-line rounded-2xl shadow-2xl p-5 sm:p-7 flex flex-col text-ink max-h-[90dvh] overflow-y-auto"
             role="dialog"
             aria-modal="true"
             aria-labelledby="eq-dialog-title"

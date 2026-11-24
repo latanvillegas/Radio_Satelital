@@ -258,7 +258,7 @@ export default function Player({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.16 }}
-              className="absolute inset-0 backdrop-blur-xl"
+              className="absolute inset-0 "
               style={{ backgroundColor: 'var(--bg-scrim)' }}
               onClick={() => setExpanded(false)}
               aria-hidden="true"
